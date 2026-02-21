@@ -1,0 +1,1 @@
+./vendor/bin/sail npx --no-install commitlint --edit "$1"

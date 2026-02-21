@@ -5,9 +5,12 @@
     "scripts": {
         "build": "tsc && vite build",
         "dev": "vite",
-        "check-ts": "tsc --noEmit"
+        "check-ts": "tsc --noEmit",
+        "prepare": "husky"
     },
     "devDependencies": {
+        "@commitlint/cli": "^20.4.2",
+        "@commitlint/config-conventional": "^20.4.2",
         "@headlessui/react": "^2.0.0",
         "@inertiajs/react": "^2.0.0",
         "@tailwindcss/forms": "^0.5.3",
@@ -26,12 +29,21 @@
         "eslint-plugin-jsx-a11y": "^6.10.2",
         "eslint-plugin-react": "^7.37.5",
         "eslint-plugin-react-hooks": "^7.0.1",
+        "husky": "^9.1.7",
         "laravel-vite-plugin": "^2.0.0",
+        "lint-staged": "^16.2.7",
         "postcss": "^8.4.31",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
         "tailwindcss": "^3.2.1",
         "typescript": "^5.9.3",
+        "validate-branch-name": "^1.3.2",
         "vite": "^7.0.7"
+    },
+    "lint-staged": {
+        "resources/js/**/*.{ts,tsx}": [
+            "eslint --fix",
+            "bash -c 'tsc --noEmit'"
+        ]
     }
 }
