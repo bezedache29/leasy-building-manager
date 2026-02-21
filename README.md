@@ -37,7 +37,7 @@ Pour lancer ce projet en local, vous devez avoir :
     ```
 
 2. **Installer les dépendances PHP (Dossier Vendor) :**
-   On utilise un conteneur temporaire pour installer Laravel sans PHP 8.5 local :
+    - On utilise un conteneur temporaire pour installer Laravel sans PHP 8.5 local :
 
     ```bash
     docker run --rm \
@@ -52,8 +52,8 @@ Pour lancer ce projet en local, vous devez avoir :
     - Copier le fichier : `cp .env.example .env`
     - Vérifier que `APP_DOMAIN` est bien renseigné (ex: `leasy.dev.localhost`).
 
-4. **VVérification SSL pour Vite (HMR) 🔐 :**
-   Avant de démarrer, assurez-vous que votre fichier `vite.config.js` pointe bien vers les certificats de votre infrastructure Traefik.
+4. **Vérification SSL pour Vite (HMR) 🔐 :**
+    - Avant de démarrer, assurez-vous que votre fichier `vite.config.js` pointe bien vers les certificats de votre infrastructure Traefik.
     - **Chemins à vérifier :** `/etc/traefik/certs/wildcard-key.pem` et `/etc/traefik/certs/wildcard.pem`.
     - **Note :** La configuration doit utiliser `loadEnv` pour récupérer dynamiquement le `APP_DOMAIN` du fichier `.env`.
 
