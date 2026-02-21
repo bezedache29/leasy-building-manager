@@ -8,10 +8,11 @@ import globals from 'globals';
 export default [
   js.configs.recommended,
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ['**/*.{js,mjs,cjs,ts,tsx}'],
     languageOptions: {
       globals: {
         ...globals.browser,
+        ...globals.node,
         route: 'readonly',
       },
       parser: tsParser,
