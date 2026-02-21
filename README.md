@@ -104,3 +104,9 @@ Si erreur `error getting credentials` au démarrage :
 ```bash
 sed -i 's/"credsStore": "desktop.exe"/"credsStore": ""/g' ~/.docker/config.json
 ```
+
+---
+
+### 👏 **Crédits**
+
+- **Développement & Conception :** [@bezedache29](https://github.com/bezedache29)
