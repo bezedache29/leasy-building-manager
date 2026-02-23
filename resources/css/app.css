@@ -1,2 +1,59 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 @plugin "@tailwindcss/forms";
+
+/* Thème unique Violet */
+:root {
+  --bg: 20 16 32; /* fond global (violet très sombre) */
+  --surface: 30 24 50; /* cartes / sidebar */
+  --surface-2: 40 32 66; /* hover / actif */
+  --border: 72 56 120; /* bordures violettes */
+  --text: 245 243 255; /* texte clair */
+  --muted: 196 181 253; /* texte secondaire violet clair */
+  --primary: 139 92 246; /* violet (accent) */
+  --primary-2: 167 139 250;
+  --primary-hover: 91 33 182; /* violet plus foncé */
+}
+
+/* Helpers */
+.bg-app {
+  background-color: rgb(var(--bg));
+}
+.bg-surface {
+  background-color: rgb(var(--surface));
+}
+.bg-surface-2 {
+  background-color: rgb(var(--surface-2));
+}
+.bg-hover {
+  background-color: rgb(var(--surface-2));
+}
+.bg-hover-soft {
+  background-color: rgba(var(--primary), 0.12);
+}
+
+.text-app {
+  color: rgb(var(--text));
+}
+.text-muted {
+  color: rgb(var(--muted));
+}
+
+.border-app {
+  border-color: rgb(var(--border));
+}
+
+.text-primary {
+  color: rgb(var(--primary));
+}
+.bg-primary {
+  background-color: rgb(var(--primary));
+}
+.bg-primary:hover {
+  background-color: rgb(var(--primary-hover));
+}
+.bg-secondary {
+  background-color: rgb(var(--bg));
+}
+.bg-secondary:hover {
+  background-color: rgb(var(--primary-hover));
+}
