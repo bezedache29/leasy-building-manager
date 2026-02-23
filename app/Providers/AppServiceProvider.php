@@ -24,7 +24,7 @@ class AppServiceProvider extends ServiceProvider
         Vite::prefetch(concurrency: 3);
 
         // Force le HTTPS si l'URL de l'application commence par https
-        if (str_contains(config('app.url'), 'https')) {
+        if (str_starts_with(config('app.url'), 'https://')) {
             URL::forceScheme('https');
         }
     }

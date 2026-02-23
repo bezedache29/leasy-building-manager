@@ -27,7 +27,7 @@ export default function AppLayout({ children }: PropsWithChildren) {
     // Inertia expose url sans le domaine (ex: "/dashboard")
     try {
       const u = new URL(href, window.location.origin);
-      return url === u.pathname;
+      return url.split('?')[0] === u.pathname;
     } catch {
       return false;
     }
@@ -44,6 +44,8 @@ export default function AppLayout({ children }: PropsWithChildren) {
               className="inline-flex items-center justify-center rounded-md border border-app px-3 py-2 text-sm hover:bg-hover md:hidden"
               onClick={() => setIsOpen((v) => !v)}
               aria-label="Toggle menu"
+              aria-expanded={isOpen}
+              aria-controls="mobile-drawer"
             >
               ☰
             </button>
@@ -97,7 +99,14 @@ export default function AppLayout({ children }: PropsWithChildren) {
         {isOpen && (
           <div className="md:hidden">
             <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setIsOpen(false)} />
-            <div className="fixed left-0 top-14 z-50 h-[calc(100vh-56px)] w-72 border-r border-app bg-surface p-4">
+            <div
+              id="mobile-drawer"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Navigation"
+              className="fixed left-0 top-14 z-50 h-[calc(100vh-56px)] w-72 border-r border-app bg-surface p-4"
+              onKeyDown={(e) => e.key === 'Escape' && setIsOpen(false)}
+            >
               <nav className="space-y-1">
                 {navItems.map((item) => (
                   <Link
