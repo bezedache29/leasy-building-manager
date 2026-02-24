@@ -22,12 +22,18 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
 }
 
 function AlertBox({ alerts }: { alerts: Alert[] }) {
+  const levelClass: Record<AlertLevel, string> = {
+    info: 'text-blue-500',
+    warning: 'text-orange-500',
+    danger: 'text-red-500',
+  };
+
   return (
     <div className="mb-6 rounded-xl border border-app bg-surface-2 p-4">
       <h2 className="text-lg font-semibold mb-3">🔔 Alertes</h2>
       <ul className="space-y-2 text-sm">
         {alerts.map((alert) => (
-          <li key={alert.key} className="text-orange-500">
+          <li key={alert.key} className={levelClass[alert.level]}>
             {alert.icon} {alert.title}
           </li>
         ))}
