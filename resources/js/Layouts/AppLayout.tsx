@@ -8,26 +8,29 @@ type NavItem = {
 
 export default function AppLayout({ children }: PropsWithChildren) {
   const { url } = usePage();
-  const [isOpen, setIsOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const navItems: NavItem[] = useMemo(
     () => [
       { label: 'Dashboard', href: route('dashboard') },
-      // À activer plus tard quand tu auras les pages/routes :
+
+      // À activer quand tu crées les pages :
       // { label: "Biens", href: route("properties.index") },
       // { label: "Baux", href: route("leases.index") },
+      // { label: "Locataires", href: route("tenants.index") },
       // { label: "États des lieux", href: route("inventories.index") },
       // { label: "Charges", href: route("charges.index") },
+      // { label: "Quittances", href: route("rent-receipts.index") },
+
       { label: 'Profil', href: route('profile.edit') },
     ],
     []
   );
 
   const isActive = (href: string) => {
-    // Inertia expose url sans le domaine (ex: "/dashboard")
     try {
       const u = new URL(href, window.location.origin);
-      return url.split('?')[0] === u.pathname;
+      return url === u.pathname;
     } catch {
       return false;
     }
@@ -38,26 +41,45 @@ export default function AppLayout({ children }: PropsWithChildren) {
       {/* Topbar */}
       <header className="sticky top-0 z-40 border-b border-app bg-surface">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
+          {/* Left */}
           <div className="flex items-center gap-3">
             <button
               type="button"
-              className="inline-flex items-center justify-center rounded-md border border-app px-3 py-2 text-sm hover:bg-hover md:hidden"
-              onClick={() => setIsOpen((v) => !v)}
-              aria-label="Toggle menu"
-              aria-expanded={isOpen}
-              aria-controls="mobile-drawer"
+              className="inline-flex items-center justify-center rounded-md border border-app px-3 py-2 text-sm cursor-pointer transition-colors hover:bg-surface-2 md:hidden"
+              onClick={() => setMobileOpen((v) => !v)}
+              aria-label="Ouvrir le menu"
             >
               ☰
             </button>
+
             <Link href={route('dashboard')} className="font-semibold">
               Leasy
             </Link>
+
+            {/* Desktop Nav */}
+            <nav className="hidden items-center gap-3 md:flex">
+              {navItems
+                .filter((i) => i.label !== 'Profil')
+                .map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={[
+                      'rounded-md px-3 py-2 text-sm cursor-pointer transition-colors',
+                      isActive(item.href) ? 'bg-surface-2 font-medium' : 'hover:bg-surface-2',
+                    ].join(' ')}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+            </nav>
           </div>
 
+          {/* Right */}
           <div className="flex items-center gap-2">
             <Link
               href={route('profile.edit')}
-              className="rounded-md border border-app px-3 py-2 bg-secondary text-sm cursor-pointer transition-colors duration-150"
+              className="rounded-md border border-app px-3 py-2 text-sm cursor-pointer transition-colors hover:bg-surface-2"
             >
               Profil
             </Link>
@@ -72,51 +94,21 @@ export default function AppLayout({ children }: PropsWithChildren) {
             </Link>
           </div>
         </div>
-      </header>
 
-      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-0 md:grid-cols-[240px_1fr]">
-        {/* Sidebar (desktop) */}
-        <aside className="hidden border-r border-app bg-surface md:block">
-          <nav className="p-4">
-            <div className="space-y-1">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={[
-                    'block rounded-md px-3 py-2 text-sm',
-                    isActive(item.href) ? 'bg-surface-2 font-medium' : 'hover:bg-hover',
-                  ].join(' ')}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          </nav>
-        </aside>
-
-        {/* Sidebar (mobile drawer simple) */}
-        {isOpen && (
-          <div className="md:hidden">
-            <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setIsOpen(false)} />
-            <div
-              id="mobile-drawer"
-              role="dialog"
-              aria-modal="true"
-              aria-label="Navigation"
-              className="fixed left-0 top-14 z-50 h-[calc(100vh-56px)] w-72 border-r border-app bg-surface p-4"
-              onKeyDown={(e) => e.key === 'Escape' && setIsOpen(false)}
-            >
-              <nav className="space-y-1">
+        {/* Mobile menu */}
+        {mobileOpen && (
+          <div className="border-t border-app bg-surface md:hidden">
+            <div className="mx-auto max-w-7xl px-4 py-3">
+              <nav className="flex flex-col gap-1">
                 {navItems.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
                     className={[
-                      'block rounded-md px-3 py-2 text-sm',
-                      isActive(item.href) ? 'bg-surface-2 font-medium' : 'hover:bg-hover',
+                      'rounded-md px-3 py-2 text-sm cursor-pointer transition-colors',
+                      isActive(item.href) ? 'bg-surface-2 font-medium' : 'hover:bg-surface-2',
                     ].join(' ')}
-                    onClick={() => setIsOpen(false)}
+                    onClick={() => setMobileOpen(false)}
                   >
                     {item.label}
                   </Link>
@@ -125,10 +117,10 @@ export default function AppLayout({ children }: PropsWithChildren) {
             </div>
           </div>
         )}
+      </header>
 
-        {/* Main */}
-        <main className="p-4 md:p-6">{children}</main>
-      </div>
+      {/* Content */}
+      <main className="mx-auto max-w-7xl p-4 md:p-6">{children}</main>
     </div>
   );
 }
