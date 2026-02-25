@@ -1,11 +1,11 @@
 import Checkbox from '@/Components/Checkbox';
+import GuestLayout from '@/Layouts/GuestLayout';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
-import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import { FormEvent } from 'react';
 
 export default function Login({
   status,
@@ -17,27 +17,32 @@ export default function Login({
   const { data, setData, post, processing, errors, reset } = useForm({
     email: '',
     password: '',
-    remember: false as boolean,
+    remember: false,
   });
 
-  const submit: FormEventHandler = (e) => {
+  const submit = (e: FormEvent) => {
     e.preventDefault();
-
-    post(route('login'), {
-      onFinish: () => reset('password'),
-    });
+    post(route('login'), { onFinish: () => reset('password') });
   };
 
   return (
     <GuestLayout>
-      <Head title="Log in" />
+      <Head title="Connexion" />
 
-      {status && <div className="mb-4 text-sm font-medium text-green-600">{status}</div>}
+      <div className="mb-6">
+        <div className="text-2xl font-semibold">Leasy</div>
+        <div className="text-sm text-muted">Connexion à l’espace privé</div>
+      </div>
 
-      <form onSubmit={submit}>
+      {status && (
+        <div className="mb-4 rounded-md border border-app bg-surface-2 p-3 text-sm text-muted">
+          {status}
+        </div>
+      )}
+
+      <form onSubmit={submit} className="space-y-4">
         <div>
           <InputLabel htmlFor="email" value="Email" />
-
           <TextInput
             id="email"
             type="email"
@@ -45,16 +50,13 @@ export default function Login({
             value={data.email}
             className="mt-1 block w-full"
             autoComplete="username"
-            isFocused={true}
             onChange={(e) => setData('email', e.target.value)}
           />
-
           <InputError message={errors.email} className="mt-2" />
         </div>
 
-        <div className="mt-4">
-          <InputLabel htmlFor="password" value="Password" />
-
+        <div>
+          <InputLabel htmlFor="password" value="Mot de passe" />
           <TextInput
             id="password"
             type="password"
@@ -64,35 +66,32 @@ export default function Login({
             autoComplete="current-password"
             onChange={(e) => setData('password', e.target.value)}
           />
-
           <InputError message={errors.password} className="mt-2" />
         </div>
 
-        <div className="mt-4 block">
-          <label className="flex items-center">
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-2 text-sm text-muted">
             <Checkbox
               name="remember"
               checked={data.remember}
-              onChange={(e) => setData('remember', (e.target.checked || false) as false)}
+              onChange={(e) => setData('remember', e.target.checked)}
             />
-            <span className="ms-2 text-sm text-gray-600">Remember me</span>
+            Se souvenir de moi
           </label>
-        </div>
 
-        <div className="mt-4 flex items-center justify-end">
           {canResetPassword && (
-            <Link
-              href={route('password.request')}
-              className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-            >
-              Forgot your password?
+            <Link href={route('password.request')} className="text-sm text-primary hover:underline">
+              Mot de passe oublié ?
             </Link>
           )}
-
-          <PrimaryButton className="ms-4" disabled={processing}>
-            Log in
-          </PrimaryButton>
         </div>
+
+        <PrimaryButton
+          className="w-full justify-center bg-primary text-white"
+          disabled={processing}
+        >
+          Connexion
+        </PrimaryButton>
       </form>
     </GuestLayout>
   );
