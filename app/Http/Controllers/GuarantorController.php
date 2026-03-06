@@ -102,6 +102,11 @@ class GuarantorController extends Controller
      */
     public function destroy(Tenant $tenant, Guarantor $guarantor)
     {
+        // 🔒 Sécurité anti-IDOR : On vérifie que le garant appartient bien à ce locataire
+        if ($guarantor->tenant_id !== $tenant->id) {
+            abort(404); // Ou abort(403, 'Accès refusé');
+        }
+
         $guarantor->delete();
 
         return back()->with('success', 'Garant retiré du dossier (archivé).');

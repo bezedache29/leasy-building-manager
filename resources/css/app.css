@@ -87,10 +87,10 @@
   background-color: rgb(var(--secondary-600));
 }
 .bg-success-500 {
-  background-color: rgb(var(--success-600));
+  background-color: rgb(var(--success-500));
 }
 .bg-success-500:hover {
-  background-color: rgb(var(--success-700));
+  background-color: rgb(var(--success-600));
 }
 .bg-warning-500 {
   background-color: rgb(var(--warning-500));

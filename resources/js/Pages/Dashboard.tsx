@@ -60,7 +60,7 @@ export default function Dashboard({ alerts, stats }: { alerts: Alert[]; stats: D
     <AppLayout>
       <Link
         href={route('tenants.create')}
-        className="rounded-md bg-primary px-4 py-2 text-sm text-white hover:bg-primary-hover"
+        className="rounded-md bg-primary-500 px-4 py-2 text-sm text-white hover:bg-primary-hover"
       >
         + Nouveau Locataire
       </Link>
