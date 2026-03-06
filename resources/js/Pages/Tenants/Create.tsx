@@ -52,7 +52,6 @@ export default function CreateTenant() {
   } = useFieldArray({ control, name: 'tenant_documents' });
 
   const onSubmit = (data: TenantFormValues) => {
-    console.log('data', data);
     router.post(route('tenants.store'), data, {
       forceFormData: true,
       preserveScroll: true,
@@ -121,7 +120,7 @@ export default function CreateTenant() {
           {/* --- 2. GARANTS --- */}
           <section className={sectionClass}>
             <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-[rgb(var(--primary))]">
+              <h2 className="text-lg font-semibold text-[rgb(var(--primary-500))]">
                 Garants (Cautions)
               </h2>
               <Button
@@ -166,16 +165,14 @@ export default function CreateTenant() {
           {/* --- 3. DOCUMENTS --- */}
           <section className={sectionClass}>
             <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-[rgb(var(--primary))]">
+              <h2 className="text-lg font-semibold text-[rgb(var(--primary-500))]">
                 Documents joints au locataire
               </h2>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  addDocument({ category: 'id_card', name: '', file: undefined as unknown as File })
-                }
+                onClick={() => addDocument({ category: 'id_card', name: '', file: null })}
               >
                 + Joindre un fichier
               </Button>

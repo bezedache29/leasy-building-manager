@@ -20,7 +20,7 @@ export default forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElem
           'w-full rounded-md border bg-surface text-app',
           'border-[rgb(var(--border))]',
           'px-3 py-2 outline-none transition-all duration-150',
-          'focus:outline-none focus:ring-0 focus:border-[rgb(var(--primary-hover))]',
+          'focus:outline-none focus:ring-0 focus:border-[rgb(var(--primary-900))]',
           className,
         ].join(' ')}
         ref={handleRef}
