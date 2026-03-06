@@ -3,6 +3,7 @@ import laravel from 'laravel-vite-plugin';
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import tailwindcss from '@tailwindcss/vite';
+import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig(({ mode }) => {
   // Vite charge les variables du fichier .env
@@ -17,6 +18,11 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
     ],
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./resources/js', import.meta.url)),
+      },
+    },
     server: {
       host: '0.0.0.0',
       port: 5173,

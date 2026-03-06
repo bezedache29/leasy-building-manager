@@ -14,10 +14,10 @@ export default function AppLayout({ children }: PropsWithChildren) {
     () => [
       { label: 'Dashboard', href: route('dashboard') },
 
-      // À activer quand tu crées les pages :
+      // TODO À activer quand tu crées les pages :
       // { label: "Biens", href: route("properties.index") },
       // { label: "Baux", href: route("leases.index") },
-      // { label: "Locataires", href: route("tenants.index") },
+      { label: 'Locataires', href: route('tenants.index') },
       // { label: "États des lieux", href: route("inventories.index") },
       // { label: "Charges", href: route("charges.index") },
       // { label: "Quittances", href: route("rent-receipts.index") },
@@ -79,7 +79,7 @@ export default function AppLayout({ children }: PropsWithChildren) {
           <div className="flex items-center gap-2">
             <Link
               href={route('profile.edit')}
-              className="rounded-md border border-app px-3 py-2 text-sm cursor-pointer transition-colors hover:bg-surface-2"
+              className="rounded-md border border-app px-3 py-2 text-sm cursor-pointer transition-colors bg-outline"
             >
               Profil
             </Link>
@@ -88,7 +88,7 @@ export default function AppLayout({ children }: PropsWithChildren) {
               href={route('logout')}
               method="post"
               as="button"
-              className="rounded-md bg-primary px-3 py-2 text-sm text-white cursor-pointer transition-colors duration-150"
+              className="rounded-md bg-primary-500 px-3 py-2 text-sm text-white cursor-pointer transition-colors duration-150"
             >
               Déconnexion
             </Link>

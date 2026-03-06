@@ -1,19 +1,12 @@
 import Checkbox from '@/Components/Checkbox';
 import GuestLayout from '@/Layouts/GuestLayout';
-import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { FormEvent } from 'react';
+import Button from '@/Components/Button';
 
-export default function Login({
-  status,
-  canResetPassword,
-}: {
-  status?: string;
-  canResetPassword: boolean;
-}) {
+export default function Login({ status }: { status?: string }) {
   const { data, setData, post, processing, errors, reset } = useForm({
     email: '',
     password: '',
@@ -30,47 +23,49 @@ export default function Login({
       <Head title="Connexion" />
 
       <div className="mb-6">
-        <div className="text-2xl font-semibold">Leasy</div>
+        <div className="text-2xl font-semibold text-app">Leasy</div>
         <div className="text-sm text-muted">Connexion à l’espace privé</div>
       </div>
 
       {status && (
-        <div className="mb-4 rounded-md border border-app bg-surface-2 p-3 text-sm text-muted">
+        <div className="mb-4 rounded-md border border-[rgb(var(--border))] bg-surface-2 p-3 text-sm text-muted">
           {status}
         </div>
       )}
 
-      <form onSubmit={submit} className="space-y-4">
+      <form onSubmit={submit} className="space-y-5">
         <div>
-          <InputLabel htmlFor="email" value="Email" />
+          <InputLabel htmlFor="email" value="Email" className="mb-1" />
           <TextInput
             id="email"
             type="email"
             name="email"
             value={data.email}
-            className="mt-1 block w-full"
+            className="block w-full"
             autoComplete="username"
             onChange={(e) => setData('email', e.target.value)}
           />
-          <InputError message={errors.email} className="mt-2" />
+          {errors.email && <p className="mt-1 text-sm font-medium text-red-400">{errors.email}</p>}
         </div>
 
         <div>
-          <InputLabel htmlFor="password" value="Mot de passe" />
+          <InputLabel htmlFor="password" value="Mot de passe" className="mb-1" />
           <TextInput
             id="password"
             type="password"
             name="password"
             value={data.password}
-            className="mt-1 block w-full"
+            className="block w-full"
             autoComplete="current-password"
             onChange={(e) => setData('password', e.target.value)}
           />
-          <InputError message={errors.password} className="mt-2" />
+          {errors.password && (
+            <p className="mt-1 text-sm font-medium text-red-400">{errors.password}</p>
+          )}
         </div>
 
-        <div className="flex items-center justify-between">
-          <label className="flex items-center gap-2 text-sm text-muted">
+        <div className="flex items-center justify-between pt-2">
+          <label className="flex items-center gap-2 text-sm text-muted cursor-pointer hover:text-app transition-colors">
             <Checkbox
               name="remember"
               checked={data.remember}
@@ -78,20 +73,13 @@ export default function Login({
             />
             Se souvenir de moi
           </label>
-
-          {canResetPassword && (
-            <Link href={route('password.request')} className="text-sm text-primary hover:underline">
-              Mot de passe oublié ?
-            </Link>
-          )}
         </div>
 
-        <PrimaryButton
-          className="w-full justify-center bg-primary text-white"
-          disabled={processing}
-        >
-          Connexion
-        </PrimaryButton>
+        <div className="pt-4">
+          <Button type="submit" className="w-full" disabled={processing}>
+            Connexion
+          </Button>
+        </div>
       </form>
     </GuestLayout>
   );

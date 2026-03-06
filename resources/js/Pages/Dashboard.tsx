@@ -1,4 +1,5 @@
 import AppLayout from '@/Layouts/AppLayout';
+import { Link } from '@inertiajs/react';
 import { ReactNode } from 'react';
 
 type AlertLevel = 'info' | 'warning' | 'danger';
@@ -11,6 +12,18 @@ type Alert = {
   action_label?: string | null;
   action_url?: string | null;
 };
+
+interface DashboardStats {
+  properties: number;
+  active_leases: number;
+  complete_tenants: number;
+  incomplete_tenants: number;
+  inventories_archived: number;
+  inventories_active: number;
+  rent_monthly_total: number;
+  receipts_count: number;
+  legal_active_cases: number;
+}
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -42,27 +55,39 @@ function AlertBox({ alerts }: { alerts: Alert[] }) {
   );
 }
 
-export default function Dashboard({ alerts }: { alerts: Alert[] }) {
+export default function Dashboard({ alerts, stats }: { alerts: Alert[]; stats: DashboardStats }) {
   return (
     <AppLayout>
+      <Link
+        href={route('tenants.create')}
+        className="rounded-md bg-primary-500 px-4 py-2 text-sm text-white"
+      >
+        + Nouveau Locataire
+      </Link>
       <h1 className="text-2xl font-semibold mb-6">Tableau de bord</h1>
 
       <AlertBox alerts={alerts} />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card title="🏢 Biens & Baux">
-          <p className="text-muted text-sm">5 biens</p>
-          <p className="text-muted text-sm">4 baux actifs</p>
+          <p className="text-muted text-sm">{stats.properties} biens</p>
+          <p className="text-muted text-sm">{stats.active_leases} baux actifs</p>
         </Card>
 
         <Card title="👥 Dossiers locataires">
-          <p className="text-green-500 text-sm">3 dossiers complets</p>
-          <p className="text-orange-500 text-sm">1 dossier incomplet</p>
+          <p className="text-green-500 text-sm">{stats.complete_tenants} dossier(s) complet(s)</p>
+          {stats.incomplete_tenants > 0 ? (
+            <p className="text-orange-500 text-sm">
+              {stats.incomplete_tenants} dossier(s) incomplet(s)
+            </p>
+          ) : (
+            <p className="text-muted text-sm">Pas de dossier incomplet</p>
+          )}
         </Card>
 
         <Card title="🧾 États des lieux">
-          <p className="text-muted text-sm">4 archivés</p>
-          <p className="text-muted text-sm">1 en cours</p>
+          <p className="text-muted text-sm">{stats.inventories_archived} archivés</p>
+          <p className="text-muted text-sm">{stats.inventories_active} en cours</p>
         </Card>
 
         <Card title="💧 Charges annuelles">
@@ -71,13 +96,13 @@ export default function Dashboard({ alerts }: { alerts: Alert[] }) {
         </Card>
 
         <Card title="💸 Loyers & Quittances">
-          <p className="text-muted text-sm">Loyers 2 560 € / mois</p>
-          <p className="text-muted text-sm">12 quittances</p>
+          <p className="text-muted text-sm">Loyers {stats.rent_monthly_total} € / mois</p>
+          <p className="text-muted text-sm">{stats.receipts_count} quittances</p>
         </Card>
 
         <Card title="⚖️ Justice & Assurance">
-          <p className="text-muted text-sm">1 dossier actif</p>
-          <p className="text-muted text-sm">Sinistre dégât des eaux - Studio</p>
+          <p className="text-muted text-sm">{stats.legal_active_cases} dossier actif</p>
+          <p className="text-muted text-sm">Aucun sinistre récent</p>
         </Card>
       </div>
     </AppLayout>

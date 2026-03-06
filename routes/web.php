@@ -1,11 +1,10 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GuarantorController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TenantController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-
-Route::get('/welcome', fn() => Inertia::render('Welcome'));
 
 Route::get('/', function () {
     return redirect()->route('dashboard');
@@ -14,11 +13,16 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
+    // Locataires
+    Route::resource('tenants', TenantController::class);
+
+    // Garants
+    Route::post('/tenants/{tenant}/guarantors', [GuarantorController::class, 'store'])->name('tenants.guarantors.store');
+    Route::delete('/tenants/{tenant}/guarantors/{guarantor}', [GuarantorController::class, 'destroy'])->name('tenants.guarantors.destroy');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-    // plus tard : Route::resource(...) etc.
 });
 
 require __DIR__ . '/auth.php';
