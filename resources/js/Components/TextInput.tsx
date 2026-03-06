@@ -31,7 +31,7 @@ export default forwardRef<
           'w-full rounded-md border bg-surface text-app',
           error
             ? 'border-red-400 focus:border-red-400 focus:ring-red-400'
-            : 'border-[rgb(var(--border))] focus:border-[rgb(var(--primary-hover))]',
+            : 'border-[rgb(var(--border))] focus:border-[rgb(var(--primary-900))]',
           'px-3 py-2 outline-none transition-all duration-150',
           'focus:outline-none focus:ring-0',
           '[&::-webkit-calendar-picker-indicator]:opacity-50',
