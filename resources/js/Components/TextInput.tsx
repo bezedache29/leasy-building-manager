@@ -5,6 +5,7 @@ export default forwardRef<
   InputHTMLAttributes<HTMLInputElement> & { isFocused?: boolean; error?: string }
 >(function TextInput({ type = 'text', className = '', isFocused = false, error, ...props }, ref) {
   const localRef = useRef<HTMLInputElement | null>(null);
+  const errorId = props.id && error ? `${props.id}-error` : undefined;
 
   const handleRef = (node: HTMLInputElement | null) => {
     (localRef as MutableRefObject<HTMLInputElement | null>).current = node;
@@ -27,6 +28,8 @@ export default forwardRef<
       <input
         {...props}
         type={type}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={errorId ?? props['aria-describedby']}
         className={[
           'w-full rounded-md border bg-surface text-app',
           error
@@ -41,7 +44,11 @@ export default forwardRef<
         ].join(' ')}
         ref={handleRef}
       />
-      {error && <p className="mt-1 text-xs font-medium text-red-400">{error}</p>}
+      {error && (
+        <p id={errorId} role="alert" className="mt-1 text-xs font-medium text-red-400">
+          {error}
+        </p>
+      )}
     </>
   );
 });

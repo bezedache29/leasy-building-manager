@@ -17,7 +17,7 @@ export default function AppLayout({ children }: PropsWithChildren) {
       // TODO À activer quand tu crées les pages :
       // { label: "Biens", href: route("properties.index") },
       // { label: "Baux", href: route("leases.index") },
-      // { label: "Locataires", href: route("tenants.index") },
+      { label: 'Locataires', href: route('tenants.index') },
       // { label: "États des lieux", href: route("inventories.index") },
       // { label: "Charges", href: route("charges.index") },
       // { label: "Quittances", href: route("rent-receipts.index") },

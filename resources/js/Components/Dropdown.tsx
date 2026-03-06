@@ -19,7 +19,7 @@ const DropDownContext = createContext<{
   toggleOpen: () => {},
 });
 
-const Dropdown = ({ children }: PropsWithChildren) => {
+const DropdownRoot = ({ children }: PropsWithChildren) => {
   const [open, setOpen] = useState(false);
   const toggleOpen = () => setOpen((previousState) => !previousState);
 
@@ -34,9 +34,15 @@ const Trigger = ({ children }: PropsWithChildren) => {
   const { open, setOpen, toggleOpen } = useContext(DropDownContext);
   return (
     <>
-      <div onClick={toggleOpen} className="cursor-pointer">
+      <button
+        type="button"
+        onClick={toggleOpen}
+        className="cursor-pointer"
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
         {children}
-      </div>
+      </button>
       {open && <div className="fixed inset-0 z-40" onClick={() => setOpen(false)}></div>}
     </>
   );
@@ -90,8 +96,10 @@ const DropdownLink = ({ className = '', children, ...props }: InertiaLinkProps) 
   );
 };
 
-Dropdown.Trigger = Trigger;
-Dropdown.Content = Content;
-Dropdown.Link = DropdownLink;
+const Dropdown = Object.assign(DropdownRoot, {
+  Trigger,
+  Content,
+  Link: DropdownLink,
+});
 
 export default Dropdown;

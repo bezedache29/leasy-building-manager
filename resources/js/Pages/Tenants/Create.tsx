@@ -1,9 +1,10 @@
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, type Path } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 import createTenantSchema from '@/Schemas/CreateTenantSchema';
 import z from 'zod';
+import { useState } from 'react';
 
 import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
@@ -16,11 +17,14 @@ import GuarantorCard from './Partials/GuarantorCard';
 type TenantFormValues = z.infer<typeof createTenantSchema>;
 
 export default function CreateTenant() {
+  const [isPosting, setIsPosting] = useState(false);
+
   const {
     register,
     control,
     handleSubmit,
     setValue,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<TenantFormValues>({
     resolver: zodResolver(createTenantSchema),
@@ -55,6 +59,16 @@ export default function CreateTenant() {
     router.post(route('tenants.store'), data, {
       forceFormData: true,
       preserveScroll: true,
+      onStart: () => setIsPosting(true),
+      onFinish: () => setIsPosting(false),
+      onError: (serverErrors) => {
+        Object.entries(serverErrors).forEach(([name, message]) => {
+          setError(name as Path<TenantFormValues>, {
+            type: 'server',
+            message,
+          });
+        });
+      },
     });
   };
 
@@ -246,8 +260,8 @@ export default function CreateTenant() {
               Annuler
             </Button>
 
-            <Button type="submit" variant="primary" disabled={isSubmitting}>
-              {isSubmitting ? 'Enregistrement...' : 'Enregistrer le dossier'}
+            <Button type="submit" variant="primary" disabled={isSubmitting || isPosting}>
+              {isSubmitting || isPosting ? 'Enregistrement...' : 'Enregistrer le dossier'}
             </Button>
           </div>
         </form>

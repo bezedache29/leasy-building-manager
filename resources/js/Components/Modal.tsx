@@ -7,11 +7,13 @@ export default function Modal({
   maxWidth = 'md',
   closeable = true,
   onClose = () => {},
+  id,
 }: PropsWithChildren<{
   show: boolean;
   maxWidth?: 'sm' | 'md' | 'lg';
   closeable?: boolean;
   onClose: CallableFunction;
+  id?: string;
 }>) {
   const close = () => {
     if (closeable) {
@@ -30,7 +32,7 @@ export default function Modal({
     <Transition show={show} leave="duration-200">
       <Dialog
         as="div"
-        id="modal"
+        id={id}
         className="fixed inset-0 z-50 flex transform items-center overflow-y-auto px-4 py-6 transition-all sm:px-0"
         onClose={close}
       >
@@ -55,7 +57,7 @@ export default function Modal({
           leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
         >
           <DialogPanel
-            className={`mb-6 transform overflow-hidden rounded-xl border border-[rgb(var(--border))] bg-surface shadow-xl transition-all sm:mx-auto sm:w-full ${maxWidthClass}`}
+            className={`mx-auto mb-6 w-full transform overflow-hidden rounded-xl border border-[rgb(var(--border))] bg-surface shadow-xl transition-all ${maxWidthClass}`}
           >
             {children}
           </DialogPanel>
