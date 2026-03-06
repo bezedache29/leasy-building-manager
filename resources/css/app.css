@@ -9,9 +9,47 @@
   --border: 72 56 120; /* bordures violettes */
   --text: 245 243 255; /* texte clair */
   --muted: 196 181 253; /* texte secondaire violet clair */
-  --primary: 139 92 246; /* violet (accent) */
-  --primary-2: 167 139 250;
-  --primary-hover: 91 33 182; /* violet plus foncé */
+  --primary-50: 245 243 255;
+  --primary-100: 237 233 254;
+  --primary-200: 221 214 254;
+  --primary-300: 196 181 253;
+  --primary-400: 167 139 250;
+  --primary-500: 139 92 246; /* BASE */
+  --primary-600: 124 58 237;
+  --primary-700: 109 40 217;
+  --primary-800: 91 33 182;
+  --primary-900: 76 29 149;
+  --secondary-50: 248 250 252;
+  --secondary-100: 241 245 249;
+  --secondary-200: 226 232 240;
+  --secondary-300: 203 213 225;
+  --secondary-400: 148 163 184;
+  --secondary-500: 100 116 139; /* BASE */
+  --secondary-600: 71 85 105;
+  --secondary-700: 51 65 85;
+  --secondary-800: 30 41 59;
+  --secondary-900: 15 23 42;
+  --success-50: 236 253 245;
+  --success-100: 209 250 229;
+  --success-200: 167 243 208;
+  --success-300: 110 231 183;
+  --success-400: 52 211 153;
+  --success-500: 16 185 129;
+  --success-600: 5 150 105; /* BASE */
+  --success-700: 4 120 87;
+  --success-800: 6 95 70;
+  --success-900: 6 78 59;
+  --success-950: 2 44 34;
+  --warning-50: 255 251 235;
+  --warning-100: 254 243 199;
+  --warning-200: 253 230 138;
+  --warning-300: 252 211 77;
+  --warning-400: 251 191 36;
+  --warning-500: 245 158 11; /* BASE */
+  --warning-600: 217 119 6;
+  --warning-700: 180 83 9;
+  --warning-800: 146 64 14;
+  --warning-900: 120 53 15;
 }
 
 /* Helpers */
@@ -30,6 +68,36 @@
 .bg-hover-soft {
   background-color: rgba(var(--primary), 0.12);
 }
+.bg-primary-500 {
+  background-color: rgb(var(--primary-500));
+}
+.bg-primary-500:hover {
+  background-color: rgb(var(--primary-900));
+}
+.bg-outline {
+  background-color: rgb(var(--surface-2));
+}
+.bg-outline:hover {
+  background-color: rgb(var(--primary-500));
+}
+.bg-secondary-500 {
+  background-color: rgb(var(--secondary-500));
+}
+.bg-secondary-500:hover {
+  background-color: rgb(var(--secondary-600));
+}
+.bg-success-500 {
+  background-color: rgb(var(--success-600));
+}
+.bg-success-500:hover {
+  background-color: rgb(var(--success-700));
+}
+.bg-warning-500 {
+  background-color: rgb(var(--warning-500));
+}
+.bg-warning-500:hover {
+  background-color: rgb(var(--warning-600));
+}
 
 .text-app {
   color: rgb(var(--text));
@@ -37,23 +105,10 @@
 .text-muted {
   color: rgb(var(--muted));
 }
-
-.border-app {
-  border-color: rgb(var(--border));
-}
-
 .text-primary {
   color: rgb(var(--primary));
 }
-.bg-primary {
-  background-color: rgb(var(--primary));
-}
-.bg-primary:hover {
-  background-color: rgb(var(--primary-hover));
-}
-.bg-secondary {
-  background-color: rgb(var(--bg));
-}
-.bg-secondary:hover {
-  background-color: rgb(var(--primary-hover));
+
+.border-app {
+  border-color: rgb(var(--border));
 }
