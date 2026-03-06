@@ -22,17 +22,11 @@ class Tenant extends Model
         'birth_date',
         'birth_place',
         'profession',
-        'id_document_paths',
-        'payslip_paths',
-        'insurance_paths',
         'notes'
     ];
 
     protected $casts = [
         'birth_date' => 'date',
-        'id_document_paths' => 'array',
-        'payslip_paths' => 'array',
-        'insurance_paths' => 'array',
     ];
 
     // Un locataire peut avoir plusieurs garants

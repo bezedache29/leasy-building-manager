@@ -60,13 +60,13 @@ class TenantController extends Controller
 
             // Documents des garants
             'guarantors.*.documents' => 'nullable|array',
-            'guarantors.*.documents.*.file' => 'required|file|max:5120',
+            'guarantors.*.documents.*.file' => 'required|file|max:5120|mimes:pdf,jpg,jpeg,png,doc,docx',
             'guarantors.*.documents.*.category' => 'required|string',
             'guarantors.*.documents.*.name' => 'required|string',
 
             // Documents du locataire
             'tenant_documents' => 'nullable|array',
-            'tenant_documents.*.file' => 'required|file|max:5120',
+            'tenant_documents.*.file' => 'required|file|max:5120|mimes:pdf,jpg,jpeg,png,doc,docx',
             'tenant_documents.*.category' => 'required|string',
             'tenant_documents.*.name' => 'required|string',
         ]);

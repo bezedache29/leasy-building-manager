@@ -12,6 +12,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export default function Button({
   variant = 'primary',
   size = 'md',
+  type = 'button',
   className = '',
   disabled,
   children,
@@ -37,6 +38,7 @@ export default function Button({
 
   return (
     <button
+      type={type}
       {...props}
       disabled={disabled}
       className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}

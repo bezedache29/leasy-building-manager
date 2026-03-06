@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Property;
 use App\Models\Tenant;
 use App\Services\DashboardAlertService;
 use Inertia\Inertia;
@@ -12,7 +11,6 @@ class DashboardController extends Controller
     public function __invoke(DashboardAlertService $alerts)
     {
         // 1. Comptage réel depuis la base de données
-        $propertiesCount = Property::count();
         $totalTenants = Tenant::count();
 
         // On considère un dossier complet s'il a au moins un document lié
@@ -23,7 +21,8 @@ class DashboardController extends Controller
         return Inertia::render('Dashboard', [
             'alerts' => $alerts->getAlerts(),
             'stats' => [
-                'properties' => $propertiesCount, // Nb total de biens
+                // TODO: À brancher quand la table Properties sera là
+                'properties' => 0, // Nb total de biens
                 'total_tenants' => $totalTenants, // Nb total de locataires
                 // TODO: À brancher quand la table Leases sera là
                 'active_leases' => 0, // Nb total de location en cours
@@ -38,7 +37,7 @@ class DashboardController extends Controller
                 // TODO: À brancher quand la table  sera là
                 'receipts_count' => 0, // Nb de quittances de loyer générées
                 // TODO: À brancher quand la table  sera là
-                'legal_active_cases' => 0, // Nb de dossiers contentieux ou sinistres en cours
+                'legal_active_cases' => 0, // Nb de dossiers contentieux ou
             ]
         ]);
     }

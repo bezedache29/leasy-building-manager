@@ -1,6 +1,6 @@
-export { guarantor } from '@/Types/guarantor';
-export { tenant } from '@/Types/tenant';
-export { document } from '@/Types/document';
+export * from '@/Types/guarantor';
+export * from '@/Types/tenant';
+export * from '@/Types/document';
 
 export interface User {
   id: number;

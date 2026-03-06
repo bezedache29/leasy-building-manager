@@ -41,7 +41,7 @@ class GuarantorController extends Controller
 
             // Documents du garant
             'documents' => 'nullable|array',
-            'documents.*.file' => 'required|file|max:5120',
+            'documents.*.file' => 'required|file|max:5120|mimes:pdf,jpg,jpeg,png,doc,docx',
             'documents.*.category' => 'required|string',
             'documents.*.name' => 'required|string',
         ]);

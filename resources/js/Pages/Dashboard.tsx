@@ -71,13 +71,7 @@ export default function Dashboard({ alerts, stats }: { alerts: Alert[]; stats: D
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card title="🏢 Biens & Baux">
           <p className="text-muted text-sm">{stats.properties} biens</p>
-
-          <Link
-            href={route('tenants.index')}
-            className="text-sm text-muted transition-colors hover:text-[rgb(var(--primary))] hover:underline"
-          >
-            {stats.active_leases} baux actifs
-          </Link>
+          <p className="text-muted text-sm">{stats.active_leases} baux actifs</p>
         </Card>
 
         <Card title="👥 Dossiers locataires">

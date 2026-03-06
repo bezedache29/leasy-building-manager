@@ -5,9 +5,6 @@ use App\Http\Controllers\GuarantorController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TenantController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-
-Route::get('/welcome', fn() => Inertia::render('Welcome'));
 
 Route::get('/', function () {
     return redirect()->route('dashboard');

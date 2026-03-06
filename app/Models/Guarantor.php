@@ -23,14 +23,10 @@ class Guarantor extends Model
         'birth_date',
         'birth_place',
         'profession',
-        'id_document_paths',
-        'payslip_paths'
     ];
 
     protected $casts = [
         'birth_date' => 'date',
-        'id_document_paths' => 'array',
-        'payslip_paths' => 'array',
     ];
 
     // Un garant appartient à un locataire
