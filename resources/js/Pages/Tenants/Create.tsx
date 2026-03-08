@@ -5,14 +5,12 @@ import AppLayout from '@/Layouts/AppLayout';
 import createTenantSchema from '@/Schemas/CreateTenantSchema';
 import z from 'zod';
 import { useState } from 'react';
-
 import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
 import SelectInput from '@/Components/SelectInput';
 import Button from '@/Components/Button';
-
-// On importe notre nouveau sous-composant
-import GuarantorCard from './Partials/GuarantorCard';
+import GuarantorCard from '@/Pages/Tenants/Partials/GuarantorCard';
+import { DOCUMENT_CATEGORIES, TENANT_DOCUMENT_KEYS } from '@/Constants/documentCategories';
 
 type TenantFormValues = z.infer<typeof createTenantSchema>;
 
@@ -31,6 +29,7 @@ export default function CreateTenant() {
     defaultValues: {
       first_name: '',
       last_name: '',
+      marital_status: '',
       email: '',
       phone: '',
       current_address: '',
@@ -112,6 +111,17 @@ export default function CreateTenant() {
                 <InputLabel htmlFor="current_address" value="Adresse actuelle" className="mb-1" />
                 <TextInput id="current_address" {...register('current_address')} />
               </div>
+              <div className="md:col-span-2">
+                <InputLabel htmlFor="marital_status" value="Statut marital" className="mb-1" />
+                <SelectInput id="marital_status" {...register('marital_status')} className="w-full">
+                  <option value="">Sélectionner...</option>
+                  <option value="single">Célibataire</option>
+                  <option value="married">Marié(e)</option>
+                  <option value="pacs">Pacsé(e)</option>
+                  <option value="divorced">Divorcé(e)</option>
+                  <option value="widowed">Veuf/Veuve</option>
+                </SelectInput>
+              </div>
               <div>
                 <InputLabel htmlFor="birth_date" value="Date de naissance" className="mb-1" />
                 <TextInput id="birth_date" type="date" {...register('birth_date')} />
@@ -145,6 +155,8 @@ export default function CreateTenant() {
                   addGuarantor({
                     first_name: '',
                     last_name: '',
+                    relationship: '',
+                    marital_status: '',
                     email: '',
                     phone: '',
                     current_address: '',
@@ -164,7 +176,7 @@ export default function CreateTenant() {
                 {guarantorFields.map((field, index) => (
                   <GuarantorCard
                     key={field.id}
-                    index={index}
+                    prefix={`guarantors.${index}.`}
                     control={control}
                     register={register}
                     setValue={setValue}
@@ -186,7 +198,9 @@ export default function CreateTenant() {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => addDocument({ category: 'id_card', name: '', file: null })}
+                onClick={() =>
+                  addDocument({ category: 'id_card', name: '', file: undefined as unknown as File })
+                }
               >
                 + Joindre un fichier
               </Button>
@@ -204,10 +218,12 @@ export default function CreateTenant() {
                     <div className="flex-1 min-w-[150px]">
                       <InputLabel value="Catégorie" className="mb-1" />
                       <SelectInput {...register(`tenant_documents.${index}.category`)}>
-                        <option value="id_card">Pièce d'identité</option>
-                        <option value="payslip">Fiche de paie</option>
-                        <option value="insurance">Assurance</option>
-                        <option value="other">Autre</option>
+                        <option value="">Sélectionner une catégorie</option>
+                        {TENANT_DOCUMENT_KEYS.map((key) => (
+                          <option key={key} value={key}>
+                            {DOCUMENT_CATEGORIES[key]}
+                          </option>
+                        ))}
                       </SelectInput>
                     </div>
                     <div className="flex-1 min-w-[200px]">

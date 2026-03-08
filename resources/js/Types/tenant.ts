@@ -5,6 +5,7 @@ export interface Tenant {
   id: number;
   first_name: string;
   last_name: string;
+  marital_status: string | null;
   email: string | null;
   phone: string | null;
   current_address: string | null;
@@ -12,6 +13,23 @@ export interface Tenant {
   birth_place: string | null;
   profession: string | null;
   notes: string | null;
+  property?: {
+    id: number;
+    name: string;
+  };
+  is_complete: boolean;
+  missing_items: {
+    tenant: {
+      fields: string[];
+      documents: string[];
+    };
+    guarantors: Array<{
+      id: number;
+      name: string;
+      fields: string[];
+      documents: string[];
+    }>;
+  };
   guarantors?: Guarantor[];
   documents?: AppDocument[];
 

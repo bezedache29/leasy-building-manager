@@ -7,6 +7,7 @@ const REQUIRED_MSG = 'Ce champ est requis';
 const createTenantSchema = z.object({
   first_name: z.string().min(1, REQUIRED_MSG),
   last_name: z.string().min(1, REQUIRED_MSG),
+  marital_status: z.string().optional().or(z.literal('')),
   email: z
     .string()
     .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Email invalide')

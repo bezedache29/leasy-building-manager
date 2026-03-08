@@ -10,10 +10,10 @@ return new class extends Migration
     {
         Schema::create('guarantors', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
-
             $table->string('first_name');
             $table->string('last_name');
+            $table->string('marital_status')->nullable();
+            $table->string('relationship')->nullable();
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
             $table->text('current_address')->nullable();

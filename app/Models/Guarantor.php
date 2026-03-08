@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -14,8 +13,8 @@ class Guarantor extends Model
     use HasFactory;
 
     protected $fillable = [
-        'tenant_id',
         'first_name',
+        'marital_status',
         'last_name',
         'email',
         'phone',
@@ -29,14 +28,15 @@ class Guarantor extends Model
         'birth_date' => 'date',
     ];
 
-    // Un garant appartient à un locataire
-    public function tenant(): BelongsTo
-    {
-        return $this->belongsTo(Tenant::class);
-    }
-
     public function documents(): MorphMany
     {
         return $this->morphMany(Document::class, 'documentable');
+    }
+
+    public function tenants()
+    {
+        return $this->belongsToMany(Tenant::class)
+            ->withPivot('relationship')
+            ->withTimestamps();
     }
 }
