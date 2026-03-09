@@ -66,7 +66,7 @@ class TenantController extends Controller
             'guarantors.*.current_address' => 'nullable|string',
             'guarantors.*.birth_date' => 'nullable|date',
             'guarantors.*.birth_place' => 'nullable|string|max:255',
-            'nationality' => 'nullable|string|max:255',
+            'guarantors.*.nationality' => 'nullable|string|max:255',
             'guarantors.*.profession' => 'nullable|string',
 
             // Documents des garants
