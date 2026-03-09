@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('current_address')->nullable();
             $table->date('birth_date')->nullable();
             $table->string('birth_place')->nullable();
+            $table->string('nationality')->nullable();
             $table->string('profession')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();

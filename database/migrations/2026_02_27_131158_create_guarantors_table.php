@@ -13,12 +13,12 @@ return new class extends Migration
             $table->string('first_name');
             $table->string('last_name');
             $table->string('marital_status')->nullable();
-            $table->string('relationship')->nullable();
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
             $table->text('current_address')->nullable();
             $table->date('birth_date')->nullable();
             $table->string('birth_place')->nullable();
+            $table->string('nationality')->nullable();
             $table->string('profession')->nullable();
             $table->timestamps();
             $table->softDeletes();

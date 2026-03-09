@@ -7,6 +7,7 @@ use App\Models\Guarantor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class TenantController extends Controller
@@ -16,8 +17,10 @@ class TenantController extends Controller
      */
     public function index()
     {
-        // On charge les locataires avec leurs relations pour éviter le problème "N+1 queries"
-        $tenants = Tenant::with(['guarantors', 'documents'])->latest()->get();
+        // 1. On "Eager Load" les relations nécessaires pour éviter les requêtes N+1
+        $tenants = Tenant::with(['documents', 'guarantors.documents'])
+            ->get()
+            ->append('is_complete');
 
         return Inertia::render('Tenants/Index', [
             'tenants' => $tenants
@@ -48,6 +51,7 @@ class TenantController extends Controller
             'current_address' => 'nullable|string',
             'birth_date' => 'nullable|date',
             'birth_place' => 'nullable|string|max:255',
+            'nationality' => 'nullable|string|max:255',
             'profession' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
 
@@ -60,18 +64,29 @@ class TenantController extends Controller
             'guarantors.*.email' => 'nullable|email',
             'guarantors.*.phone' => 'nullable|string',
             'guarantors.*.current_address' => 'nullable|string',
+            'guarantors.*.birth_date' => 'nullable|date',
+            'guarantors.*.birth_place' => 'nullable|string|max:255',
+            'nationality' => 'nullable|string|max:255',
             'guarantors.*.profession' => 'nullable|string',
 
             // Documents des garants
             'guarantors.*.documents' => 'nullable|array',
             'guarantors.*.documents.*.file' => 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx',
-            'guarantors.*.documents.*.category' => 'required|string',
+            'guarantors.*.documents.*.category' => [
+                'required',
+                'string',
+                Rule::in(['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice', 'guarantee_deed', 'other'])
+            ],
             'guarantors.*.documents.*.name' => 'required|string',
 
             // Documents du locataire
             'tenant_documents' => 'nullable|array',
             'tenant_documents.*.file' => 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx',
-            'tenant_documents.*.category' => 'required|string',
+            'tenant_documents.*.category' => [
+                'required',
+                'string',
+                Rule::in(['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice', 'bank_details', 'insurance', 'lease', 'inventory', 'deposit_check', 'other'])
+            ],
             'tenant_documents.*.name' => 'required|string',
         ]);
 
@@ -152,13 +167,19 @@ class TenantController extends Controller
      */
     public function show(Tenant $tenant)
     {
+        // 1. On s'assure que toutes les relations du locataire sont chargées
+        $tenant->loadMissing(['documents', 'guarantors.documents']);
+
+        // 2. On ajoute manuellement les deux attributs lourds pour cette vue précise
+        $tenant->append(['is_complete', 'missing_items']);
+
         $tenant->load(['documents', 'guarantors.documents']);
 
         $availableGuarantors = Guarantor::orderBy('last_name')->get();
 
         return Inertia::render('Tenants/Show', [
             'tenant' => $tenant,
-            'availableGuarantors' => $availableGuarantors
+            'availableGuarantors' => $availableGuarantors ?? [],
         ]);
     }
 

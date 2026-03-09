@@ -17,6 +17,7 @@ const createTenantSchema = z.object({
   current_address: z.string().optional().or(z.literal('')),
   birth_date: z.string().optional().or(z.literal('')),
   birth_place: z.string().optional().or(z.literal('')),
+  nationality: z.string().nullable().optional(),
   profession: z.string().optional().or(z.literal('')),
   notes: z.string().optional().or(z.literal('')),
 

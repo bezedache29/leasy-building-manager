@@ -143,7 +143,30 @@ export default function GuarantorCard<T extends FieldValues>({
           )}
         </div>
 
-        <div className="md:col-span-2">
+        <div>
+          <InputLabel value="Date de naissance" className="mb-1" />
+          <TextInput type="date" {...register(`${prefix}birth_date` as Path<T>)} />
+          {getError(`${prefix}birth_date`) && (
+            <p className={errorClass}>{getError(`${prefix}birth_date`)}</p>
+          )}
+        </div>
+        <div>
+          <InputLabel value="Lieu de naissance" className="mb-1" />
+          <TextInput {...register(`${prefix}birth_place` as Path<T>)} />
+          {getError(`${prefix}birth_place`) && (
+            <p className={errorClass}>{getError(`${prefix}birth_place`)}</p>
+          )}
+        </div>
+
+        <div>
+          <InputLabel value="Nationalité" className="mb-1" />
+          <TextInput {...register(`${prefix}nationality` as Path<T>)} />
+          {getError(`${prefix}nationality`) && (
+            <p className={errorClass}>{getError(`${prefix}nationality`)}</p>
+          )}
+        </div>
+
+        <div>
           <InputLabel value="Profession" className="mb-1" />
           <TextInput {...register(`${prefix}profession` as Path<T>)} />
           {getError(`${prefix}profession`) && (
@@ -161,7 +184,7 @@ export default function GuarantorCard<T extends FieldValues>({
             size="sm"
             onClick={() =>
               addDoc({
-                category: 'id_card',
+                category: '',
                 name: '',
                 file: undefined,
               } as unknown as Parameters<typeof addDoc>[0])

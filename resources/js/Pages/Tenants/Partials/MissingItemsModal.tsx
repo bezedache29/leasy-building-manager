@@ -26,7 +26,7 @@ export default function MissingItemsModal({ show, onClose, tenant }: Props) {
   if (!tenant.missing_items) return null;
 
   return (
-    <Modal show={show} onClose={onClose}>
+    <Modal show={show} onClose={onClose} maxWidth="3xl">
       <div className="p-6 bg-surface border border-[rgb(var(--border))] rounded-xl">
         <div className="flex items-center gap-3 mb-6">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">

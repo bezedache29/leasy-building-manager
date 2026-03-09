@@ -21,6 +21,7 @@ class Guarantor extends Model
         'current_address',
         'birth_date',
         'birth_place',
+        'nationality',
         'profession',
     ];
 

@@ -21,6 +21,7 @@ class Tenant extends Model
         'current_address',
         'birth_date',
         'birth_place',
+        'nationality',
         'profession',
         'notes'
     ];
@@ -28,11 +29,6 @@ class Tenant extends Model
     protected $casts = [
         'birth_date' => 'date',
     ];
-
-    /**
-     * Ajoute l'attribut calculé "is_complete" lors de la sérialisation JSON
-     */
-    protected $appends = ['is_complete', 'missing_items'];
 
     public function documents(): MorphMany
     {
@@ -61,6 +57,7 @@ class Tenant extends Model
             'current_address',
             'birth_date',
             'birth_place',
+            'nationality',
             'profession'
         ];
 
@@ -103,6 +100,7 @@ class Tenant extends Model
             'current_address',
             'birth_date',
             'birth_place',
+            'nationality',
             'profession'
         ];
 
@@ -143,7 +141,7 @@ class Tenant extends Model
             'guarantors' => []
         ];
 
-        $requiredFields = ['first_name', 'last_name', 'marital_status', 'email', 'phone', 'current_address', 'birth_date', 'birth_place', 'profession'];
+        $requiredFields = ['first_name', 'last_name', 'marital_status', 'email', 'phone', 'current_address', 'birth_date', 'birth_place', 'nationality', 'profession'];
         $tenantRequiredDocs = ['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice', 'bank_details', 'insurance', 'lease', 'inventory', 'deposit_check'];
         $guarantorRequiredDocs = ['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice', 'guarantee_deed'];
 

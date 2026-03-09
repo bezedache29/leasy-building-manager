@@ -172,6 +172,10 @@ export default function Show({
                   <p className={labelClass}>À</p>
                   <p className={valueClass}>{tenant.birth_place || '—'}</p>
                 </div>
+                <div>
+                  <p className={labelClass}>Nationalité</p>
+                  <p className={valueClass}>{tenant.nationality ? tenant.nationality : '—'}</p>
+                </div>
                 {tenant.notes && (
                   <div className="sm:col-span-2 pt-4 border-t border-[rgb(var(--border))]">
                     <p className={labelClass}>Notes internes</p>
@@ -235,9 +239,27 @@ export default function Show({
                           {getMaritalStatusLabel(guarantor.marital_status)}
                         </p>
                       </div>
+                      <div>
+                        <p className={labelClass}>Né(e) le</p>
+                        <p className={valueClass}>
+                          {guarantor.birth_date
+                            ? new Date(guarantor.birth_date).toLocaleDateString()
+                            : '—'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className={labelClass}>À</p>
+                        <p className={valueClass}>{guarantor.birth_place || '—'}</p>
+                      </div>
                       <div className="sm:col-span-2">
                         <p className={labelClass}>Adresse</p>
                         <p className="text-sm text-app mt-1">{guarantor.current_address || '—'}</p>
+                      </div>
+                      <div>
+                        <p className={labelClass}>Nationalité</p>
+                        <p className={valueClass}>
+                          {guarantor.nationality ? guarantor.nationality : '—'}
+                        </p>
                       </div>
                     </div>
                     {guarantor.documents && guarantor.documents.length > 0 && (

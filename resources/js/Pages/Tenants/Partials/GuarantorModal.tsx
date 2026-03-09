@@ -48,6 +48,8 @@ export default function GuarantorModal({
       email: '',
       phone: '',
       current_address: '',
+      birth_date: '',
+      birth_place: '',
       profession: '',
       documents: [],
     },
@@ -64,6 +66,8 @@ export default function GuarantorModal({
           email: guarantor.email || '',
           phone: guarantor.phone || '',
           current_address: guarantor.current_address || '',
+          birth_date: guarantor.birth_date ? guarantor.birth_date.substring(0, 10) : '',
+          birth_place: guarantor.birth_place || '',
           profession: guarantor.profession || '',
           documents: [], // Les documents existants ne sont pas chargés ici (logique complexe à gérer côté métier)
         });
@@ -76,6 +80,8 @@ export default function GuarantorModal({
           email: '',
           phone: '',
           current_address: '',
+          birth_date: '',
+          birth_place: '',
           profession: '',
           documents: [],
         });
@@ -108,7 +114,7 @@ export default function GuarantorModal({
   };
 
   return (
-    <Modal show={show} onClose={onClose}>
+    <Modal show={show} onClose={onClose} maxWidth="4xl">
       <div className="p-6 bg-surface border border-[rgb(var(--border))] rounded-xl">
         <h2 className="text-xl font-semibold text-app mb-6">
           {guarantor ? 'Modifier le garant' : 'Ajouter un garant'}

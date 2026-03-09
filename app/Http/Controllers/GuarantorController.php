@@ -7,6 +7,7 @@ use App\Models\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class GuarantorController extends Controller
 {
@@ -40,12 +41,19 @@ class GuarantorController extends Controller
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:255',
             'current_address' => 'nullable|string',
+            'birth_date' => 'nullable|date',
+            'birth_place' => 'nullable|string|max:255',
+            'nationality' => 'nullable|string|max:255',
             'profession' => 'nullable|string|max:255',
 
             // Documents du garant
             'documents' => 'nullable|array',
             'documents.*.file' => 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx',
-            'documents.*.category' => 'required|string',
+            'documents.*.category' => [
+                'required',
+                'string',
+                Rule::in(['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice', 'guarantee_deed', 'other'])
+            ],
             'documents.*.name' => 'required|string',
         ]);
 
@@ -125,6 +133,9 @@ class GuarantorController extends Controller
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:255',
             'current_address' => 'nullable|string',
+            'birth_date' => 'nullable|date',
+            'birth_place' => 'nullable|string|max:255',
+            'nationality' => 'nullable|string|max:255',
             'profession' => 'nullable|string|max:255',
         ]);
 

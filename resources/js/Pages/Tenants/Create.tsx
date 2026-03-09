@@ -130,7 +130,11 @@ export default function CreateTenant() {
                 <InputLabel htmlFor="birth_place" value="Lieu de naissance" className="mb-1" />
                 <TextInput id="birth_place" {...register('birth_place')} />
               </div>
-              <div className="md:col-span-2">
+              <div>
+                <InputLabel htmlFor="nationality" value="Nationalité" className="mb-1" />
+                <TextInput id="nationality" {...register('nationality')} />
+              </div>
+              <div className="mb-1">
                 <InputLabel htmlFor="profession" value="Profession" className="mb-1" />
                 <TextInput id="profession" {...register('profession')} />
               </div>
@@ -199,7 +203,7 @@ export default function CreateTenant() {
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  addDocument({ category: 'id_card', name: '', file: undefined as unknown as File })
+                  addDocument({ category: '', name: '', file: undefined as unknown as File })
                 }
               >
                 + Joindre un fichier

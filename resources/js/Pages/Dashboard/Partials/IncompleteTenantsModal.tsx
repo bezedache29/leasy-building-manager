@@ -17,7 +17,7 @@ interface Props {
 
 export default function IncompleteTenantsModal({ show, onClose, tenants }: Props) {
   return (
-    <Modal show={show} onClose={onClose}>
+    <Modal show={show} onClose={onClose} maxWidth="2xl">
       <div className="p-6 bg-surface border border-[rgb(var(--border))] rounded-xl">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-app">Dossiers à compléter</h2>

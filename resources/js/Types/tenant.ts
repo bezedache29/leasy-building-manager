@@ -11,6 +11,7 @@ export interface Tenant {
   current_address: string | null;
   birth_date: string | null;
   birth_place: string | null;
+  nationality: string | null;
   profession: string | null;
   notes: string | null;
   property?: {
