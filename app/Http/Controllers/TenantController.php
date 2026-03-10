@@ -103,6 +103,7 @@ class TenantController extends Controller
                 'current_address' => $validated['current_address'] ?? null,
                 'birth_date' => $validated['birth_date'] ?? null,
                 'birth_place' => $validated['birth_place'] ?? null,
+                'nationality' => $validated['nationality'] ?? null,
                 'profession' => $validated['profession'] ?? null,
                 'notes' => $validated['notes'] ?? null,
             ]);
