@@ -36,29 +36,33 @@ export default function Index({ tenants }: Props) {
               <table className="w-full text-left text-sm text-app">
                 <thead className="border-b border-[rgb(var(--border))] bg-surface-2 text-xs uppercase text-muted">
                   <tr>
-                    <th className="px-6 py-4 font-medium">Nom complet</th>
-                    <th className="px-6 py-4 font-medium">Contact</th>
-                    <th className="px-6 py-4 font-medium text-right">Actions</th>
+                    <th className="px-6 py-4 font-semibold text-left">NOM COMPLET</th>
+                    <th className="px-6 py-4 font-semibold text-left">CONTACT</th>
+                    <th className="px-6 py-4 font-semibold text-left">BIEN</th>
+                    <th className="px-6 py-4 font-semibold text-right">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[rgb(var(--border))]">
                   {tenants.map((tenant) => (
                     <tr key={tenant.id} className="hover:bg-surface-2 transition-colors">
-                      <td className="px-6 py-4 font-medium">
+                      <td className="px-6 py-4 font-medium whitespace-nowrap">
                         {tenant.first_name} {tenant.last_name}
                       </td>
-                      <td className="px-6 py-4 text-muted">
+                      <td className="px-6 py-4 text-muted whitespace-nowrap">
                         <div>{tenant.email || '—'}</div>
                         <div>{tenant.phone || '—'}</div>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        {/* TODO On mettra les vrais liens plus tard */}
-                        <Button variant="primary" size="sm">
-                          Voir
-                        </Button>
-                        <Button variant="danger" size="sm">
-                          Supprimer
-                        </Button>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[rgb(var(--primary-100))] text-[rgb(var(--primary-800))]">
+                          {tenant.property?.name || 'Aucun bien'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <Link href={route('tenants.show', tenant.id)}>
+                          <Button variant={tenant.is_complete ? 'primary' : 'warning'} size="sm">
+                            Voir
+                          </Button>
+                        </Link>
                       </td>
                     </tr>
                   ))}

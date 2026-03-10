@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tenant;
+use App\Models\Guarantor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class TenantController extends Controller
@@ -15,8 +17,10 @@ class TenantController extends Controller
      */
     public function index()
     {
-        // On charge les locataires avec leurs relations pour éviter le problème "N+1 queries"
-        $tenants = Tenant::with(['guarantors', 'documents'])->latest()->get();
+        // 1. On "Eager Load" les relations nécessaires pour éviter les requêtes N+1
+        $tenants = Tenant::with(['documents', 'guarantors.documents'])
+            ->get()
+            ->append('is_complete');
 
         return Inertia::render('Tenants/Index', [
             'tenants' => $tenants
@@ -41,11 +45,13 @@ class TenantController extends Controller
             // Locataire
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
+            'marital_status' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:255',
             'current_address' => 'nullable|string',
             'birth_date' => 'nullable|date',
             'birth_place' => 'nullable|string|max:255',
+            'nationality' => 'nullable|string|max:255',
             'profession' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
 
@@ -53,21 +59,34 @@ class TenantController extends Controller
             'guarantors' => 'nullable|array',
             'guarantors.*.first_name' => 'required|string|max:255',
             'guarantors.*.last_name' => 'required|string|max:255',
+            'guarantors.*.marital_status' => 'nullable|string|max:255',
+            'guarantors.*.relationship' => 'nullable|string|max:255',
             'guarantors.*.email' => 'nullable|email',
             'guarantors.*.phone' => 'nullable|string',
             'guarantors.*.current_address' => 'nullable|string',
+            'guarantors.*.birth_date' => 'nullable|date',
+            'guarantors.*.birth_place' => 'nullable|string|max:255',
+            'guarantors.*.nationality' => 'nullable|string|max:255',
             'guarantors.*.profession' => 'nullable|string',
 
             // Documents des garants
             'guarantors.*.documents' => 'nullable|array',
-            'guarantors.*.documents.*.file' => 'required|file|max:5120|mimes:pdf,jpg,jpeg,png,doc,docx',
-            'guarantors.*.documents.*.category' => 'required|string',
+            'guarantors.*.documents.*.file' => 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx',
+            'guarantors.*.documents.*.category' => [
+                'required',
+                'string',
+                Rule::in(['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice', 'guarantee_deed', 'other'])
+            ],
             'guarantors.*.documents.*.name' => 'required|string',
 
             // Documents du locataire
             'tenant_documents' => 'nullable|array',
-            'tenant_documents.*.file' => 'required|file|max:5120|mimes:pdf,jpg,jpeg,png,doc,docx',
-            'tenant_documents.*.category' => 'required|string',
+            'tenant_documents.*.file' => 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx',
+            'tenant_documents.*.category' => [
+                'required',
+                'string',
+                Rule::in(['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice', 'bank_details', 'insurance', 'lease', 'inventory', 'deposit_check', 'other'])
+            ],
             'tenant_documents.*.name' => 'required|string',
         ]);
 
@@ -78,6 +97,7 @@ class TenantController extends Controller
             $tenant = Tenant::create([
                 'first_name' => $validated['first_name'],
                 'last_name' => $validated['last_name'],
+                'marital_status' => $validated['marital_status'] ?? null,
                 'email' => $validated['email'] ?? null,
                 'phone' => $validated['phone'] ?? null,
                 'current_address' => $validated['current_address'] ?? null,
@@ -87,15 +107,21 @@ class TenantController extends Controller
                 'notes' => $validated['notes'] ?? null,
             ]);
 
-            // B. Création des garants et de leurs documents
             if (!empty($validated['guarantors'])) {
                 foreach ($validated['guarantors'] as $guarantorData) {
 
-                    // On isole les infos du garant sans les documents
-                    $guarantorDbData = \Illuminate\Support\Arr::except($guarantorData, ['documents']);
-                    $guarantor = $tenant->guarantors()->create($guarantorDbData);
+                    // On isole les infos du garant pur (sans documents ni relationship de la table pivot)
+                    $guarantorDbData = Arr::except($guarantorData, ['documents', 'relationship']);
 
-                    // On boucle directement sur les documents validés du garant
+                    // 1. On crée le garant de manière isolée
+                    $guarantor = Guarantor::create($guarantorDbData);
+
+                    // 2. On l'attache au locataire via la table pivot (en y ajoutant le lien de parenté)
+                    $tenant->guarantors()->attach($guarantor->id, [
+                        'relationship' => $guarantorData['relationship'] ?? null
+                    ]);
+
+                    // 3. On boucle sur les documents validés du garant
                     if (!empty($guarantorData['documents'])) {
                         foreach ($guarantorData['documents'] as $docData) {
                             if (isset($docData['file'])) {
@@ -139,32 +165,49 @@ class TenantController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Tenant $tenant)
     {
-        //
+        // 1. On s'assure que toutes les relations du locataire sont chargées
+        $tenant->loadMissing(['documents', 'guarantors.documents']);
+
+        // 2. On ajoute manuellement les deux attributs lourds pour cette vue précise
+        $tenant->append(['is_complete', 'missing_items']);
+
+        $availableGuarantors = Guarantor::orderBy('last_name')->get();
+
+        return Inertia::render('Tenants/Show', [
+            'tenant' => $tenant,
+            'availableGuarantors' => $availableGuarantors ?? [],
+        ]);
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Tenant $tenant)
     {
-        //
+        $tenant->load(['documents', 'guarantors.documents']);
+
+        return Inertia::render('Tenants/Edit', [
+            'tenant' => $tenant
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Tenant $tenant)
     {
-        //
+        // À faire quand on codera la sauvegarde de l'édition
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Tenant $tenant)
     {
-        //
+        $tenant->delete();
+
+        return redirect()->route('tenants.index')->with('success', 'Le dossier locataire a été archivé.');
     }
 }

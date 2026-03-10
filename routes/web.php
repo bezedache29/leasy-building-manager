@@ -18,6 +18,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Garants
     Route::post('/tenants/{tenant}/guarantors', [GuarantorController::class, 'store'])->name('tenants.guarantors.store');
+    Route::put('/tenants/{tenant}/guarantors/{guarantor}', [GuarantorController::class, 'update'])->name('tenants.guarantors.update');
     Route::delete('/tenants/{tenant}/guarantors/{guarantor}', [GuarantorController::class, 'destroy'])->name('tenants.guarantors.destroy');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
