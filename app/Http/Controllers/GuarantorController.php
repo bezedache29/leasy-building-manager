@@ -48,11 +48,19 @@ class GuarantorController extends Controller
 
             // Documents du garant
             'documents' => 'nullable|array',
-            'documents.*.file' => 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx',
+            'documents.*.file'     => 'required_with:documents|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:10240',
             'documents.*.category' => [
                 'required',
                 'string',
-                Rule::in(['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice', 'guarantee_deed', 'other'])
+                Rule::in([
+                    'id_card',
+                    'proof_of_address',
+                    'employment_contract',
+                    'payslip',
+                    'tax_notice',
+                    'guarantee_deed',
+                    'other'
+                ])
             ],
             'documents.*.name' => 'required|string',
         ]);
@@ -142,7 +150,7 @@ class GuarantorController extends Controller
             // Validation du tableau de documents
             'documents'       => 'nullable|array',
             'documents.*.name'     => 'required_with:documents|string',
-            'documents.*.file'     => 'required_with:documents|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'documents.*.file'     => 'required_with:documents|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:10240',
             'documents.*.category' => [
                 'required_with:documents',
                 'string',

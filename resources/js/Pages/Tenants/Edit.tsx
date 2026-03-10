@@ -121,7 +121,7 @@ export default function Edit({ tenant }: { tenant: Tenant }) {
                       </div>
                     </a>
                     <IconButton
-                      aria-label=""
+                      aria-label={`Supprimer le document ${doc.name}`}
                       variant="danger"
                       size="sm"
                       title="Supprimer le document"
