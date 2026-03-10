@@ -5,12 +5,10 @@ import Button from '@/Components/Button';
 import { Tenant } from '@/Types/tenant';
 import { Guarantor } from '@/Types/guarantor';
 import GuarantorModal from './Partials/GuarantorModal';
-import { DOCUMENT_CATEGORIES } from '@/Constants/documentCategories';
 import MissingItemsModal from '@/Pages/Tenants/Partials/MissingItemsModal';
-import IconButton from '@/Components/IconButton';
 import Modal from '@/Components/Modal';
 import { AppDocument } from '@/Types';
-import ExistingDocumentItem from '@/Pages/Tenants/Partials/ExistingDocumentItem';
+import ExistingDocumentItem from '@/Pages/Tenants/Partials/ExistingDocumentItem'; // ✅ Uniformisation de l'affichage
 
 export default function Show({
   tenant,
@@ -25,7 +23,7 @@ export default function Show({
   const [editingGuarantor, setEditingGuarantor] = useState<Guarantor | null>(null);
   const [docToDelete, setDocToDelete] = useState<AppDocument | null>(null);
   const [showMissingModal, setShowMissingModal] = useState(false);
-  const [guarantorToDelete, setGuarantorToDelete] = useState<Guarantor | null>(null);
+  const [guarantorToDetach, setGuarantorToDetach] = useState<Guarantor | null>(null);
 
   const openModalForAdd = () => {
     setEditingGuarantor(null);
@@ -59,13 +57,13 @@ export default function Show({
   };
 
   // Fonction pour détacher le garant via Inertia
-  const confirmDeleteGuarantor = () => {
-    if (!guarantorToDelete) return;
+  const confirmDetachGuarantor = () => {
+    if (!guarantorToDetach) return;
 
-    router.delete(route('tenants.guarantors.destroy', [tenant.id, guarantorToDelete.id]), {
+    router.delete(route('tenants.guarantors.destroy', [tenant.id, guarantorToDetach.id]), {
       preserveScroll: true,
-      onSuccess: () => setGuarantorToDelete(null),
-      onFinish: () => setGuarantorToDelete(null),
+      onSuccess: () => setGuarantorToDetach(null),
+      onFinish: () => setGuarantorToDetach(null),
     });
   };
 
@@ -73,10 +71,6 @@ export default function Show({
   const sectionClass = 'rounded-xl border border-[rgb(var(--border))] bg-surface p-6 shadow-sm';
   const labelClass = 'text-sm font-medium text-muted';
   const valueClass = 'mt-1 text-base text-app font-medium';
-
-  const getCategoryLabel = (cat: string) => {
-    return DOCUMENT_CATEGORIES[cat] || cat;
-  };
 
   const getMaritalStatusLabel = (status: string | null) => {
     if (!status) return '—';
@@ -158,6 +152,7 @@ export default function Show({
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* COLONNE GAUCHE (Infos Locataire + Garants) */}
           <div className="lg:col-span-2 space-y-8">
             <section className={sectionClass}>
               <h2 className="mb-5 text-lg font-semibold text-[rgb(var(--primary-500))]">
@@ -207,7 +202,7 @@ export default function Show({
               </div>
             </section>
 
-            <section className="space-y-4 mt-8">
+            <section className="space-y-4">
               <div className="flex items-center justify-between pl-1">
                 <h2 className="text-lg font-semibold text-app">
                   Garants ({tenant.guarantors?.length || 0})
@@ -226,6 +221,7 @@ export default function Show({
               ) : (
                 tenant.guarantors.map((guarantor) => (
                   <div key={guarantor.id} className={`${sectionClass} bg-surface-2`}>
+                    {/* En-tête du garant */}
                     <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <h3 className="text-md font-semibold text-[rgb(var(--primary-400))]">
@@ -246,12 +242,14 @@ export default function Show({
                         <Button
                           variant="danger"
                           size="sm"
-                          onClick={() => setGuarantorToDelete(guarantor)}
+                          onClick={() => setGuarantorToDetach(guarantor)}
                         >
                           Retirer
                         </Button>
                       </div>
                     </div>
+
+                    {/* Infos du garant */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <p className={labelClass}>Contact</p>
@@ -288,8 +286,10 @@ export default function Show({
                         </p>
                       </div>
                     </div>
+
+                    {/* ✅ SECTION DOCUMENTS DU GARANT (À l'intérieur de la div de la carte) */}
                     {guarantor.documents && guarantor.documents.length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-[rgb(var(--border))]">
+                      <div className="mt-6 pt-4 border-t border-[rgb(var(--border))]">
                         <p className="text-sm font-medium text-muted mb-3">Documents joints :</p>
                         <ul className="space-y-2">
                           {guarantor.documents.map((doc) => (
@@ -308,55 +308,19 @@ export default function Show({
             </section>
           </div>
 
+          {/* COLONNE DROITE (Documents du Locataire) */}
           <div className="space-y-8">
             <section className={sectionClass}>
               <h2 className="mb-5 text-lg font-semibold text-[rgb(var(--primary-500))]">
-                Documents du dossier
+                Documents du locataire
               </h2>
               {!tenant.documents || tenant.documents.length === 0 ? (
                 <p className="text-sm text-muted italic">Aucun document enregistré.</p>
               ) : (
                 <ul className="space-y-3">
+                  {/* ✅ Remplacement de la boucle manuelle par le composant unifié [cite: 2026-03-10] */}
                   {tenant.documents.map((doc) => (
-                    <li
-                      key={doc.id}
-                      className="flex items-center justify-between p-3 rounded-lg border border-[rgb(var(--border))] bg-surface-2 transition-colors"
-                    >
-                      <a
-                        href={`/storage/${doc.file_path}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex flex-col gap-1 min-w-0 flex-1 pr-4"
-                      >
-                        <span className="text-sm font-semibold text-primary truncate">
-                          {getCategoryLabel(doc.category || '')}
-                        </span>
-                        <span className="text-xs text-muted truncate">{doc.name || 'Fichier'}</span>
-                      </a>
-
-                      <IconButton
-                        variant="danger"
-                        size="sm"
-                        title="Supprimer le document"
-                        onClick={() => setDocToDelete(doc)}
-                        className="bg-red-500/30"
-                        icon={
-                          <svg
-                            className="h-4 w-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        }
-                      />
-                    </li>
+                    <ExistingDocumentItem key={doc.id} doc={doc} onDelete={setDocToDelete} />
                   ))}
                 </ul>
               )}
@@ -398,15 +362,12 @@ export default function Show({
               />
             </svg>
           </div>
-
           <h2 className="text-xl font-bold text-app">Supprimer le document</h2>
-
           <p className="mt-6 text-sm text-muted leading-relaxed">
             Es-tu sûr de vouloir retirer le document <br />
             <span className="font-semibold text-app">"{docToDelete?.name}"</span> ? <br /> <br />
             Cette action est réversible via l'archivage sécurisé.
           </p>
-
           <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
             <Button variant="secondary" onClick={() => setDocToDelete(null)}>
               Annuler
@@ -418,10 +379,10 @@ export default function Show({
         </div>
       </Modal>
 
-      {/* 4. Modale demande suppression garant */}
+      {/* 4. Modale demande détachement garant */}
       <Modal
-        show={guarantorToDelete !== null}
-        onClose={() => setGuarantorToDelete(null)}
+        show={guarantorToDetach !== null}
+        onClose={() => setGuarantorToDetach(null)}
         maxWidth="md"
       >
         <div className="bg-surface p-8 rounded-xl border border-[rgb(var(--border))] shadow-2xl text-center">
@@ -435,23 +396,20 @@ export default function Show({
               />
             </svg>
           </div>
-
           <h2 className="text-xl font-bold text-app">Retirer le garant</h2>
-
           <p className="mt-6 text-sm text-muted leading-relaxed">
             Es-tu sûr de vouloir détacher le garant <br />
             <span className="font-semibold text-app">
-              "{guarantorToDelete?.first_name} {guarantorToDelete?.last_name}"
+              "{guarantorToDetach?.first_name} {guarantorToDetach?.last_name}"
             </span>{' '}
             de ce dossier ? <br /> <br />
             Ses données resteront archivées dans le système.
           </p>
-
           <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
-            <Button variant="secondary" onClick={() => setGuarantorToDelete(null)}>
+            <Button variant="secondary" onClick={() => setGuarantorToDetach(null)}>
               Annuler
             </Button>
-            <Button variant="danger" onClick={confirmDeleteGuarantor}>
+            <Button variant="danger" onClick={confirmDetachGuarantor}>
               Retirer
             </Button>
           </div>

@@ -63,6 +63,7 @@ export default function DocumentFieldItem<T extends FieldValues>({
             </option>
           ))}
         </SelectInput>
+        {getNestedError('category') && <p className={errorClass}>{getNestedError('category')}</p>}
       </div>
 
       {/* Nom du document */}

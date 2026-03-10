@@ -4,7 +4,7 @@ import { DOCUMENT_CATEGORIES } from '@/Constants/documentCategories';
 
 interface Props {
   doc: AppDocument;
-  onDelete: (_doc: AppDocument) => void;
+  onDelete: (doc: AppDocument) => void;
 }
 
 export default function ExistingDocumentItem({ doc, onDelete }: Props) {
@@ -16,7 +16,7 @@ export default function ExistingDocumentItem({ doc, onDelete }: Props) {
   return (
     <li className="flex items-center justify-between py-2 border-b border-gray-700 last:border-0">
       <a
-        href={`/storage/${doc.file_path}`}
+        href={route('documents.show', doc.id)}
         target="_blank"
         rel="noreferrer"
         className="text-sm text-primary hover:underline flex items-center gap-2 min-w-0 flex-1 pr-4"
@@ -29,6 +29,7 @@ export default function ExistingDocumentItem({ doc, onDelete }: Props) {
       </a>
 
       <IconButton
+        aria-label=""
         variant="danger"
         size="sm"
         title="Supprimer le document"

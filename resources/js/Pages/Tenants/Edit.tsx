@@ -10,7 +10,7 @@ import TenantFormFields from '@/Pages/Tenants/Partials/TenantFormFields';
 import { Tenant } from '@/Types/tenant';
 import { DOCUMENT_CATEGORIES, TENANT_DOCUMENT_KEYS } from '@/Constants/documentCategories';
 import IconButton from '@/Components/IconButton';
-import DocumentFieldItem from './Partials/DocumentFieldItem'; // 👈 Import du nouveau composant
+import DocumentFieldItem from '@/Pages/Tenants/Partials/DocumentFieldItem';
 
 type EditTenantValues = z.infer<typeof editTenantSchema>;
 
@@ -121,6 +121,7 @@ export default function Edit({ tenant }: { tenant: Tenant }) {
                       </div>
                     </a>
                     <IconButton
+                      aria-label=""
                       variant="danger"
                       size="sm"
                       title="Supprimer le document"

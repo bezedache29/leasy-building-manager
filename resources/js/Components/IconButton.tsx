@@ -1,10 +1,14 @@
 import { ButtonVariant } from '@/Components/Button';
 import { ButtonHTMLAttributes, ReactNode } from 'react';
 
-interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
+interface IconButtonProps extends Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  'children' | 'aria-label'
+> {
   variant?: ButtonVariant;
   size?: 'sm' | 'md' | 'lg';
   icon: ReactNode;
+  'aria-label': string;
 }
 
 export default function IconButton({

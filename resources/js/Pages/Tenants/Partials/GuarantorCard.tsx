@@ -207,9 +207,9 @@ export default function GuarantorCard<T extends FieldValues>({
               <p className="text-xs font-semibold text-emerald-500 uppercase tracking-wider">
                 À ajouter au dossier
               </p>
-              {docs.map((_, docIndex) => (
+              {docs.map((docField, docIndex) => (
                 <DocumentFieldItem
-                  key={docIndex}
+                  key={docField.id}
                   index={docIndex}
                   register={register}
                   setValue={setValue}

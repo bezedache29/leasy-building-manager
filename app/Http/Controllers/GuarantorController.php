@@ -120,7 +120,12 @@ class GuarantorController extends Controller
      */
     public function update(Request $request, Tenant $tenant, Guarantor $guarantor)
     {
-        // 1. Validation stricte des champs du garant et de ses nouveaux documents
+        // 🔒 Sécurité anti-IDOR
+        if (!$tenant->guarantors()->where('guarantor_id', $guarantor->id)->exists()) {
+            abort(404);
+        }
+
+        // 1. Validation stricte
         $validated = $request->validate([
             'first_name'      => 'required|string|max:255',
             'last_name'       => 'required|string|max:255',
@@ -147,47 +152,48 @@ class GuarantorController extends Controller
                     'employment_contract',
                     'payslip',
                     'tax_notice',
-                    'bank_details',
-                    'insurance',
-                    'lease',
-                    'inventory',
-                    'deposit_check',
+                    'guarantee_deed',
                     'other'
                 ])
             ],
         ]);
 
-        // 2. Mise à jour des informations de base du garant
-        $guarantor->update($validated);
+        // 2. Exécution dans une Transaction pour sécuriser les mises à jour
+        DB::transaction(function () use ($validated, $tenant, $guarantor, $request) {
 
-        // 3. Mise à jour du lien (pivot) avec le locataire
-        if ($request->has('relationship')) {
-            $tenant->guarantors()->updateExistingPivot($guarantor->id, [
-                'relationship' => $request->input('relationship')
-            ]);
-        }
+            // A. Mise à jour des informations de base du garant
+            $guarantorDbData = Arr::except($validated, ['documents', 'relationship']);
+            $guarantor->update($guarantorDbData);
 
-        // 4. Traitement des fichiers imbriqués via la dot-notation
-        if ($request->has('documents')) {
-            foreach ($request->input('documents') as $index => $docData) {
-                $file = $request->file("documents.{$index}.file");
+            // B. Mise à jour du lien (pivot) avec le locataire
+            if (isset($validated['relationship'])) {
+                $tenant->guarantors()->updateExistingPivot($guarantor->id, [
+                    'relationship' => $validated['relationship']
+                ]);
+            }
 
-                if ($file) {
-                    // Stockage physique sécurisé
-                    $path = $file->store('documents/guarantors', 'public');
+            // C. Traitement des fichiers imbriqués via la dot-notation
+            if ($request->has('documents')) {
+                foreach ($request->input('documents') as $index => $docData) {
+                    $file = $request->file("documents.{$index}.file");
 
-                    // Création de l'enregistrement polymorphique
-                    $guarantor->documents()->create([
-                        'name'      => $docData['name'],
-                        'category'  => $docData['category'],
-                        'file_path' => $path,
-                        'mime_type' => $file->getMimeType(),
-                    ]);
+                    if ($file) {
+                        // Stockage physique sécurisé
+                        $path = $file->store("documents/guarantors/{$guarantor->id}", 'public');
+
+                        // Création de l'enregistrement polymorphique
+                        $guarantor->documents()->create([
+                            'name'      => $docData['name'],
+                            'category'  => $docData['category'],
+                            'file_path' => $path,
+                            'mime_type' => $file->getMimeType(),
+                        ]);
+                    }
                 }
             }
-        }
+        });
 
-        return redirect()->back()->with('success', 'Garant et documents mis à jour.');
+        return redirect()->back()->with('success', 'Garant et documents mis à jour avec succès.');
     }
 
     /**

@@ -7,6 +7,7 @@ use App\Models\Guarantor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
@@ -199,7 +200,7 @@ class TenantController extends Controller
      */
     public function update(Request $request, Tenant $tenant)
     {
-        // 1. Validation avec la liste stricte des catégories
+        // 1. Validation avec la liste stricte des catégories [cite: 2026-03-10]
         $validated = $request->validate([
             'first_name'      => 'required|string|max:255',
             'last_name'       => 'required|string|max:255',
@@ -236,18 +237,28 @@ class TenantController extends Controller
             ],
         ]);
 
-        // 2. Transaction pour sécuriser la mise à jour et l'upload
-        DB::transaction(function () use ($validated, $tenant, $request) {
+        // Tableau pour traquer les chemins des fichiers fraîchement uploadés
+        $storedPaths = [];
+
+        DB::beginTransaction();
+
+        try {
+            // Mise à jour des informations de base
             $tenant->update($validated);
 
-            // Traitement des nouveaux fichiers
+            // Traitement des nouveaux fichiers via la dot-notation [cite: 2026-02-19]
             if ($request->has('tenant_documents')) {
                 foreach ($request->input('tenant_documents') as $index => $docData) {
                     $file = $request->file("tenant_documents.{$index}.file");
 
                     if ($file) {
+                        // 1. Stockage du fichier
                         $path = $file->store("documents/tenants/{$tenant->id}", 'public');
 
+                        // 2. On garde une trace du chemin en cas de rollback
+                        $storedPaths[] = $path;
+
+                        // 3. Création de l'enregistrement en base
                         $tenant->documents()->create([
                             'name'      => $docData['name'],
                             'file_path' => $path,
@@ -257,9 +268,23 @@ class TenantController extends Controller
                     }
                 }
             }
-        });
 
-        return redirect()->route('tenants.show', $tenant)->with('success', 'Dossier mis à jour.');
+            // Tout s'est bien passé, on valide la transaction en base
+            DB::commit();
+        } catch (\Throwable $e) {
+            // En cas d'erreur (SQL, etc.), on annule les écritures en base de données
+            DB::rollBack();
+
+            // Et on supprime physiquement les fichiers orphelins qui venaient d'être uploadés
+            if (!empty($storedPaths)) {
+                Storage::disk('public')->delete($storedPaths);
+            }
+
+            // On relance l'exception pour que Laravel puisse la gérer (affichage d'erreur 500, logs, etc.)
+            throw $e;
+        }
+
+        return redirect()->route('tenants.show', $tenant)->with('success', 'Dossier mis à jour avec succès.');
     }
 
     /**
