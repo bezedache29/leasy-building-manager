@@ -21,15 +21,25 @@ export default [
     },
     plugins: {
       '@typescript-eslint': ts,
-      react: react,
+      react,
       'react-hooks': reactHooks,
     },
     rules: {
+      'no-unused-vars': 'off',
       'react/react-in-jsx-scope': 'off',
       '@typescript-eslint/no-explicit-any': 'error',
       'no-console': 'warn',
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          args: 'all',
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
     },
     settings: {
       react: { version: 'detect' },

@@ -199,7 +199,67 @@ class TenantController extends Controller
      */
     public function update(Request $request, Tenant $tenant)
     {
-        // À faire quand on codera la sauvegarde de l'édition
+        // 1. Validation avec la liste stricte des catégories
+        $validated = $request->validate([
+            'first_name'      => 'required|string|max:255',
+            'last_name'       => 'required|string|max:255',
+            'marital_status'  => 'nullable|string|max:255',
+            'email'           => ['nullable', 'email', 'max:255', Rule::unique('tenants')->ignore($tenant->id)],
+            'phone'           => 'nullable|string|max:255',
+            'current_address' => 'nullable|string',
+            'birth_date'      => 'nullable|date',
+            'birth_place'     => 'nullable|string|max:255',
+            'nationality'     => 'nullable|string|max:255',
+            'profession'      => 'nullable|string|max:255',
+            'notes'           => 'nullable|string',
+
+            // Validation des nouveaux documents
+            'tenant_documents' => 'nullable|array',
+            'tenant_documents.*.file' => 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx',
+            'tenant_documents.*.name' => 'required|string',
+            'tenant_documents.*.category' => [
+                'required',
+                'string',
+                Rule::in([
+                    'id_card',
+                    'proof_of_address',
+                    'employment_contract',
+                    'payslip',
+                    'tax_notice',
+                    'bank_details',
+                    'insurance',
+                    'lease',
+                    'inventory',
+                    'deposit_check',
+                    'other'
+                ])
+            ],
+        ]);
+
+        // 2. Transaction pour sécuriser la mise à jour et l'upload
+        DB::transaction(function () use ($validated, $tenant, $request) {
+            $tenant->update($validated);
+
+            // Traitement des nouveaux fichiers
+            if ($request->has('tenant_documents')) {
+                foreach ($request->input('tenant_documents') as $index => $docData) {
+                    $file = $request->file("tenant_documents.{$index}.file");
+
+                    if ($file) {
+                        $path = $file->store("documents/tenants/{$tenant->id}", 'public');
+
+                        $tenant->documents()->create([
+                            'name'      => $docData['name'],
+                            'file_path' => $path,
+                            'category'  => $docData['category'],
+                            'mime_type' => $file->getMimeType(),
+                        ]);
+                    }
+                }
+            }
+        });
+
+        return redirect()->route('tenants.show', $tenant)->with('success', 'Dossier mis à jour.');
     }
 
     /**

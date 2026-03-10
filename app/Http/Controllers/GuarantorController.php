@@ -120,37 +120,74 @@ class GuarantorController extends Controller
      */
     public function update(Request $request, Tenant $tenant, Guarantor $guarantor)
     {
-        // 🔒 Sécurité anti-IDOR : On vérifie que le garant qu'on essaie de modifier est bien rattaché à ce locataire
-        if (!$tenant->guarantors()->where('guarantor_id', $guarantor->id)->exists()) {
-            abort(404);
-        }
-
+        // 1. Validation stricte des champs du garant et de ses nouveaux documents
         $validated = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'marital_status' => 'nullable|string|max:255',
-            'relationship' => 'nullable|string|max:255',
-            'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:255',
-            'current_address' => 'nullable|string',
-            'birth_date' => 'nullable|date',
-            'birth_place' => 'nullable|string|max:255',
-            'nationality' => 'nullable|string|max:255',
-            'profession' => 'nullable|string|max:255',
+            'first_name'      => 'required|string|max:255',
+            'last_name'       => 'required|string|max:255',
+            'email'           => 'nullable|email|max:255',
+            'phone'           => 'nullable|string|max:20',
+            'profession'      => 'nullable|string|max:255',
+            'marital_status'  => 'nullable|string',
+            'current_address' => 'nullable|string|max:500',
+            'birth_date'      => 'nullable|date',
+            'birth_place'     => 'nullable|string|max:255',
+            'nationality'     => 'nullable|string|max:255',
+            'relationship'    => 'nullable|string',
+
+            // Validation du tableau de documents
+            'documents'       => 'nullable|array',
+            'documents.*.name'     => 'required_with:documents|string',
+            'documents.*.file'     => 'required_with:documents|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'documents.*.category' => [
+                'required_with:documents',
+                'string',
+                Rule::in([
+                    'id_card',
+                    'proof_of_address',
+                    'employment_contract',
+                    'payslip',
+                    'tax_notice',
+                    'bank_details',
+                    'insurance',
+                    'lease',
+                    'inventory',
+                    'deposit_check',
+                    'other'
+                ])
+            ],
         ]);
 
-        DB::transaction(function () use ($validated, $tenant, $guarantor) {
-            // 1. On met à jour les informations pures du garant
-            $guarantorDbData = Arr::except($validated, ['relationship']);
-            $guarantor->update($guarantorDbData);
+        // 2. Mise à jour des informations de base du garant
+        $guarantor->update($validated);
 
-            // 2. On met à jour spécifiquement le lien de parenté dans la table pivot pour CE locataire
+        // 3. Mise à jour du lien (pivot) avec le locataire
+        if ($request->has('relationship')) {
             $tenant->guarantors()->updateExistingPivot($guarantor->id, [
-                'relationship' => $validated['relationship'] ?? null
+                'relationship' => $request->input('relationship')
             ]);
-        });
+        }
 
-        return back()->with('success', 'Les informations du garant ont été modifiées.');
+        // 4. Traitement des fichiers imbriqués via la dot-notation
+        if ($request->has('documents')) {
+            foreach ($request->input('documents') as $index => $docData) {
+                $file = $request->file("documents.{$index}.file");
+
+                if ($file) {
+                    // Stockage physique sécurisé
+                    $path = $file->store('documents/guarantors', 'public');
+
+                    // Création de l'enregistrement polymorphique
+                    $guarantor->documents()->create([
+                        'name'      => $docData['name'],
+                        'category'  => $docData['category'],
+                        'file_path' => $path,
+                        'mime_type' => $file->getMimeType(),
+                    ]);
+                }
+            }
+        }
+
+        return redirect()->back()->with('success', 'Garant et documents mis à jour.');
     }
 
     /**

@@ -33,7 +33,7 @@ interface DashboardStats {
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="rounded-xl border border-app bg-surface p-5 flex flex-col">
+    <div className="rounded-xl border border-app bg-surface p-5 flex flex-col shadow-sm">
       <h2 className="text-lg font-semibold mb-3">{title}</h2>
       <div className="flex-1 flex flex-col">{children}</div>
     </div>
@@ -89,56 +89,62 @@ export default function Dashboard({ alerts, stats }: { alerts: Alert[]; stats: D
             <span className="mb-1 text-sm font-medium text-muted">locataire(s) actif(s)</span>
           </div>
 
-          {/* Barre de progression & Légende */}
-          <div className="mt-auto space-y-3 pt-2">
-            {/* La jauge */}
-            <div className="flex h-2 w-full overflow-hidden rounded-full bg-surface-2">
-              <div
-                style={{ width: `${completePercent}%` }}
-                className="bg-emerald-500 transition-all duration-500"
-              ></div>
-              <div
-                style={{ width: `${100 - completePercent}%` }}
-                className="bg-amber-500 transition-all duration-500"
-              ></div>
-            </div>
+          <div className="mt-auto pt-2">
+            {totalTenants > 0 ? (
+              /* CAS AVEC DES LOCATAIRES : Affichage de la jauge */
+              <div className="space-y-3">
+                {/* La jauge */}
+                <div className="flex h-2 w-full overflow-hidden rounded-full bg-surface-2">
+                  <div
+                    style={{ width: `${completePercent}%` }}
+                    className="bg-emerald-500 transition-all duration-500"
+                  ></div>
+                  <div
+                    style={{ width: `${100 - completePercent}%` }}
+                    className="bg-amber-500 transition-all duration-500"
+                  ></div>
+                </div>
 
-            {/* La légende */}
-            <div className="flex justify-between text-xs sm:text-sm">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
-                <span className="font-medium text-emerald-400">
-                  {stats.complete_tenants} complets
-                </span>
-              </div>
-
-              {stats.incomplete_tenants > 0 ? (
-                <div className="flex items-center gap-3">
-                  {/* 1. La donnée visuelle (Légende) */}
+                {/* La légende */}
+                <div className="flex justify-between text-xs sm:text-sm">
                   <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-amber-500"></div>
-                    <span className="font-medium text-amber-400">
-                      {stats.incomplete_tenants} incomplets
+                    <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
+                    <span className="font-medium text-emerald-400">
+                      {stats.complete_tenants} complets
                     </span>
                   </div>
 
-                  {/* 2. L'action avec ton vrai composant Button */}
-                  <Button
-                    type="button"
-                    variant="warning"
-                    size="sm"
-                    onClick={() => setShowIncompleteModal(true)}
-                    className="px-2 py-0.5 text-xs h-auto" // Surcharge légère pour le compacter dans la légende
-                  >
-                    Voir
-                  </Button>
+                  {stats.incomplete_tenants > 0 ? (
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-amber-500"></div>
+                        <span className="font-medium text-amber-400">
+                          {stats.incomplete_tenants} incomplets
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="warning"
+                        size="sm"
+                        onClick={() => setShowIncompleteModal(true)}
+                        className="px-2 py-0.5 text-xs h-auto"
+                      >
+                        Voir
+                      </Button>
+                    </div>
+                  ) : (
+                    <span className="text-muted flex items-center gap-1 italic">
+                      Tous complets ! 🎉
+                    </span>
+                  )}
                 </div>
-              ) : (
-                <span className="text-muted flex items-center gap-1 italic">
-                  Tous complets ! 🎉
-                </span>
-              )}
-            </div>
+              </div>
+            ) : (
+              /* CAS SANS LOCATAIRE : Empty State */
+              <div className="rounded-lg bg-surface-2 p-3 text-center border border-[rgb(var(--border))]">
+                <p className="text-sm text-muted italic">Aucun locataire pour le moment.</p>
+              </div>
+            )}
           </div>
         </Card>
 
