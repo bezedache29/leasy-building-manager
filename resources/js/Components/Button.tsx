@@ -1,24 +1,36 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, InertiaLinkProps } from '@inertiajs/react';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger' | 'success' | 'warning';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
-// Ajout de la prop 'href' optionnelle
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+// 1. Les props communes aux deux versions (Bouton et Lien)
+type BaseProps = {
   variant?: ButtonVariant;
   size?: ButtonSize;
-  href?: string;
+  className?: string;
   children: ReactNode;
-}
+};
+
+// 2. Le typage strict si c'est un vrai <button> (pas de href)
+type ButtonAsButton = BaseProps &
+  Omit<ButtonHTMLAttributes<HTMLButtonElement>, keyof BaseProps> & {
+    href?: undefined;
+  };
+
+// 3. Le typage strict si c'est un <Link> (href obligatoire + props spécifiques à Inertia/Anchor)
+type ButtonAsLink = BaseProps &
+  Omit<InertiaLinkProps, keyof BaseProps> & {
+    href: string;
+  };
+
+// 4. L'Union discriminée : TypeScript saura automatiquement lequel utiliser
+export type ButtonProps = ButtonAsButton | ButtonAsLink;
 
 export default function Button({
   variant = 'primary',
   size = 'md',
-  type = 'button',
   className = '',
-  disabled,
-  href, // Extraction de href
   children,
   ...props
 }: ButtonProps) {
@@ -40,21 +52,20 @@ export default function Button({
     lg: 'px-6 py-3 text-base',
   };
 
-  // Centralisation des classes pour pouvoir les utiliser dans les deux balises
   const combinedClasses = `${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`;
 
-  // Si on a un lien, on retourne un composant de navigation valide HTML5
-  if (href) {
+  // TypeScript comprend ici que "props" est de type ButtonAsLink grâce au "!== undefined" [cite: 2026-03-10]
+  if (props.href !== undefined) {
     return (
-      <Link href={href} className={combinedClasses}>
+      <Link {...props} className={combinedClasses}>
         {children}
       </Link>
     );
   }
 
-  // Sinon, on retourne le bouton classique
+  // TypeScript comprend ici que "props" est de type ButtonAsButton [cite: 2026-03-10]
   return (
-    <button type={type} {...props} disabled={disabled} className={combinedClasses}>
+    <button type={props.type || 'button'} {...props} className={combinedClasses}>
       {children}
     </button>
   );

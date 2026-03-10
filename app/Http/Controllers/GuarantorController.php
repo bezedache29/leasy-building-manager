@@ -138,7 +138,7 @@ class GuarantorController extends Controller
             'first_name'      => 'required|string|max:255',
             'last_name'       => 'required|string|max:255',
             'email'           => 'nullable|email|max:255',
-            'phone'           => 'nullable|string|max:20',
+            'phone'           => 'nullable|string|max:255',
             'profession'      => 'nullable|string|max:255',
             'marital_status'  => 'nullable|string',
             'current_address' => 'nullable|string|max:500',
