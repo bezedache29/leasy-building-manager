@@ -1,1 +1,2 @@
 ./vendor/bin/sail npx --no-install validate-branch-name
+./vendor/bin/sail pest
