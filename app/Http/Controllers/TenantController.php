@@ -173,8 +173,6 @@ class TenantController extends Controller
         // 2. On ajoute manuellement les deux attributs lourds pour cette vue précise
         $tenant->append(['is_complete', 'missing_items']);
 
-        $tenant->load(['documents', 'guarantors.documents']);
-
         $availableGuarantors = Guarantor::orderBy('last_name')->get();
 
         return Inertia::render('Tenants/Show', [
