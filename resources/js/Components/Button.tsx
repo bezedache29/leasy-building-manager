@@ -1,11 +1,14 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react';
+import { Link } from '@inertiajs/react';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger' | 'success' | 'warning';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
+// Ajout de la prop 'href' optionnelle
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
+  href?: string;
   children: ReactNode;
 }
 
@@ -15,6 +18,7 @@ export default function Button({
   type = 'button',
   className = '',
   disabled,
+  href, // Extraction de href
   children,
   ...props
 }: ButtonProps) {
@@ -36,13 +40,21 @@ export default function Button({
     lg: 'px-6 py-3 text-base',
   };
 
+  // Centralisation des classes pour pouvoir les utiliser dans les deux balises
+  const combinedClasses = `${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`;
+
+  // Si on a un lien, on retourne un composant de navigation valide HTML5
+  if (href) {
+    return (
+      <Link href={href} className={combinedClasses}>
+        {children}
+      </Link>
+    );
+  }
+
+  // Sinon, on retourne le bouton classique
   return (
-    <button
-      type={type}
-      {...props}
-      disabled={disabled}
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
-    >
+    <button type={type} {...props} disabled={disabled} className={combinedClasses}>
       {children}
     </button>
   );

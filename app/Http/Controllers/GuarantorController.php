@@ -174,7 +174,7 @@ class GuarantorController extends Controller
             $guarantor->update($guarantorDbData);
 
             // B. Mise à jour du lien (pivot) avec le locataire
-            if (isset($validated['relationship'])) {
+            if (array_key_exists('relationship', $validated)) {
                 $tenant->guarantors()->updateExistingPivot($guarantor->id, [
                     'relationship' => $validated['relationship']
                 ]);
