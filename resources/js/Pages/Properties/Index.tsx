@@ -106,8 +106,6 @@ export default function Index({ properties }: Props) {
                       </p>
                       <p className="mt-1 text-sm text-app">600 €</p>
                     </div>
-
-                    {/* Affichage des deux types de tantièmes */}
                     <div className="col-span-2 grid grid-cols-2 rounded bg-surface-2 p-2 border border-[rgb(var(--border))]">
                       <div>
                         <p className="text-xs font-medium text-muted uppercase tracking-wider">
