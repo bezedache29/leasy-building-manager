@@ -21,8 +21,8 @@ return new class extends Migration
 
             // Métriques pour le calcul des charges et loyers
             $table->decimal('surface_area', 8, 2)->nullable(); // Surface en m²
-            $table->integer('tantiemes_eau')->nullable(); // Clé Générale (Base 10000)
-            $table->integer('tantiemes_communs')->nullable(); // Clé Bâtiment (Base 1000)
+            $table->integer('tantiemes_water')->nullable(); // Clé Générale (Base 10000)
+            $table->integer('tantiemes_commons')->nullable(); // Clé Bâtiment (Base 1000)
 
             // Informations complémentaires
             $table->text('description')->nullable();

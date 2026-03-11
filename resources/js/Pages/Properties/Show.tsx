@@ -78,7 +78,7 @@ export default function Show({ property }: Props) {
                 <div>
                   <p className={labelClass}>Surface habitable</p>
                   <p className={valueClass}>
-                    {property.surface_area ? `${property.surface_area} m²` : '—'}
+                    {property.surface_area !== null ? `${property.surface_area} m²` : '—'}
                   </p>
                 </div>
                 <div>
