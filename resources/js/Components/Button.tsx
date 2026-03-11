@@ -54,7 +54,6 @@ export default function Button({
 
   const combinedClasses = `${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`;
 
-  // TypeScript comprend ici que "props" est de type ButtonAsLink grâce au "!== undefined" [cite: 2026-03-10]
   if (props.href !== undefined) {
     return (
       <Link {...props} className={combinedClasses}>
@@ -63,9 +62,8 @@ export default function Button({
     );
   }
 
-  // TypeScript comprend ici que "props" est de type ButtonAsButton [cite: 2026-03-10]
   return (
-    <button type={props.type || 'button'} {...props} className={combinedClasses}>
+    <button {...props} type={props.type ?? 'button'} className={combinedClasses}>
       {children}
     </button>
   );
