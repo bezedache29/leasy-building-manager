@@ -7,6 +7,7 @@ use App\Models\Guarantor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
@@ -199,7 +200,91 @@ class TenantController extends Controller
      */
     public function update(Request $request, Tenant $tenant)
     {
-        // À faire quand on codera la sauvegarde de l'édition
+        // 1. Validation avec la liste stricte des catégories [cite: 2026-03-10]
+        $validated = $request->validate([
+            'first_name'      => 'required|string|max:255',
+            'last_name'       => 'required|string|max:255',
+            'marital_status'  => 'nullable|string|max:255',
+            'email'           => ['nullable', 'email', 'max:255', Rule::unique('tenants')->ignore($tenant->id)],
+            'phone'           => 'nullable|string|max:255',
+            'current_address' => 'nullable|string',
+            'birth_date'      => 'nullable|date',
+            'birth_place'     => 'nullable|string|max:255',
+            'nationality'     => 'nullable|string|max:255',
+            'profession'      => 'nullable|string|max:255',
+            'notes'           => 'nullable|string',
+
+            // Validation des nouveaux documents
+            'tenant_documents' => 'nullable|array',
+            'tenant_documents.*.file' => 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx',
+            'tenant_documents.*.name' => 'required|string',
+            'tenant_documents.*.category' => [
+                'required',
+                'string',
+                Rule::in([
+                    'id_card',
+                    'proof_of_address',
+                    'employment_contract',
+                    'payslip',
+                    'tax_notice',
+                    'bank_details',
+                    'insurance',
+                    'lease',
+                    'inventory',
+                    'deposit_check',
+                    'other'
+                ])
+            ],
+        ]);
+
+        // Tableau pour traquer les chemins des fichiers fraîchement uploadés
+        $storedPaths = [];
+
+        DB::beginTransaction();
+
+        try {
+            // Mise à jour des informations de base
+            $tenant->update($validated);
+
+            // Traitement des nouveaux fichiers via la dot-notation [cite: 2026-02-19]
+            if ($request->has('tenant_documents')) {
+                foreach ($request->input('tenant_documents') as $index => $docData) {
+                    $file = $request->file("tenant_documents.{$index}.file");
+
+                    if ($file) {
+                        // 1. Stockage du fichier
+                        $path = $file->store("documents/tenants/{$tenant->id}", 'public');
+
+                        // 2. On garde une trace du chemin en cas de rollback
+                        $storedPaths[] = $path;
+
+                        // 3. Création de l'enregistrement en base
+                        $tenant->documents()->create([
+                            'name'      => $docData['name'],
+                            'file_path' => $path,
+                            'category'  => $docData['category'],
+                            'mime_type' => $file->getMimeType(),
+                        ]);
+                    }
+                }
+            }
+
+            // Tout s'est bien passé, on valide la transaction en base
+            DB::commit();
+        } catch (\Throwable $e) {
+            // En cas d'erreur (SQL, etc.), on annule les écritures en base de données
+            DB::rollBack();
+
+            // Et on supprime physiquement les fichiers orphelins qui venaient d'être uploadés
+            if (!empty($storedPaths)) {
+                Storage::disk('public')->delete($storedPaths);
+            }
+
+            // On relance l'exception pour que Laravel puisse la gérer (affichage d'erreur 500, logs, etc.)
+            throw $e;
+        }
+
+        return redirect()->route('tenants.show', $tenant)->with('success', 'Dossier mis à jour avec succès.');
     }
 
     /**

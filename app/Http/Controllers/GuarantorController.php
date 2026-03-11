@@ -48,11 +48,19 @@ class GuarantorController extends Controller
 
             // Documents du garant
             'documents' => 'nullable|array',
-            'documents.*.file' => 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx',
+            'documents.*.file'     => 'required_with:documents|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:10240',
             'documents.*.category' => [
                 'required',
                 'string',
-                Rule::in(['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice', 'guarantee_deed', 'other'])
+                Rule::in([
+                    'id_card',
+                    'proof_of_address',
+                    'employment_contract',
+                    'payslip',
+                    'tax_notice',
+                    'guarantee_deed',
+                    'other'
+                ])
             ],
             'documents.*.name' => 'required|string',
         ]);
@@ -120,37 +128,80 @@ class GuarantorController extends Controller
      */
     public function update(Request $request, Tenant $tenant, Guarantor $guarantor)
     {
-        // 🔒 Sécurité anti-IDOR : On vérifie que le garant qu'on essaie de modifier est bien rattaché à ce locataire
+        // 🔒 Sécurité anti-IDOR
         if (!$tenant->guarantors()->where('guarantor_id', $guarantor->id)->exists()) {
             abort(404);
         }
 
+        // 1. Validation stricte
         $validated = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'marital_status' => 'nullable|string|max:255',
-            'relationship' => 'nullable|string|max:255',
-            'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:255',
-            'current_address' => 'nullable|string',
-            'birth_date' => 'nullable|date',
-            'birth_place' => 'nullable|string|max:255',
-            'nationality' => 'nullable|string|max:255',
-            'profession' => 'nullable|string|max:255',
+            'first_name'      => 'required|string|max:255',
+            'last_name'       => 'required|string|max:255',
+            'email'           => 'nullable|email|max:255',
+            'phone'           => 'nullable|string|max:255',
+            'profession'      => 'nullable|string|max:255',
+            'marital_status'  => 'nullable|string',
+            'current_address' => 'nullable|string|max:500',
+            'birth_date'      => 'nullable|date',
+            'birth_place'     => 'nullable|string|max:255',
+            'nationality'     => 'nullable|string|max:255',
+            'relationship'    => 'nullable|string',
+
+            // Validation du tableau de documents
+            'documents'       => 'nullable|array',
+            'documents.*.name'     => 'required_with:documents|string',
+            'documents.*.file'     => 'required_with:documents|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:10240',
+            'documents.*.category' => [
+                'required_with:documents',
+                'string',
+                Rule::in([
+                    'id_card',
+                    'proof_of_address',
+                    'employment_contract',
+                    'payslip',
+                    'tax_notice',
+                    'guarantee_deed',
+                    'other'
+                ])
+            ],
         ]);
 
-        DB::transaction(function () use ($validated, $tenant, $guarantor) {
-            // 1. On met à jour les informations pures du garant
-            $guarantorDbData = Arr::except($validated, ['relationship']);
+        // 2. Exécution dans une Transaction pour sécuriser les mises à jour
+        DB::transaction(function () use ($validated, $tenant, $guarantor, $request) {
+
+            // A. Mise à jour des informations de base du garant
+            $guarantorDbData = Arr::except($validated, ['documents', 'relationship']);
             $guarantor->update($guarantorDbData);
 
-            // 2. On met à jour spécifiquement le lien de parenté dans la table pivot pour CE locataire
-            $tenant->guarantors()->updateExistingPivot($guarantor->id, [
-                'relationship' => $validated['relationship'] ?? null
-            ]);
+            // B. Mise à jour du lien (pivot) avec le locataire
+            if (array_key_exists('relationship', $validated)) {
+                $tenant->guarantors()->updateExistingPivot($guarantor->id, [
+                    'relationship' => $validated['relationship']
+                ]);
+            }
+
+            // C. Traitement des fichiers imbriqués via la dot-notation
+            if ($request->has('documents')) {
+                foreach ($request->input('documents') as $index => $docData) {
+                    $file = $request->file("documents.{$index}.file");
+
+                    if ($file) {
+                        // Stockage physique sécurisé
+                        $path = $file->store("documents/guarantors/{$guarantor->id}", 'public');
+
+                        // Création de l'enregistrement polymorphique
+                        $guarantor->documents()->create([
+                            'name'      => $docData['name'],
+                            'category'  => $docData['category'],
+                            'file_path' => $path,
+                            'mime_type' => $file->getMimeType(),
+                        ]);
+                    }
+                }
+            }
         });
 
-        return back()->with('success', 'Les informations du garant ont été modifiées.');
+        return redirect()->back()->with('success', 'Garant et documents mis à jour avec succès.');
     }
 
     /**

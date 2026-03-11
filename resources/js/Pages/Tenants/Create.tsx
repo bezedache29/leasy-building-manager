@@ -11,6 +11,7 @@ import SelectInput from '@/Components/SelectInput';
 import Button from '@/Components/Button';
 import GuarantorCard from '@/Pages/Tenants/Partials/GuarantorCard';
 import { DOCUMENT_CATEGORIES, TENANT_DOCUMENT_KEYS } from '@/Constants/documentCategories';
+import TenantFormFields from '@/Pages/Tenants/Partials/TenantFormFields';
 
 type TenantFormValues = z.infer<typeof createTenantSchema>;
 
@@ -73,8 +74,6 @@ export default function CreateTenant() {
 
   const errorClass = 'mt-1 text-xs text-red-400 font-medium';
   const sectionClass = 'rounded-xl border border-[rgb(var(--border))] bg-surface p-6 shadow-sm';
-  const textareaClass =
-    'w-full rounded-md border border-[rgb(var(--border))] bg-surface text-app px-3 py-2 outline-none transition-all duration-150 focus:border-[rgb(var(--primary-900))]';
 
   return (
     <AppLayout>
@@ -87,62 +86,8 @@ export default function CreateTenant() {
             <h2 className="mb-5 text-lg font-semibold text-[rgb(var(--primary-500))]">
               Informations du locataire
             </h2>
-            <div className="grid gap-5 md:grid-cols-2">
-              <div>
-                <InputLabel htmlFor="first_name" value="Prénom *" className="mb-1" />
-                <TextInput id="first_name" {...register('first_name')} />
-                {errors.first_name && <p className={errorClass}>{errors.first_name.message}</p>}
-              </div>
-              <div>
-                <InputLabel htmlFor="last_name" value="Nom *" className="mb-1" />
-                <TextInput id="last_name" {...register('last_name')} />
-                {errors.last_name && <p className={errorClass}>{errors.last_name.message}</p>}
-              </div>
-              <div>
-                <InputLabel htmlFor="email" value="Email" className="mb-1" />
-                <TextInput id="email" type="email" {...register('email')} />
-                {errors.email && <p className={errorClass}>{errors.email.message}</p>}
-              </div>
-              <div>
-                <InputLabel htmlFor="phone" value="Téléphone" className="mb-1" />
-                <TextInput id="phone" type="tel" {...register('phone')} />
-              </div>
-              <div className="md:col-span-2">
-                <InputLabel htmlFor="current_address" value="Adresse actuelle" className="mb-1" />
-                <TextInput id="current_address" {...register('current_address')} />
-              </div>
-              <div className="md:col-span-2">
-                <InputLabel htmlFor="marital_status" value="Statut marital" className="mb-1" />
-                <SelectInput id="marital_status" {...register('marital_status')} className="w-full">
-                  <option value="">Sélectionner...</option>
-                  <option value="single">Célibataire</option>
-                  <option value="married">Marié(e)</option>
-                  <option value="pacs">Pacsé(e)</option>
-                  <option value="divorced">Divorcé(e)</option>
-                  <option value="widowed">Veuf/Veuve</option>
-                </SelectInput>
-              </div>
-              <div>
-                <InputLabel htmlFor="birth_date" value="Date de naissance" className="mb-1" />
-                <TextInput id="birth_date" type="date" {...register('birth_date')} />
-              </div>
-              <div>
-                <InputLabel htmlFor="birth_place" value="Lieu de naissance" className="mb-1" />
-                <TextInput id="birth_place" {...register('birth_place')} />
-              </div>
-              <div>
-                <InputLabel htmlFor="nationality" value="Nationalité" className="mb-1" />
-                <TextInput id="nationality" {...register('nationality')} />
-              </div>
-              <div className="mb-1">
-                <InputLabel htmlFor="profession" value="Profession" className="mb-1" />
-                <TextInput id="profession" {...register('profession')} />
-              </div>
-              <div className="md:col-span-2">
-                <InputLabel htmlFor="notes" value="Notes internes" className="mb-1" />
-                <textarea id="notes" rows={3} {...register('notes')} className={textareaClass} />
-              </div>
-            </div>
+
+            <TenantFormFields register={register} errors={errors} />
           </section>
 
           {/* --- 2. GARANTS --- */}

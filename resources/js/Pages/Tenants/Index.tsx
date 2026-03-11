@@ -28,7 +28,7 @@ export default function Index({ tenants }: Props) {
                 Aucun dossier locataire n'a été créé pour le moment.
               </p>
               <Link href={route('tenants.create')}>
-                <Button variant="secondary">Créer mon premier dossier</Button>
+                <Button>Créer mon premier dossier</Button>
               </Link>
             </div>
           ) : (

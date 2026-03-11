@@ -1,20 +1,36 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react';
+import { Link, InertiaLinkProps } from '@inertiajs/react';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger' | 'success' | 'warning';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+// 1. Les props communes aux deux versions (Bouton et Lien)
+type BaseProps = {
   variant?: ButtonVariant;
   size?: ButtonSize;
+  className?: string;
   children: ReactNode;
-}
+};
+
+// 2. Le typage strict si c'est un vrai <button> (pas de href)
+type ButtonAsButton = BaseProps &
+  Omit<ButtonHTMLAttributes<HTMLButtonElement>, keyof BaseProps> & {
+    href?: undefined;
+  };
+
+// 3. Le typage strict si c'est un <Link> (href obligatoire + props spécifiques à Inertia/Anchor)
+type ButtonAsLink = BaseProps &
+  Omit<InertiaLinkProps, keyof BaseProps> & {
+    href: string;
+  };
+
+// 4. L'Union discriminée : TypeScript saura automatiquement lequel utiliser
+export type ButtonProps = ButtonAsButton | ButtonAsLink;
 
 export default function Button({
   variant = 'primary',
   size = 'md',
-  type = 'button',
   className = '',
-  disabled,
   children,
   ...props
 }: ButtonProps) {
@@ -36,13 +52,18 @@ export default function Button({
     lg: 'px-6 py-3 text-base',
   };
 
+  const combinedClasses = `${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`;
+
+  if (props.href !== undefined) {
+    return (
+      <Link {...props} className={combinedClasses}>
+        {children}
+      </Link>
+    );
+  }
+
   return (
-    <button
-      type={type}
-      {...props}
-      disabled={disabled}
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
-    >
+    <button {...props} type={props.type ?? 'button'} className={combinedClasses}>
       {children}
     </button>
   );

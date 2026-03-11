@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm, type Path } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,8 +7,6 @@ import Modal from '@/Components/Modal';
 import Button from '@/Components/Button';
 import GuarantorCard from './GuarantorCard';
 import { Guarantor } from '@/Types/guarantor';
-import InputLabel from '@/Components/InputLabel';
-import SelectInput from '@/Components/SelectInput';
 import { guarantorModalSchema } from '@/Schemas/CreateGuarantorSchema';
 
 type FormValues = z.infer<typeof guarantorModalSchema>;
@@ -21,15 +19,7 @@ interface Props {
   availableGuarantors: Guarantor[];
 }
 
-export default function GuarantorModal({
-  show,
-  onClose,
-  tenantId,
-  guarantor,
-  availableGuarantors,
-}: Props) {
-  const [mode, setMode] = useState<'new' | 'existing'>('new');
-
+export default function GuarantorModal({ show, onClose, tenantId, guarantor }: Props) {
   const {
     register,
     control,
@@ -50,6 +40,7 @@ export default function GuarantorModal({
       current_address: '',
       birth_date: '',
       birth_place: '',
+      nationality: '',
       profession: '',
       documents: [],
     },
@@ -68,8 +59,9 @@ export default function GuarantorModal({
           current_address: guarantor.current_address || '',
           birth_date: guarantor.birth_date ? guarantor.birth_date.substring(0, 10) : '',
           birth_place: guarantor.birth_place || '',
+          nationality: guarantor.nationality || '',
           profession: guarantor.profession || '',
-          documents: [], // Les documents existants ne sont pas chargés ici (logique complexe à gérer côté métier)
+          documents: [],
         });
       } else {
         reset({
@@ -82,6 +74,7 @@ export default function GuarantorModal({
           current_address: '',
           birth_date: '',
           birth_place: '',
+          nationality: '',
           profession: '',
           documents: [],
         });
@@ -90,27 +83,37 @@ export default function GuarantorModal({
   }, [show, guarantor, reset]);
 
   const onSubmit = (data: FormValues) => {
-    const submitRoute = guarantor
-      ? route('tenants.guarantors.update', [tenantId, guarantor.id])
-      : route('tenants.guarantors.store', tenantId);
-
-    // On ajoute _method='put' manuellement pour Laravel si on est en édition
-    const payload = { ...data, _method: guarantor ? 'put' : 'post' };
-
-    router.post(submitRoute, payload, {
-      forceFormData: true, // Obligatoire pour envoyer des fichiers
-      preserveScroll: true,
-      onSuccess: () => onClose(),
-      onError: (serverErrors) => {
-        // Si Laravel renvoie des erreurs de validation (422), on les injecte dans React Hook Form
-        Object.entries(serverErrors).forEach(([key, message]) => {
-          setError(key as Path<FormValues>, {
-            type: 'server',
-            message,
+    if (guarantor) {
+      // Pour l'édition avec documents, on utilise POST + _method: PUT
+      router.post(
+        route('tenants.guarantors.update', [tenantId, guarantor.id]),
+        {
+          ...data,
+          _method: 'put',
+        },
+        {
+          forceFormData: true,
+          preserveScroll: true,
+          onSuccess: () => onClose(),
+          onError: (serverErrors) => {
+            Object.entries(serverErrors).forEach(([key, message]) => {
+              setError(key as Path<FormValues>, { type: 'server', message: message as string });
+            });
+          },
+        }
+      );
+    } else {
+      router.post(route('tenants.guarantors.store', tenantId), data, {
+        forceFormData: true,
+        preserveScroll: true,
+        onSuccess: () => onClose(),
+        onError: (serverErrors) => {
+          Object.entries(serverErrors).forEach(([key, message]) => {
+            setError(key as Path<FormValues>, { type: 'server', message: message as string });
           });
-        });
-      },
-    });
+        },
+      });
+    }
   };
 
   return (
@@ -120,70 +123,22 @@ export default function GuarantorModal({
           {guarantor ? 'Modifier le garant' : 'Ajouter un garant'}
         </h2>
 
-        {!guarantor && (
-          <div className="mb-6 flex gap-2 p-1 bg-surface-2 rounded-lg border border-[rgb(var(--border))] w-fit">
-            <button
-              type="button"
-              onClick={() => setMode('new')}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${mode === 'new' ? 'bg-surface text-primary shadow-sm border border-[rgb(var(--border))]' : 'text-muted hover:text-app'}`}
-            >
-              Nouveau garant
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('existing')}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${mode === 'existing' ? 'bg-surface text-primary shadow-sm border border-[rgb(var(--border))]' : 'text-muted hover:text-app'}`}
-            >
-              Garant existant
-            </button>
-          </div>
-        )}
-
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {mode === 'existing' && !guarantor ? (
-            <div className="space-y-4 border border-[rgb(var(--border))] p-5 rounded-lg bg-surface-2">
-              <div>
-                <InputLabel value="Sélectionner un garant existant" className="mb-1" />
-                <SelectInput {...register('guarantor_id')} className="w-full">
-                  <option value="">Choisir dans la liste...</option>
-                  {availableGuarantors.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.last_name} {g.first_name} ({g.email || "Pas d'email"})
-                    </option>
-                  ))}
-                </SelectInput>
-              </div>
-              <div>
-                <InputLabel value="Lien avec le locataire" className="mb-1" />
-                <SelectInput {...register('relationship')} className="w-full">
-                  <option value="">Sélectionner...</option>
-                  <option value="parent">Parent</option>
-                  <option value="colleague">Collègue</option>
-                  <option value="other">Autre</option>
-                </SelectInput>
-              </div>
-            </div>
-          ) : (
-            /* --- VUE : CRÉATION / ÉDITION --- */
-            <GuarantorCard
-              prefix=""
-              register={register}
-              control={control}
-              setValue={setValue}
-              errors={errors}
-            />
-          )}
+          <GuarantorCard
+            prefix=""
+            register={register}
+            control={control}
+            setValue={setValue}
+            errors={errors}
+            existingDocuments={guarantor?.documents || []}
+          />
 
           <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-[rgb(var(--border))]">
             <Button type="button" variant="danger" onClick={onClose}>
               Annuler
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting
-                ? 'Enregistrement...'
-                : guarantor
-                  ? 'Sauvegarder les modifications'
-                  : 'Ajouter le garant'}
+              {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
             </Button>
           </div>
         </form>
