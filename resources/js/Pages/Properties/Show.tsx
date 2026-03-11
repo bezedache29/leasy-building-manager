@@ -83,14 +83,16 @@ export default function Show({ property }: Props) {
                 <div>
                   <p className={labelClass}>Tantièmes Eau (Général)</p>
                   <p className={valueClass}>
-                    {property.tantiemes_eau !== null ? `${property.tantiemes_eau} / 10000` : '—'}
+                    {property.tantiemes_water !== null
+                      ? `${property.tantiemes_water} / 10000`
+                      : '—'}
                   </p>
                 </div>
                 <div>
                   <p className={labelClass}>Tantièmes Communs (Bâtiment)</p>
                   <p className={valueClass}>
-                    {property.tantiemes_communs !== null
-                      ? `${property.tantiemes_communs} / 1000`
+                    {property.tantiemes_commons !== null
+                      ? `${property.tantiemes_commons} / 1000`
                       : '—'}
                   </p>
                 </div>

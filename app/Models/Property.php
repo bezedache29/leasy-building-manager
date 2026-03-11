@@ -20,8 +20,8 @@ class Property extends Model
         'type',
         'floor',
         'surface_area',
-        'tantiemes_eau',
-        'tantiemes_communs',
+        'tantiemes_water',
+        'tantiemes_commons',
         'description',
         'notes',
     ];
@@ -33,8 +33,8 @@ class Property extends Model
      */
     protected $casts = [
         'surface_area' => 'decimal:2',
-        'tantiemes_eau' => 'integer',
-        'tantiemes_communs' => 'integer',
+        'tantiemes_water' => 'integer',
+        'tantiemes_commons' => 'integer',
         'floor' => 'integer',
     ];
 

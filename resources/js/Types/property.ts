@@ -2,10 +2,10 @@ export interface Property {
   id: number;
   name: string;
   type: 'studio' | 'apartment' | 'commercial' | 'garage' | 'other';
-  floor: number | null;
+  floor: number;
   surface_area: number | null; // en m²
-  tantiemes_eau: number | null; // Base 10000
-  tantiemes_communs: number | null; // Base 1000
+  tantiemes_water: number | null; // Base 10000
+  tantiemes_commons: number | null; // Base 1000
   description: string | null;
   notes: string | null;
   created_at: string;

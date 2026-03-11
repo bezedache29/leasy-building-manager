@@ -13,11 +13,11 @@ export const propertySchema = z.object({
     (val) => (val === '' || val === null ? null : Number(val)),
     z.number().nullable()
   ),
-  tantiemes_eau: z.preprocess(
+  tantiemes_water: z.preprocess(
     (val) => (val === '' || val === null ? null : Number(val)),
     z.number().nullable()
   ),
-  tantiemes_communs: z.preprocess(
+  tantiemes_commons: z.preprocess(
     (val) => (val === '' || val === null ? null : Number(val)),
     z.number().nullable()
   ),

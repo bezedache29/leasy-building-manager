@@ -22,8 +22,8 @@ export default function Create() {
       type: 'apartment',
       floor: '',
       surface_area: '',
-      tantiemes_eau: '',
-      tantiemes_communs: '',
+      tantiemes_water: '',
+      tantiemes_commons: '',
       description: '',
       notes: '',
     },
@@ -90,30 +90,32 @@ export default function Create() {
             </div>
 
             <div>
-              <label htmlFor="tantiemes_eau" className={labelClass}>
+              <label htmlFor="tantiemes_water" className={labelClass}>
                 Tantièmes Eau ( / 10000)
               </label>
               <input
                 type="number"
-                id="tantiemes_eau"
-                {...register('tantiemes_eau')}
+                id="tantiemes_water"
+                {...register('tantiemes_water')}
                 className={inputClass}
               />
-              {errors.tantiemes_eau && <p className={errorClass}>{errors.tantiemes_eau.message}</p>}
+              {errors.tantiemes_water && (
+                <p className={errorClass}>{errors.tantiemes_water.message}</p>
+              )}
             </div>
 
             <div>
-              <label htmlFor="tantiemes_communs" className={labelClass}>
+              <label htmlFor="tantiemes_commons" className={labelClass}>
                 Tantièmes Communs ( / 1000)
               </label>
               <input
                 type="number"
-                id="tantiemes_communs"
-                {...register('tantiemes_communs')}
+                id="tantiemes_commons"
+                {...register('tantiemes_commons')}
                 className={inputClass}
               />
-              {errors.tantiemes_communs && (
-                <p className={errorClass}>{errors.tantiemes_communs.message}</p>
+              {errors.tantiemes_commons && (
+                <p className={errorClass}>{errors.tantiemes_commons.message}</p>
               )}
             </div>
 

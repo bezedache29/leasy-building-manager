@@ -31,9 +31,9 @@ export default function Edit({ property }: Props) {
       type: property.type || 'apartment',
       floor: property.floor != null ? String(property.floor) : '',
       surface_area: property.surface_area != null ? String(property.surface_area) : '',
-      tantiemes_eau: property.tantiemes_eau != null ? String(property.tantiemes_eau) : '',
-      tantiemes_communs:
-        property.tantiemes_communs != null ? String(property.tantiemes_communs) : '',
+      tantiemes_water: property.tantiemes_water != null ? String(property.tantiemes_water) : '',
+      tantiemes_commons:
+        property.tantiemes_commons != null ? String(property.tantiemes_commons) : '',
       description: property.description || '',
       notes: property.notes || '',
     },
@@ -109,16 +109,18 @@ export default function Edit({ property }: Props) {
             </div>
 
             <div>
-              <label htmlFor="tantiemes_eau" className={labelClass}>
+              <label htmlFor="tantiemes_water" className={labelClass}>
                 Tantièmes Eau ( / 10000)
               </label>
               <input
                 type="number"
-                id="tantiemes_eau"
-                {...register('tantiemes_eau')}
+                id="tantiemes_water"
+                {...register('tantiemes_water')}
                 className={inputClass}
               />
-              {errors.tantiemes_eau && <p className={errorClass}>{errors.tantiemes_eau.message}</p>}
+              {errors.tantiemes_water && (
+                <p className={errorClass}>{errors.tantiemes_water.message}</p>
+              )}
             </div>
 
             <div>
@@ -128,11 +130,11 @@ export default function Edit({ property }: Props) {
               <input
                 type="number"
                 id="tantiemes_communs"
-                {...register('tantiemes_communs')}
+                {...register('tantiemes_commons')}
                 className={inputClass}
               />
-              {errors.tantiemes_communs && (
-                <p className={errorClass}>{errors.tantiemes_communs.message}</p>
+              {errors.tantiemes_commons && (
+                <p className={errorClass}>{errors.tantiemes_commons.message}</p>
               )}
             </div>
 
@@ -194,18 +196,18 @@ export default function Edit({ property }: Props) {
               />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-app">Supprimer le bien</h2>
+          <h2 className="text-xl font-bold text-app">Archiver le bien</h2>
           <p className="mt-6 text-sm text-muted leading-relaxed">
-            Es-tu sûr de vouloir supprimer le lot <br />
+            Es-tu sûr de vouloir archiver le lot <br />
             <span className="font-semibold text-app">"{property.name}"</span> ? <br /> <br />
-            Ses données seront conservées en archive (Soft delete).
+            Cette action masquera le bien des vues principales.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
             <Button variant="secondary" onClick={() => setIsDeleteModalOpen(false)}>
               Annuler
             </Button>
             <Button variant="danger" onClick={executeDelete}>
-              Supprimer
+              Archiver
             </Button>
           </div>
         </div>

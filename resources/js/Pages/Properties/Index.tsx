@@ -99,13 +99,12 @@ export default function Index({ properties }: Props) {
                       </p>
                       <p className="mt-1 text-sm text-app">{formatFloor(property.floor)}</p>
                     </div>
+
                     <div>
                       <p className="text-xs font-medium text-muted uppercase tracking-wider">
-                        Étage
+                        Loyer
                       </p>
-                      <p className="mt-1 text-sm text-app">
-                        {property.floor !== null ? property.floor : '—'}
-                      </p>
+                      <p className="mt-1 text-sm text-app">600 €</p>
                     </div>
 
                     {/* Affichage des deux types de tantièmes */}
@@ -115,8 +114,8 @@ export default function Index({ properties }: Props) {
                           💧 Eau
                         </p>
                         <p className="mt-1 text-sm text-app">
-                          {property.tantiemes_eau !== null
-                            ? `${property.tantiemes_eau} / 10000`
+                          {property.tantiemes_water !== null
+                            ? `${property.tantiemes_water} / 10000`
                             : '—'}
                         </p>
                       </div>
@@ -125,18 +124,11 @@ export default function Index({ properties }: Props) {
                           ⚡ Communs
                         </p>
                         <p className="mt-1 text-sm text-app">
-                          {property.tantiemes_communs !== null
-                            ? `${property.tantiemes_communs} / 1000`
+                          {property.tantiemes_commons !== null
+                            ? `${property.tantiemes_commons} / 1000`
                             : '—'}
                         </p>
                       </div>
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-medium text-muted uppercase tracking-wider">
-                        Loyer
-                      </p>
-                      <p className="mt-1 text-sm text-app">600 €</p>
                     </div>
                   </div>
 

@@ -30,7 +30,8 @@ class PropertyController extends Controller
             'type' => ['required', 'string', Rule::in(['studio', 'apartment', 'commercial', 'garage', 'other'])],
             'floor' => 'required|integer',
             'surface_area' => 'nullable|numeric|min:0',
-            'tantiemes' => 'nullable|integer|min:0',
+            'tantiemes_water' => 'nullable|integer|min:0',
+            'tantiemes_commons' => 'nullable|integer|min:0',
             'description' => 'nullable|string',
             'notes' => 'nullable|string',
         ]);
@@ -59,9 +60,10 @@ class PropertyController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'type' => ['required', 'string', Rule::in(['studio', 'apartment', 'commercial', 'garage', 'other'])],
-            'floor' => 'nullable|integer',
+            'floor' => 'required|integer',
             'surface_area' => 'nullable|numeric|min:0',
-            'tantiemes' => 'nullable|integer|min:0',
+            'tantiemes_water' => 'nullable|integer|min:0',
+            'tantiemes_commons' => 'nullable|integer|min:0',
             'description' => 'nullable|string',
             'notes' => 'nullable|string',
         ]);
