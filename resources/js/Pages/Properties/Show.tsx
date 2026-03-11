@@ -67,6 +67,7 @@ export default function Show({ property }: Props) {
                 <h2 className="mb-5 text-lg font-semibold text-[rgb(var(--primary-500))]">
                   Informations du lot
                 </h2>
+                {/* TODO: Display actual rent from lease when implemented */}
                 <p className="text-muted text-sm">Loyer : 600 €</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

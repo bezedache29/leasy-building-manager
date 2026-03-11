@@ -175,7 +175,7 @@ export default function Edit({ property }: Props) {
 
           <div className="flex items-center justify-between border-t border-[rgb(var(--border))] pt-6 mt-6">
             <Button type="button" variant="danger" onClick={handleDeleteClick}>
-              Supprimer ce bien
+              Archiver ce bien
             </Button>
             <Button type="submit" disabled={isSubmitting} variant="primary">
               Mettre à jour
