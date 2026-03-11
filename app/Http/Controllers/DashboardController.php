@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tenant;
+use App\Models\Property; // ✅ On importe le modèle Property
 use App\Services\DashboardAlertService;
 use Inertia\Inertia;
 
@@ -23,11 +24,14 @@ class DashboardController extends Controller
             ];
         })->values();
 
+        // ✅ On récupère le nombre total de biens (excluant les soft deletes)
+        $propertiesCount = Property::count();
+
         return Inertia::render('Dashboard/Dashboard', [
             'alerts' => $alerts->getAlerts(),
             'stats' => [
-                // TODO: À brancher quand la table Properties sera là
-                'properties' => 0, // Nb total de biens
+                // ✅ Branché sur la table Properties
+                'properties' => $propertiesCount, // Nb total de biens
 
                 'total_tenants' => $totalTenants, // Nb total de locataires
 

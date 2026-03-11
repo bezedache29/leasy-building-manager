@@ -77,9 +77,25 @@ export default function Dashboard({ alerts, stats }: { alerts: Alert[]; stats: D
       <AlertBox alerts={alerts} />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* --- CARTE BIENS & BAUX MISE À JOUR --- */}
         <Card title="🏢 Biens & Baux">
-          <p className="text-muted text-sm">{stats.properties} biens</p>
-          <p className="text-muted text-sm">{stats.active_leases} baux actifs</p>
+          <div className="mb-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted">Biens enregistrés</span>
+              <span className="text-lg font-bold text-app">{stats.properties}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted">Baux actifs</span>
+              <span className="text-lg font-bold text-app">{stats.active_leases}</span>
+            </div>
+          </div>
+
+          <div className="mt-auto pt-4 border-t border-[rgb(var(--border))]">
+            {/* Utilisation de notre Button polymorphe qui génère un <Link> valide */}
+            <Button href={route('properties.index')} variant="secondary" className="w-full">
+              Gérer l'immeuble
+            </Button>
+          </div>
         </Card>
 
         <Card title="👥 Dossiers locataires">
