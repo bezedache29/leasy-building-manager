@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { PropsWithChildren } from 'react';
 import Modal from '@/Components/Modal';
 import Button from '@/Components/Button';
 
@@ -7,7 +7,6 @@ interface Props {
   onClose: () => void;
   onConfirm: () => void;
   title: string;
-  message: ReactNode; // Permet d'accepter du texte brut ou du JSX comme des <span> [cite: 2026-03-10]
   confirmText?: string;
   cancelText?: string;
 }
@@ -17,10 +16,10 @@ export default function ConfirmModal({
   onClose,
   onConfirm,
   title,
-  message,
   confirmText = 'Archiver',
   cancelText = 'Annuler',
-}: Props) {
+  children,
+}: PropsWithChildren<Props>) {
   return (
     <Modal show={show} onClose={onClose} maxWidth="md">
       <div className="bg-surface p-8 rounded-xl border border-[rgb(var(--border))] shadow-2xl text-center">
@@ -36,8 +35,7 @@ export default function ConfirmModal({
         </div>
         <h2 className="text-xl font-bold text-app">{title}</h2>
 
-        {/* Affichage du message dynamique [cite: 2026-03-10] */}
-        <p className="mt-6 text-sm text-muted leading-relaxed">{message}</p>
+        <p className="mt-6 text-sm text-muted leading-relaxed">{children}</p>
 
         <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
           <Button variant="secondary" onClick={onClose}>

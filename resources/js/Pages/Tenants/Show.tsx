@@ -351,14 +351,11 @@ export default function Show({
         onConfirm={confirmDeleteDocument}
         title="Supprimer le document"
         confirmText="Supprimer"
-        message={
-          <>
-            Es-tu sûr de vouloir retirer le document <br />
-            <span className="font-semibold text-app">"{docToDelete?.name}"</span> ? <br /> <br />
-            Cette action est réversible via l'archivage sécurisé (Soft delete).
-          </>
-        }
-      />
+      >
+        Es-tu sûr de vouloir retirer le document <br />
+        <span className="font-semibold text-app">"{docToDelete?.name}"</span> ? <br /> <br />
+        Cette action est réversible via l'archivage sécurisé (Soft delete).
+      </ConfirmModal>
 
       {/* 4. Modale demande détachement garant */}
       <ConfirmModal
@@ -367,17 +364,14 @@ export default function Show({
         onConfirm={confirmDetachGuarantor}
         title="Retirer le garant"
         confirmText="Retirer"
-        message={
-          <>
-            Es-tu sûr de vouloir détacher le garant <br />
-            <span className="font-semibold text-app">
-              "{guarantorToDetach?.first_name} {guarantorToDetach?.last_name}"
-            </span>{' '}
-            de ce dossier ? <br /> <br />
-            Ses données resteront archivées dans le système.
-          </>
-        }
-      />
+      >
+        Es-tu sûr de vouloir détacher le garant <br />
+        <span className="font-semibold text-app">
+          "{guarantorToDetach?.first_name} {guarantorToDetach?.last_name}"
+        </span>{' '}
+        de ce dossier ? <br /> <br />
+        Ses données resteront archivées dans le système.
+      </ConfirmModal>
 
       {/* 5. Modale demande archivage locataire */}
       <ConfirmModal
@@ -386,17 +380,14 @@ export default function Show({
         onConfirm={confirmArchiveTenant}
         title="Archiver le dossier"
         confirmText="Archiver"
-        message={
-          <>
-            Voulez-vous vraiment archiver le dossier de <br />
-            <span className="font-semibold text-app">
-              {tenant.first_name} {tenant.last_name}
-            </span>{' '}
-            ? <br /> <br />
-            Il ne sera plus visible dans la liste principale des locataires actifs.
-          </>
-        }
-      />
+      >
+        Voulez-vous vraiment archiver le dossier de <br />
+        <span className="font-semibold text-app">
+          {tenant.first_name} {tenant.last_name}
+        </span>{' '}
+        ? <br /> <br />
+        Il ne sera plus visible dans la liste principale des locataires actifs.
+      </ConfirmModal>
     </AppLayout>
   );
 }

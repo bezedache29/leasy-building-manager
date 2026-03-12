@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Modal from '@/Components/Modal';
 import Button from '@/Components/Button';
 import SelectInput from '@/Components/SelectInput';
@@ -20,17 +20,19 @@ interface Props {
 }
 
 export default function EquipmentModal({ show, onClose, roomId, equipment }: Props) {
+  const [isSaving, setIsSaving] = useState(false);
+
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<EquipmentFormInput, unknown, EquipmentFormData>({
     resolver: zodResolver(equipmentSchema),
     defaultValues: { name: '', type: '', quantity: 1, notes: '' },
   });
 
-  // Pré-remplissage ou réinitialisation [cite: 2026-03-10]
+  // Pré-remplissage ou réinitialisation
   useEffect(() => {
     if (show) {
       if (equipment) {
@@ -47,18 +49,20 @@ export default function EquipmentModal({ show, onClose, roomId, equipment }: Pro
   }, [show, equipment, reset]);
 
   const onSubmit = (data: EquipmentFormData) => {
+    setIsSaving(true);
+
+    const options = {
+      preserveScroll: true,
+      onSuccess: () => onClose(),
+      onFinish: () => setIsSaving(false),
+    };
+
     if (equipment) {
-      // Mode édition
-      router.put(route('equipments.update', equipment.id), data, {
-        preserveScroll: true,
-        onSuccess: () => onClose(),
-      });
-    } else if (roomId) {
-      // Mode création
-      router.post(route('equipments.store', roomId), data, {
-        preserveScroll: true,
-        onSuccess: () => onClose(),
-      });
+      router.put(route('equipments.update', equipment.id), data, options);
+    } else if (roomId != null) {
+      router.post(route('equipments.store', roomId), data, options);
+    } else {
+      setIsSaving(false);
     }
   };
 
@@ -140,8 +144,8 @@ export default function EquipmentModal({ show, onClose, roomId, equipment }: Pro
             <Button type="button" variant="danger" onClick={onClose}>
               Annuler
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? 'Enregistrement...' : 'Enregistrer'}
             </Button>
           </div>
         </form>

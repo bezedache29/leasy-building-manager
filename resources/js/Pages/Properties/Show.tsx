@@ -268,14 +268,11 @@ export default function Show({ property }: Props) {
         onClose={() => setRoomToDelete(null)}
         onConfirm={confirmDeleteRoom}
         title="Archiver la pièce"
-        message={
-          <>
-            Es-tu sûr de vouloir archiver la pièce <br />
-            <span className="font-semibold text-app">"{roomToDelete?.name}"</span> ? <br /> <br />
-            Tous les équipements associés seront également masqués.
-          </>
-        }
-      />
+      >
+        Es-tu sûr de vouloir archiver la pièce <br />
+        <span className="font-semibold text-app">"{roomToDelete?.name}"</span> ? <br /> <br />
+        Tous les équipements associés seront également masqués.
+      </ConfirmModal>
 
       <EquipmentModal
         show={isEquipmentModalOpen}
@@ -290,15 +287,11 @@ export default function Show({ property }: Props) {
         onConfirm={confirmDeleteEquipment}
         title="Archiver l'équipement"
         confirmText="Archiver"
-        message={
-          <>
-            Es-tu sûr de vouloir retirer cet équipement <br />
-            <span className="font-semibold text-app">"{equipmentToDelete?.name}"</span> ? <br />{' '}
-            <br />
-            Il sera conservé dans l'historique mais n'apparaîtra plus dans cette pièce.
-          </>
-        }
-      />
+      >
+        Es-tu sûr de vouloir retirer cet équipement <br />
+        <span className="font-semibold text-app">"{equipmentToDelete?.name}"</span> ? <br /> <br />
+        Il sera conservé dans l'historique mais n'apparaîtra plus dans cette pièce.
+      </ConfirmModal>
 
       <ConfirmModal
         show={isArchiveModalOpen}
@@ -306,14 +299,11 @@ export default function Show({ property }: Props) {
         onConfirm={executeArchive}
         title="Archiver le bien"
         confirmText="Archiver"
-        message={
-          <>
-            Es-tu sûr de vouloir archiver le lot <br />
-            <span className="font-semibold text-app">"{property.name}"</span> ? <br /> <br />
-            Cette action masquera le bien des vues principales.
-          </>
-        }
-      />
+      >
+        Es-tu sûr de vouloir archiver le lot <br />
+        <span className="font-semibold text-app">"{property.name}"</span> ? <br /> <br />
+        Cette action masquera le bien des vues principales.
+      </ConfirmModal>
     </AppLayout>
   );
 }
