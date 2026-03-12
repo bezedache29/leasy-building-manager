@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -129,6 +130,14 @@ class Tenant extends Model
         }
 
         return true;
+    }
+
+    // Un locataire peut être rattaché à plusieurs baux (historique)
+    public function leases(): BelongsToMany
+    {
+        return $this->belongsToMany(Lease::class)
+            ->withPivot('is_main_tenant')
+            ->withTimestamps();
     }
 
     /**

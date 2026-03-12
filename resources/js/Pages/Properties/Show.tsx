@@ -8,6 +8,8 @@ import EquipmentItem from '@/Pages/Properties/Partials/EquipmentItem';
 import EquipmentModal from '@/Pages/Properties/Partials/EquipmentModal';
 import RoomModal from '@/Pages/Properties/Partials/RoomModal';
 import ConfirmModal from '@/Components/ConfirmModal';
+import { Lease } from '@/Types/lease';
+import TerminateLeaseModal from '@/Pages/Leases/Partials/TerminateLeaseModal';
 
 interface Props {
   property: Property;
@@ -24,6 +26,7 @@ export default function Show({ property }: Props) {
   const [roomToDelete, setRoomToDelete] = useState<Room | null>(null);
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
   const [equipmentToDelete, setEquipmentToDelete] = useState<Equipment | null>(null);
+  const [leaseToTerminate, setLeaseToTerminate] = useState<Lease | null>(null);
 
   const handleArchiveClick = () => {
     setIsArchiveModalOpen(true);
@@ -86,6 +89,10 @@ export default function Show({ property }: Props) {
   const sectionClass = 'rounded-xl border border-[rgb(var(--border))] bg-surface p-6 shadow-sm';
   const labelClass = 'text-sm font-medium text-muted';
   const valueClass = 'mt-1 text-base text-app font-medium';
+
+  const activeLease: Lease | undefined = property.leases?.find(
+    (lease) => lease.status === 'active'
+  );
 
   return (
     <AppLayout>
@@ -243,14 +250,114 @@ export default function Show({ property }: Props) {
 
           <div className="space-y-8">
             <section className={sectionClass}>
-              <h2 className="mb-5 text-lg font-semibold text-[rgb(var(--primary-500))]">
+              <h2 className="mb-4 text-lg font-semibold text-[rgb(var(--primary-500))]">
                 Occupation & Baux
               </h2>
-              <div className="rounded-lg bg-surface-2 p-4 text-center border border-[rgb(var(--border))]">
-                <p className="text-sm text-muted italic">
-                  La gestion des baux sera implémentée à la prochaine étape.
-                </p>
-              </div>
+
+              {/* CAS 1 : Aucun bail du tout */}
+              {!property.leases || property.leases.length === 0 ? (
+                <div className="rounded-lg border border-[rgb(var(--border))] bg-surface-2 p-8 text-center">
+                  <p className="mb-4 text-sm italic text-muted">
+                    Aucun bail n'est rattaché à ce bien pour le moment.
+                  </p>
+                  <Button
+                    href={route('leases.create', { property_id: property.id })}
+                    variant="primary"
+                    size="sm"
+                  >
+                    + Créer le premier bail
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* CAS 2 : Des baux existent, mais aucun n'est actif */}
+                  {!activeLease ? (
+                    <Button
+                      href={route('leases.create', { property_id: property.id })}
+                      variant="primary"
+                      size="sm"
+                      className="w-full justify-center"
+                    >
+                      + Nouveau Bail
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button
+                        href={route('leases.edit', activeLease.id)}
+                        variant="warning"
+                        size="sm"
+                        className="w-full justify-center"
+                      >
+                        Modifier Bail
+                      </Button>
+                      <Button
+                        onClick={() => setLeaseToTerminate(activeLease)}
+                        variant="danger"
+                        size="sm"
+                        className="w-full justify-center"
+                      >
+                        Arreter Bail
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Affichage de la liste des baux */}
+                  {property.leases.map((lease) => {
+                    const totalRent = Number(lease.rent_amount) + Number(lease.charges_amount);
+
+                    return (
+                      <div
+                        key={lease.id}
+                        className="border border-[rgb(var(--border))] rounded-lg p-4 bg-surface-2"
+                      >
+                        <div className="flex flex-col gap-3 mb-4">
+                          <div className="flex items-center justify-between">
+                            <span
+                              className={`px-2 py-0.5 text-xs font-semibold rounded-full ${lease.status === 'active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-gray-500/10 text-gray-400'}`}
+                            >
+                              {lease.status === 'active' ? 'En cours' : 'Terminé'}
+                            </span>
+                            <p className="text-xl font-bold text-app">
+                              {totalRent.toFixed(2)} €{' '}
+                              <span className="text-sm font-normal text-muted">/ mois</span>
+                            </p>
+                          </div>
+
+                          <div className="flex items-end justify-between">
+                            <span className="text-sm font-medium text-muted">
+                              Du {new Date(lease.start_date).toLocaleDateString()}
+                              {lease.end_date
+                                ? ` au ${new Date(lease.end_date).toLocaleDateString()}`
+                                : " à aujourd'hui"}
+                            </span>
+                            <p className="text-xs text-muted">
+                              Dont {Number(lease.charges_amount).toFixed(2)} € charges
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="pt-3 border-t border-[rgb(var(--border))]">
+                          <p className="text-xs font-medium text-muted mb-2">Locataires :</p>
+                          <div className="flex flex-wrap gap-2">
+                            {lease.tenants &&
+                              lease.tenants.map((tenant) => (
+                                <span
+                                  key={tenant.id}
+                                  className="inline-flex items-center gap-1 bg-surface px-2 py-1 rounded-md border border-[rgb(var(--border))] text-sm text-app"
+                                >
+                                  {tenant.pivot?.is_main_tenant && (
+                                    <span title="Locataire principal">👑</span>
+                                  )}
+                                  {tenant.first_name} {tenant.last_name}
+                                </span>
+                              ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </section>
           </div>
         </div>
@@ -304,6 +411,12 @@ export default function Show({ property }: Props) {
         <span className="font-semibold text-app">"{property.name}"</span> ? <br /> <br />
         Cette action masquera le bien des vues principales.
       </ConfirmModal>
+
+      <TerminateLeaseModal
+        show={leaseToTerminate !== null}
+        onClose={() => setLeaseToTerminate(null)}
+        lease={leaseToTerminate}
+      />
     </AppLayout>
   );
 }

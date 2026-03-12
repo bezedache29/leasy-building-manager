@@ -43,11 +43,11 @@ class PropertyController extends Controller
 
     public function show(Property $property)
     {
-        // On charge les pièces et les équipements associés en cascade
-        $property->load(['rooms.equipments']);
+        // On charge les pièces, équipements, et l'historique des baux avec les locataires
+        $property->load(['rooms.equipments', 'leases.tenants']);
 
         return inertia('Properties/Show', [
-            'property' => $property,
+            'property' => $property
         ]);
     }
 

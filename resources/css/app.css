@@ -65,6 +65,9 @@
 .bg-hover {
   background-color: rgb(var(--surface-2));
 }
+.bg-hover:hover {
+  background-color: rgb(var(--primary-500));
+}
 .bg-hover-soft {
   background-color: rgba(var(--primary-500), 0.12);
 }

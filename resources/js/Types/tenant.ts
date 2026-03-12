@@ -1,5 +1,6 @@
 import { AppDocument } from '@/Types/document';
 import { Guarantor } from '@/Types/guarantor';
+import { Lease } from '@/Types/lease';
 
 export interface Tenant {
   id: number;
@@ -33,6 +34,10 @@ export interface Tenant {
   };
   guarantors?: Guarantor[];
   documents?: AppDocument[];
+  leases?: Lease[];
+  pivot?: {
+    is_main_tenant: boolean | number; // Laravel peut renvoyer 1/0 ou true/false selon le SGBD
+  };
 
   created_at: string;
   updated_at: string;

@@ -44,7 +44,12 @@ class Property extends Model
         return $this->hasMany(Room::class);
     }
 
+    // Un bien peut avoir plusieurs baux (historique)
+    public function leases()
+    {
+        return $this->hasMany(Lease::class);
+    }
+
     // Plus tard, nous ajouterons ici les relations :
-    // public function leases() { return $this->hasMany(Lease::class); }
     // public function currentTenant() { ... }
 }
