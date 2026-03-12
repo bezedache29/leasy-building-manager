@@ -43,8 +43,11 @@ class PropertyController extends Controller
 
     public function show(Property $property)
     {
-        return Inertia::render('Properties/Show', [
-            'property' => $property
+        // On charge les pièces et les équipements associés en cascade
+        $property->load(['rooms.equipments']);
+
+        return inertia('Properties/Show', [
+            'property' => $property,
         ]);
     }
 

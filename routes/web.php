@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\GuarantorController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\RoomController;
 use App\Http\Controllers\TenantController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,6 +30,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
 
     Route::resource('properties', PropertyController::class);
+
+    // Routes pour les pièces
+    Route::post('/properties/{property}/rooms', [RoomController::class, 'store'])->name('rooms.store');
+    Route::put('/rooms/{room}', [RoomController::class, 'update'])->name('rooms.update');
+    Route::delete('/rooms/{room}', [RoomController::class, 'destroy'])->name('rooms.destroy');
+
+    // Routes pour les équipements
+    Route::post('/rooms/{room}/equipments', [EquipmentController::class, 'store'])->name('equipments.store');
+    Route::put('/equipments/{equipment}', [EquipmentController::class, 'update'])->name('equipments.update');
+    Route::delete('/equipments/{equipment}', [EquipmentController::class, 'destroy'])->name('equipments.destroy');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

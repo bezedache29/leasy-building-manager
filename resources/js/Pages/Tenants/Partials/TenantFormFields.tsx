@@ -16,7 +16,7 @@ export default function TenantFormFields<T extends FieldValues>({
   const textareaClass =
     'w-full rounded-md border border-[rgb(var(--border))] bg-surface text-app px-3 py-2 outline-none transition-all duration-150 focus:border-[rgb(var(--primary-900))]';
 
-  // Utilitaire strictement typé pour récupérer le message d'erreur [cite: 2026-02-19]
+  // Utilitaire strictement typé pour récupérer le message d'erreur
   const getErrorMessage = (fieldName: Path<T>): string | undefined => {
     const error = errors[fieldName] as { message?: string } | undefined;
     return error?.message;

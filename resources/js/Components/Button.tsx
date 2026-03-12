@@ -1,7 +1,14 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Link, InertiaLinkProps } from '@inertiajs/react';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger' | 'success' | 'warning';
+export type ButtonVariant =
+  | 'primary'
+  | 'secondary'
+  | 'outline'
+  | 'danger'
+  | 'success'
+  | 'warning'
+  | 'ghost';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 // 1. Les props communes aux deux versions (Bouton et Lien)
@@ -44,6 +51,7 @@ export default function Button({
     danger: 'bg-red-400 text-white hover:bg-red-600 border border-transparent',
     success: 'bg-success-500 text-white border border-transparent',
     warning: 'bg-warning-500 text-white border border-transparent',
+    ghost: 'bg-transparent border-transparent hover:bg-surface-2 text-app',
   };
 
   const sizes: Record<ButtonSize, string> = {

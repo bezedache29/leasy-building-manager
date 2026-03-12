@@ -38,6 +38,12 @@ class Property extends Model
         'floor' => 'integer',
     ];
 
+    // Un bien possède plusieurs pièces
+    public function rooms()
+    {
+        return $this->hasMany(Room::class);
+    }
+
     // Plus tard, nous ajouterons ici les relations :
     // public function leases() { return $this->hasMany(Lease::class); }
     // public function currentTenant() { ... }
