@@ -6,9 +6,9 @@ import { Tenant } from '@/Types/tenant';
 import { Guarantor } from '@/Types/guarantor';
 import GuarantorModal from './Partials/GuarantorModal';
 import MissingItemsModal from '@/Pages/Tenants/Partials/MissingItemsModal';
-import Modal from '@/Components/Modal';
+import ConfirmModal from '@/Components/ConfirmModal';
 import { AppDocument } from '@/Types';
-import ExistingDocumentItem from '@/Pages/Tenants/Partials/ExistingDocumentItem'; // ✅ Uniformisation de l'affichage
+import ExistingDocumentItem from '@/Pages/Tenants/Partials/ExistingDocumentItem';
 
 export default function Show({
   tenant,
@@ -24,6 +24,7 @@ export default function Show({
   const [docToDelete, setDocToDelete] = useState<AppDocument | null>(null);
   const [showMissingModal, setShowMissingModal] = useState(false);
   const [guarantorToDetach, setGuarantorToDetach] = useState<Guarantor | null>(null);
+  const [showArchiveTenantModal, setShowArchiveTenantModal] = useState(false);
 
   const openModalForAdd = () => {
     setEditingGuarantor(null);
@@ -40,10 +41,9 @@ export default function Show({
     setTimeout(() => setEditingGuarantor(null), 300);
   };
 
-  const archiveTenant = () => {
-    if (confirm('Voulez-vous vraiment archiver ce dossier locataire ?')) {
-      destroyTenant(route('tenants.destroy', tenant.id));
-    }
+  const confirmArchiveTenant = () => {
+    destroyTenant(route('tenants.destroy', tenant.id));
+    setShowArchiveTenantModal(false);
   };
 
   const confirmDeleteDocument = () => {
@@ -56,7 +56,6 @@ export default function Show({
     });
   };
 
-  // Fonction pour détacher le garant via Inertia
   const confirmDetachGuarantor = () => {
     if (!guarantorToDetach) return;
 
@@ -142,7 +141,7 @@ export default function Show({
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="danger" onClick={archiveTenant}>
+            <Button variant="danger" onClick={() => setShowArchiveTenantModal(true)}>
               Archiver
             </Button>
             <Link href={route('tenants.edit', tenant.id)}>
@@ -221,7 +220,6 @@ export default function Show({
               ) : (
                 tenant.guarantors.map((guarantor) => (
                   <div key={guarantor.id} className={`${sectionClass} bg-surface-2`}>
-                    {/* En-tête du garant */}
                     <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <h3 className="text-md font-semibold text-[rgb(var(--primary-400))]">
@@ -249,7 +247,6 @@ export default function Show({
                       </div>
                     </div>
 
-                    {/* Infos du garant */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <p className={labelClass}>Contact</p>
@@ -287,7 +284,6 @@ export default function Show({
                       </div>
                     </div>
 
-                    {/* ✅ SECTION DOCUMENTS DU GARANT (À l'intérieur de la div de la carte) */}
                     {guarantor.documents && guarantor.documents.length > 0 && (
                       <div className="mt-6 pt-4 border-t border-[rgb(var(--border))]">
                         <p className="text-sm font-medium text-muted mb-3">Documents joints :</p>
@@ -318,7 +314,6 @@ export default function Show({
                 <p className="text-sm text-muted italic">Aucun document enregistré.</p>
               ) : (
                 <ul className="space-y-3">
-                  {/* ✅ Remplacement de la boucle manuelle par le composant unifié [cite: 2026-03-10] */}
                   {tenant.documents.map((doc) => (
                     <ExistingDocumentItem key={doc.id} doc={doc} onDelete={setDocToDelete} />
                   ))}
@@ -350,71 +345,58 @@ export default function Show({
       />
 
       {/* 3. Modale demande suppression document */}
-      <Modal show={docToDelete !== null} onClose={() => setDocToDelete(null)} maxWidth="md">
-        <div className="bg-surface p-8 rounded-xl border border-[rgb(var(--border))] shadow-2xl text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 text-red-500">
-            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
-          </div>
-          <h2 className="text-xl font-bold text-app">Supprimer le document</h2>
-          <p className="mt-6 text-sm text-muted leading-relaxed">
+      <ConfirmModal
+        show={docToDelete !== null}
+        onClose={() => setDocToDelete(null)}
+        onConfirm={confirmDeleteDocument}
+        title="Supprimer le document"
+        confirmText="Supprimer"
+        message={
+          <>
             Es-tu sûr de vouloir retirer le document <br />
             <span className="font-semibold text-app">"{docToDelete?.name}"</span> ? <br /> <br />
-            Cette action est réversible via l'archivage sécurisé.
-          </p>
-          <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
-            <Button variant="secondary" onClick={() => setDocToDelete(null)}>
-              Annuler
-            </Button>
-            <Button variant="danger" onClick={confirmDeleteDocument}>
-              Supprimer
-            </Button>
-          </div>
-        </div>
-      </Modal>
+            Cette action est réversible via l'archivage sécurisé (Soft delete).
+          </>
+        }
+      />
 
       {/* 4. Modale demande détachement garant */}
-      <Modal
+      <ConfirmModal
         show={guarantorToDetach !== null}
         onClose={() => setGuarantorToDetach(null)}
-        maxWidth="md"
-      >
-        <div className="bg-surface p-8 rounded-xl border border-[rgb(var(--border))] shadow-2xl text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 text-red-500">
-            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6"
-              />
-            </svg>
-          </div>
-          <h2 className="text-xl font-bold text-app">Retirer le garant</h2>
-          <p className="mt-6 text-sm text-muted leading-relaxed">
+        onConfirm={confirmDetachGuarantor}
+        title="Retirer le garant"
+        confirmText="Retirer"
+        message={
+          <>
             Es-tu sûr de vouloir détacher le garant <br />
             <span className="font-semibold text-app">
               "{guarantorToDetach?.first_name} {guarantorToDetach?.last_name}"
             </span>{' '}
             de ce dossier ? <br /> <br />
             Ses données resteront archivées dans le système.
-          </p>
-          <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
-            <Button variant="secondary" onClick={() => setGuarantorToDetach(null)}>
-              Annuler
-            </Button>
-            <Button variant="danger" onClick={confirmDetachGuarantor}>
-              Retirer
-            </Button>
-          </div>
-        </div>
-      </Modal>
+          </>
+        }
+      />
+
+      {/* 5. Modale demande archivage locataire */}
+      <ConfirmModal
+        show={showArchiveTenantModal}
+        onClose={() => setShowArchiveTenantModal(false)}
+        onConfirm={confirmArchiveTenant}
+        title="Archiver le dossier"
+        confirmText="Archiver"
+        message={
+          <>
+            Voulez-vous vraiment archiver le dossier de <br />
+            <span className="font-semibold text-app">
+              {tenant.first_name} {tenant.last_name}
+            </span>{' '}
+            ? <br /> <br />
+            Il ne sera plus visible dans la liste principale des locataires actifs.
+          </>
+        }
+      />
     </AppLayout>
   );
 }

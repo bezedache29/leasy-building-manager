@@ -30,6 +30,7 @@ export default function IconButton({
     danger: 'bg-red-400 text-white hover:bg-red-600 border border-transparent',
     success: 'bg-success-500 text-white border border-transparent',
     warning: 'bg-warning-500 text-white border border-transparent',
+    ghost: 'bg-transparent border-transparent hover:bg-surface-2 text-app',
   };
 
   const sizes = {
