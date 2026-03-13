@@ -92,24 +92,25 @@ it('updates an existing lease', function () {
 });
 
 it('terminates an active lease', function () {
-    // Création d'un bail actif
+    // Creation d'un bail actif dans le passe
     $lease = Lease::factory()->create([
-        'start_date' => '2026-01-01',
+        'start_date' => '2025-01-01',
         'end_date' => null,
         'status' => 'active',
     ]);
 
-    $terminationDate = '2026-12-31';
+    // Une date de fin dans le passe pour forcer le statut 'terminated'
+    $terminationDate = '2025-12-31';
 
-    // Exécution de la requête PATCH pour la clôture
+    // Execution de la requete PATCH pour la cloture
     $response = patch(route('leases.terminate', $lease->id), [
         'end_date' => $terminationDate,
     ]);
 
-    // Vérification que le message de succès est présent en session
+    // Verification que le message de succes est present en session
     $response->assertSessionHas('success');
 
-    // Vérification du changement de statut et de l'ajout de la date de fin
+    // Verification du changement de statut et de l'ajout de la date de fin
     assertDatabaseHas('leases', [
         'id' => $lease->id,
         'end_date' => $terminationDate,

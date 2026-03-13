@@ -214,7 +214,8 @@ class LeaseController extends Controller
     public function terminate(Request $request, Lease $lease)
     {
         $validated = $request->validate([
-            'end_date' => 'required|date|after_or_equal:start_date',
+            // On compare directement avec la date stockee dans le modele
+            'end_date' => 'required|date|after_or_equal:' . $lease->start_date->toDateString(),
         ]);
 
         $lease->update([
@@ -222,7 +223,7 @@ class LeaseController extends Controller
             'status' => $this->calculateLeaseStatus($lease->start_date, $validated['end_date']),
         ]);
 
-        return back()->with('success', 'La clôture du bail a bien été enregistrée.');
+        return back()->with('success', 'La cloture du bail a bien ete enregistree.');
     }
 
     /**
