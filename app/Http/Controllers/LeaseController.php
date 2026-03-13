@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Lease;
 use App\Models\Property;
 use App\Models\Tenant;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class LeaseController extends Controller
 {
@@ -52,37 +54,52 @@ class LeaseController extends Controller
             'tenant_ids.*' => 'exists:tenants,id',
         ]);
 
-        // Vérification de la règle métier : un seul bail actif par appartement
-        $activeLeaseExists = Lease::where('property_id', $validated['property_id'])
-            ->where('status', 'active')
-            ->exists();
+        return DB::transaction(function () use ($validated) {
+            // Verrouillage du bien pour éviter toute concurrence (le fameux FOR UPDATE)
+            $property = Property::lockForUpdate()->find($validated['property_id']);
 
-        if ($activeLeaseExists) {
-            return back()->withErrors([
-                'property_id' => 'Cet appartement possède déjà un bail en cours. Veuillez le clôturer avant d\'en créer un nouveau.'
-            ])->withInput();
-        }
+            $activeLeaseExists = Lease::where('property_id', $property->id)
+                ->where('status', 'active')
+                ->exists();
 
-        $lease = Lease::create([
-            'property_id' => $validated['property_id'],
-            'start_date' => $validated['start_date'],
-            'end_date' => $validated['end_date'] ?? null,
-            'rent_amount' => $validated['rent_amount'],
-            'charges_amount' => $validated['charges_amount'],
-            'deposit_amount' => $validated['deposit_amount'] ?? null,
-            'payment_day' => $validated['payment_day'],
-            'status' => 'active',
-        ]);
+            if ($activeLeaseExists) {
+                return back()->withErrors([
+                    'property_id' => 'Cet appartement possède déjà un bail en cours. Veuillez le clôturer avant d\'en créer un nouveau.'
+                ])->withInput();
+            }
 
-        $pivotData = [];
-        foreach ($validated['tenant_ids'] as $index => $tenantId) {
-            $pivotData[$tenantId] = ['is_main_tenant' => $index === 0];
-        }
+            $unavailableTenantsExists = Tenant::whereIn('id', $validated['tenant_ids'])
+                ->whereHas('leases', function ($query) {
+                    $query->where('status', 'active');
+                })->exists();
 
-        $lease->tenants()->attach($pivotData);
+            if ($unavailableTenantsExists) {
+                return back()->withErrors([
+                    'tenant_ids' => 'Un ou plusieurs locataires sélectionnés ont déjà un bail actif ailleurs.'
+                ])->withInput();
+            }
 
-        return redirect()->route('properties.show', $validated['property_id'])
-            ->with('success', 'Le bail a été créé avec succès.');
+            $lease = Lease::create([
+                'property_id' => $property->id,
+                'start_date' => $validated['start_date'],
+                'end_date' => $validated['end_date'] ?? null,
+                'rent_amount' => $validated['rent_amount'],
+                'charges_amount' => $validated['charges_amount'],
+                'deposit_amount' => $validated['deposit_amount'] ?? null,
+                'payment_day' => $validated['payment_day'],
+                'status' => $this->calculateLeaseStatus($validated['start_date'], $validated['end_date'] ?? null),
+            ]);
+
+            $pivotData = [];
+            foreach ($validated['tenant_ids'] as $index => $tenantId) {
+                $pivotData[$tenantId] = ['is_main_tenant' => $index === 0];
+            }
+
+            $lease->tenants()->attach($pivotData);
+
+            return redirect()->route('properties.show', $property->id)
+                ->with('success', 'Le bail a été créé avec succès.');
+        });
     }
 
     /**
@@ -137,37 +154,53 @@ class LeaseController extends Controller
             'tenant_ids.*' => 'exists:tenants,id',
         ]);
 
-        // Vérification de la règle métier (en excluant le bail actuel)
-        $activeLeaseExists = Lease::where('property_id', $validated['property_id'])
-            ->where('status', 'active')
-            ->where('id', '!=', $lease->id)
-            ->exists();
+        return DB::transaction(function () use ($validated, $lease) {
+            $property = Property::lockForUpdate()->find($validated['property_id']);
 
-        if ($activeLeaseExists) {
-            return back()->withErrors([
-                'property_id' => 'Cet appartement possède déjà un autre bail en cours.'
-            ])->withInput();
-        }
+            $activeLeaseExists = Lease::where('property_id', $property->id)
+                ->where('status', 'active')
+                ->where('id', '!=', $lease->id)
+                ->exists();
 
-        $lease->update([
-            'property_id' => $validated['property_id'],
-            'start_date' => $validated['start_date'],
-            'end_date' => $validated['end_date'] ?? null,
-            'rent_amount' => $validated['rent_amount'],
-            'charges_amount' => $validated['charges_amount'],
-            'deposit_amount' => $validated['deposit_amount'] ?? null,
-            'payment_day' => $validated['payment_day'],
-        ]);
+            if ($activeLeaseExists) {
+                return back()->withErrors([
+                    'property_id' => 'Cet appartement possède déjà un autre bail en cours.'
+                ])->withInput();
+            }
 
-        $pivotData = [];
-        foreach ($validated['tenant_ids'] as $index => $tenantId) {
-            $pivotData[$tenantId] = ['is_main_tenant' => $index === 0];
-        }
+            $unavailableTenantsExists = Tenant::whereIn('id', $validated['tenant_ids'])
+                ->whereHas('leases', function ($query) use ($lease) {
+                    $query->where('status', 'active')
+                        ->where('leases.id', '!=', $lease->id);
+                })->exists();
 
-        $lease->tenants()->sync($pivotData);
+            if ($unavailableTenantsExists) {
+                return back()->withErrors([
+                    'tenant_ids' => 'Un ou plusieurs locataires sélectionnés ont déjà un autre bail actif.'
+                ])->withInput();
+            }
 
-        return redirect()->route('properties.show', $validated['property_id'])
-            ->with('success', 'Le bail a été mis à jour avec succès.');
+            $lease->update([
+                'property_id' => $property->id,
+                'start_date' => $validated['start_date'],
+                'end_date' => $validated['end_date'] ?? null,
+                'rent_amount' => $validated['rent_amount'],
+                'charges_amount' => $validated['charges_amount'],
+                'deposit_amount' => $validated['deposit_amount'] ?? null,
+                'payment_day' => $validated['payment_day'],
+                'status' => $this->calculateLeaseStatus($validated['start_date'], $validated['end_date'] ?? null),
+            ]);
+
+            $pivotData = [];
+            foreach ($validated['tenant_ids'] as $index => $tenantId) {
+                $pivotData[$tenantId] = ['is_main_tenant' => $index === 0];
+            }
+
+            $lease->tenants()->sync($pivotData);
+
+            return redirect()->route('properties.show', $property->id)
+                ->with('success', 'Le bail a été mis à jour avec succès.');
+        });
     }
 
     /**
@@ -180,17 +213,28 @@ class LeaseController extends Controller
 
     public function terminate(Request $request, Lease $lease)
     {
-        $request->validate([
-            'end_date' => 'required|date|after_or_equal:' . $lease->start_date->toDateString(),
-        ], [
-            'end_date.after_or_equal' => 'La date de fin doit être ultérieure ou égale à la date de début.',
+        $validated = $request->validate([
+            'end_date' => 'required|date|after_or_equal:start_date',
         ]);
 
         $lease->update([
-            'end_date' => $request->end_date,
-            'status' => 'terminated',
+            'end_date' => $validated['end_date'],
+            'status' => $this->calculateLeaseStatus($lease->start_date, $validated['end_date']),
         ]);
 
-        return back()->with('success', 'Le bail a été clôturé avec succès.');
+        return back()->with('success', 'La clôture du bail a bien été enregistrée.');
+    }
+
+    /**
+     * Determine le statut du bail en fonction de ses dates.
+     */
+    private function calculateLeaseStatus($startDate, $endDate): string
+    {
+        // Si une date de fin existe et qu'elle est strictement dans le passé
+        if ($endDate && Carbon::parse($endDate)->startOfDay()->isPast()) {
+            return 'terminated';
+        }
+
+        return 'active';
     }
 }

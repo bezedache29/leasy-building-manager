@@ -17,7 +17,11 @@ export const getLocalISODate = (date: Date = new Date()): string => {
 };
 
 export const parseLocalDate = (dateInput: string | Date): Date => {
-  const dateString = typeof dateInput === 'string' ? dateInput : String(dateInput);
+  if (dateInput instanceof Date) {
+    return new Date(dateInput.getFullYear(), dateInput.getMonth(), dateInput.getDate());
+  }
+
+  const dateString = dateInput;
   const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
 
   return new Date(year, month - 1, day);

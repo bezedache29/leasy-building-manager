@@ -152,9 +152,10 @@ export default function LeaseForm({ properties, tenants, lease, defaultPropertyI
       <section className="border-t border-[rgb(var(--border))] pt-8">
         <h2 className={sectionTitleClass}>Les Locataires</h2>
         <div className="mb-4">
-          <InputLabel value="Rechercher un locataire *" className="mb-1" />
+          <InputLabel htmlFor="tenant_search" value="Rechercher un locataire *" className="mb-1" />
           <div className="relative mt-1">
             <TextInput
+              id="tenant_search"
               type="text"
               placeholder="Tapez un nom..."
               value={searchTerm}
@@ -204,6 +205,7 @@ export default function LeaseForm({ properties, tenants, lease, defaultPropertyI
               <button
                 type="button"
                 onClick={() => handleRemoveTenant(tenant.id)}
+                aria-label={`Retirer ${tenant.first_name} ${tenant.last_name}`}
                 className="flex h-5 w-5 items-center justify-center rounded-full text-muted transition-colors hover:bg-red-500 hover:text-white"
               >
                 &times;
