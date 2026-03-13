@@ -69,7 +69,10 @@ class LeaseController extends Controller
                 ])->withInput();
             }
 
-            $unavailableTenantsExists = Tenant::whereIn('id', $validated['tenant_ids'])
+            $tenantIds = $validated['tenant_ids'];
+            Tenant::whereIn('id', $tenantIds)->lockForUpdate()->get(['id']);
+
+            $unavailableTenantsExists = Tenant::whereIn('id', $tenantIds)
                 ->whereHas('leases', function ($query) {
                     $query->where('status', 'active');
                 })->exists();
@@ -157,7 +160,7 @@ class LeaseController extends Controller
         ]);
 
         return DB::transaction(function () use ($validated, $lease) {
-            $property = Property::lockForUpdate()->findOrFail($validated['property_id']);
+            $property = Property::lockForUpdate()->find($validated['property_id']);
 
             $activeLeaseExists = Lease::where('property_id', $property->id)
                 ->where('status', 'active')
@@ -170,7 +173,10 @@ class LeaseController extends Controller
                 ])->withInput();
             }
 
-            $unavailableTenantsExists = Tenant::whereIn('id', $validated['tenant_ids'])
+            $tenantIds = $validated['tenant_ids'];
+            Tenant::whereIn('id', $tenantIds)->lockForUpdate()->get(['id']);
+
+            $unavailableTenantsExists = Tenant::whereIn('id', $tenantIds)
                 ->whereHas('leases', function ($query) use ($lease) {
                     $query->where('status', 'active')
                         ->where('leases.id', '!=', $lease->id);
