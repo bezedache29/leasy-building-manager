@@ -1,3 +1,5 @@
+import { Lease } from '@/Types/lease';
+
 export interface Property {
   id: number;
   name: string;
@@ -12,6 +14,7 @@ export interface Property {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  leases?: Lease[];
 }
 
 // Interface pour les équipements
