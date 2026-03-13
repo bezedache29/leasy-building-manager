@@ -51,12 +51,13 @@ class LeaseController extends Controller
             'deposit_amount' => 'nullable|numeric|min:0',
             'payment_day' => 'required|integer|min:1|max:31',
             'tenant_ids' => 'required|array|min:1',
-            'tenant_ids.*' => 'exists:tenants,id',
+            // Garantit qu'un ID n'apparaît qu'une seule fois dans le tableau
+            'tenant_ids.*' => 'distinct|exists:tenants,id',
         ]);
 
         return DB::transaction(function () use ($validated) {
             // Verrouillage du bien pour éviter toute concurrence (le fameux FOR UPDATE)
-            $property = Property::lockForUpdate()->find($validated['property_id']);
+            $property = Property::lockForUpdate()->findOrFail($validated['property_id']);
 
             $activeLeaseExists = Lease::where('property_id', $property->id)
                 ->where('status', 'active')
@@ -151,11 +152,12 @@ class LeaseController extends Controller
             'deposit_amount' => 'nullable|numeric|min:0',
             'payment_day' => 'required|integer|min:1|max:31',
             'tenant_ids' => 'required|array|min:1',
-            'tenant_ids.*' => 'exists:tenants,id',
+            // Application de la même protection pour la mise à jour
+            'tenant_ids.*' => 'distinct|exists:tenants,id',
         ]);
 
         return DB::transaction(function () use ($validated, $lease) {
-            $property = Property::lockForUpdate()->find($validated['property_id']);
+            $property = Property::lockForUpdate()->findOrFail($validated['property_id']);
 
             $activeLeaseExists = Lease::where('property_id', $property->id)
                 ->where('status', 'active')
