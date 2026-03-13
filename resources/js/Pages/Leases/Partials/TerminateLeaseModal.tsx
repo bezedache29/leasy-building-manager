@@ -5,6 +5,7 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import { FormEventHandler, useEffect } from 'react';
 import { Lease } from '@/Types/lease';
+import { getLocalISODate } from '@/Utils/formatters';
 
 interface Props {
   show: boolean;
@@ -14,12 +15,12 @@ interface Props {
 
 export default function TerminateLeaseModal({ show, onClose, lease }: Props) {
   const { data, setData, patch, processing, errors, reset, clearErrors } = useForm({
-    end_date: new Date().toISOString().split('T')[0],
+    end_date: getLocalISODate(),
   });
 
   useEffect(() => {
     if (show) {
-      setData('end_date', new Date().toISOString().split('T')[0]);
+      setData('end_date', getLocalISODate());
       clearErrors();
     } else {
       reset();

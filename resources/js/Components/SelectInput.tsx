@@ -1,6 +1,6 @@
-import { forwardRef, MutableRefObject, SelectHTMLAttributes, useRef } from 'react';
+import { forwardRef, SelectHTMLAttributes, useImperativeHandle, useRef } from 'react';
 
-export interface SelectInputProps extends SelectHTMLAttributes<HTMLSelectElement> {
+interface SelectInputProps extends SelectHTMLAttributes<HTMLSelectElement> {
   error?: string;
 }
 
@@ -10,33 +10,31 @@ export default forwardRef<HTMLSelectElement, SelectInputProps>(function SelectIn
 ) {
   const localRef = useRef<HTMLSelectElement | null>(null);
 
-  const handleRef = (node: HTMLSelectElement | null) => {
-    (localRef as MutableRefObject<HTMLSelectElement | null>).current = node;
-    if (typeof ref === 'function') {
-      ref(node);
-    } else if (ref) {
-      (ref as MutableRefObject<HTMLSelectElement | null>).current = node;
-    }
-  };
+  useImperativeHandle(ref, () => localRef.current as HTMLSelectElement);
+
+  const errorId = props.id && error ? `${props.id}-error` : undefined;
 
   return (
-    <div className="w-full">
+    <div className="flex w-full flex-col">
       <select
         {...props}
-        className={[
-          'w-full rounded-md border bg-surface text-app',
-          'px-3 py-2 outline-none transition-all duration-150',
-          'focus:outline-none focus:ring-0',
-          error
-            ? 'border-red-400 focus:border-red-500'
-            : 'border-[rgb(var(--border))] focus:border-[rgb(var(--primary-900))]',
-          className,
-        ].join(' ')}
-        ref={handleRef}
+        ref={localRef}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={errorId ?? props['aria-describedby']}
+        className={
+          'border-[rgb(var(--border))] bg-surface text-app focus:border-[rgb(var(--primary-500))] focus:ring-[rgb(var(--primary-500))] rounded-md shadow-sm ' +
+          (error ? 'border-red-500 focus:border-red-500 focus:ring-red-500 ' : '') +
+          className
+        }
       >
         {children}
       </select>
-      {error && <p className="mt-1 text-xs font-medium text-red-400">{error}</p>}
+
+      {error && (
+        <p id={errorId} role="alert" className="mt-1 text-xs font-medium text-red-400">
+          {error}
+        </p>
+      )}
     </div>
   );
 });

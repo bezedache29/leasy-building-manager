@@ -25,8 +25,17 @@ interface Props {
 export default function LeaseForm({ properties, tenants, lease, defaultPropertyId }: Props) {
   const isEdit = !!lease;
 
+  // Sécurisation de l'ordre : on s'assure que le locataire principal est TOUJOURS en premier
+  const initialTenants = lease?.tenants
+    ? [...lease.tenants].sort((a, b) => {
+        if (a.pivot?.is_main_tenant) return -1;
+        if (b.pivot?.is_main_tenant) return 1;
+        return 0;
+      })
+    : [];
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTenants, setSelectedTenants] = useState<Tenant[]>(lease?.tenants || []);
+  const [selectedTenants, setSelectedTenants] = useState<Tenant[]>(initialTenants);
 
   const {
     register,
@@ -37,11 +46,12 @@ export default function LeaseForm({ properties, tenants, lease, defaultPropertyI
     resolver: zodResolver(leaseSchema),
     defaultValues: {
       property_id: lease?.property_id || defaultPropertyId || 0,
-      tenant_ids: lease?.tenants?.map((t) => t.id) || [],
+      tenant_ids: initialTenants.map((t) => t.id),
       payment_day: lease?.payment_day || 1,
+      // Utilisation du format local (en-CA donne YYYY-MM-DD) au lieu de l'UTC
       start_date: lease?.start_date
         ? String(lease.start_date).split('T')[0]
-        : new Date().toISOString().split('T')[0],
+        : new Date().toLocaleDateString('en-CA'),
       end_date: lease?.end_date ? String(lease.end_date).split('T')[0] : '',
       rent_amount: lease?.rent_amount || 0,
       charges_amount: lease?.charges_amount || 0,
@@ -154,14 +164,19 @@ export default function LeaseForm({ properties, tenants, lease, defaultPropertyI
             />
 
             {searchTerm && availableTenants.length > 0 && (
-              <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md bg-surface border border-[rgb(var(--border))] py-1 shadow-lg">
+              <ul
+                role="listbox"
+                className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md bg-surface border border-[rgb(var(--border))] py-1 shadow-lg"
+              >
                 {availableTenants.map((tenant) => (
-                  <li
-                    key={tenant.id}
-                    onClick={() => handleAddTenant(tenant)}
-                    className="cursor-pointer px-4 py-2 hover:bg-surface-2 text-app text-sm"
-                  >
-                    {tenant.first_name} {tenant.last_name}
+                  <li key={tenant.id} role="option" aria-selected={false}>
+                    <button
+                      type="button"
+                      onClick={() => handleAddTenant(tenant)}
+                      className="w-full text-left cursor-pointer px-4 py-2 hover:bg-surface-2 focus:bg-surface-2 focus:outline-none text-app text-sm transition-colors"
+                    >
+                      {tenant.first_name} {tenant.last_name}
+                    </button>
                   </li>
                 ))}
               </ul>

@@ -24,11 +24,8 @@ class LeaseController extends Controller
     {
         $properties = Property::orderBy('name')->get();
 
-        $tenants = Tenant::where(function ($query) {
-            $query->doesntHave('leases')
-                ->orWhereHas('leases', function ($q) {
-                    $q->whereNull('end_date');
-                });
+        $tenants = Tenant::whereDoesntHave('leases', function ($query) {
+            $query->where('status', 'active');
         })->orderBy('last_name')->orderBy('first_name')->get();
 
         return inertia('Leases/Create', [
@@ -51,32 +48,39 @@ class LeaseController extends Controller
             'charges_amount' => 'required|numeric|min:0',
             'deposit_amount' => 'nullable|numeric|min:0',
             'payment_day' => 'required|integer|min:1|max:31',
-            // On attend un tableau d'IDs de locataires
             'tenant_ids' => 'required|array|min:1',
             'tenant_ids.*' => 'exists:tenants,id',
         ]);
 
-        // 1. Création du bail
+        // Vérification de la règle métier : un seul bail actif par appartement
+        $activeLeaseExists = Lease::where('property_id', $validated['property_id'])
+            ->where('status', 'active')
+            ->exists();
+
+        if ($activeLeaseExists) {
+            return back()->withErrors([
+                'property_id' => 'Cet appartement possède déjà un bail en cours. Veuillez le clôturer avant d\'en créer un nouveau.'
+            ])->withInput();
+        }
+
         $lease = Lease::create([
             'property_id' => $validated['property_id'],
             'start_date' => $validated['start_date'],
-            'end_date' => $validated['end_date'],
+            'end_date' => $validated['end_date'] ?? null,
             'rent_amount' => $validated['rent_amount'],
             'charges_amount' => $validated['charges_amount'],
-            'deposit_amount' => $validated['deposit_amount'],
+            'deposit_amount' => $validated['deposit_amount'] ?? null,
             'payment_day' => $validated['payment_day'],
             'status' => 'active',
         ]);
 
-        // 2. Attachement des locataires via la table pivot
-        // Le premier locataire sélectionné sera défini comme locataire principal par défaut
         $pivotData = [];
         foreach ($validated['tenant_ids'] as $index => $tenantId) {
             $pivotData[$tenantId] = ['is_main_tenant' => $index === 0];
         }
+
         $lease->tenants()->attach($pivotData);
 
-        // Redirection vers la liste des baux (ou la fiche du bien, au choix)
         return redirect()->route('properties.show', $validated['property_id'])
             ->with('success', 'Le bail a été créé avec succès.');
     }
@@ -99,10 +103,11 @@ class LeaseController extends Controller
         $properties = Property::orderBy('name')->get();
 
         $tenants = Tenant::where(function ($query) use ($lease) {
-            $query->doesntHave('leases')
-                ->orWhereHas('leases', function ($q) {
-                    $q->whereNull('end_date');
-                })
+            // Soit le locataire n'a pas de bail actif en cours...
+            $query->whereDoesntHave('leases', function ($q) {
+                $q->where('status', 'active');
+            })
+                // ... Soit il est lié au bail que l'on est en train d'éditer
                 ->orWhereHas('leases', function ($q) use ($lease) {
                     $q->where('leases.id', $lease->id);
                 });
@@ -132,13 +137,25 @@ class LeaseController extends Controller
             'tenant_ids.*' => 'exists:tenants,id',
         ]);
 
+        // Vérification de la règle métier (en excluant le bail actuel)
+        $activeLeaseExists = Lease::where('property_id', $validated['property_id'])
+            ->where('status', 'active')
+            ->where('id', '!=', $lease->id)
+            ->exists();
+
+        if ($activeLeaseExists) {
+            return back()->withErrors([
+                'property_id' => 'Cet appartement possède déjà un autre bail en cours.'
+            ])->withInput();
+        }
+
         $lease->update([
             'property_id' => $validated['property_id'],
             'start_date' => $validated['start_date'],
-            'end_date' => $validated['end_date'],
+            'end_date' => $validated['end_date'] ?? null,
             'rent_amount' => $validated['rent_amount'],
             'charges_amount' => $validated['charges_amount'],
-            'deposit_amount' => $validated['deposit_amount'],
+            'deposit_amount' => $validated['deposit_amount'] ?? null,
             'payment_day' => $validated['payment_day'],
         ]);
 

@@ -2,7 +2,7 @@ import AppLayout from '@/Layouts/AppLayout';
 import Button from '@/Components/Button';
 import { Equipment, Property, Room } from '@/Types/property';
 import { useForm } from '@inertiajs/react';
-import { formatFloor } from '@/Utils/formatters';
+import { formatFloor, parseLocalDate } from '@/Utils/formatters';
 import { useState } from 'react';
 import EquipmentItem from '@/Pages/Properties/Partials/EquipmentItem';
 import EquipmentModal from '@/Pages/Properties/Partials/EquipmentModal';
@@ -296,7 +296,7 @@ export default function Show({ property }: Props) {
                         size="sm"
                         className="w-full justify-center"
                       >
-                        Arreter Bail
+                        Arrêter Bail
                       </Button>
                     </div>
                   )}
@@ -325,9 +325,9 @@ export default function Show({ property }: Props) {
 
                           <div className="flex items-end justify-between">
                             <span className="text-sm font-medium text-muted">
-                              Du {new Date(lease.start_date).toLocaleDateString()}
+                              Du {parseLocalDate(lease.start_date).toLocaleDateString()}
                               {lease.end_date
-                                ? ` au ${new Date(lease.end_date).toLocaleDateString()}`
+                                ? ` au ${parseLocalDate(lease.end_date).toLocaleDateString()}`
                                 : " à aujourd'hui"}
                             </span>
                             <p className="text-xs text-muted">
