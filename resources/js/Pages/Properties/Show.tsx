@@ -1,7 +1,7 @@
 import AppLayout from '@/Layouts/AppLayout';
 import Button from '@/Components/Button';
 import { Equipment, Property, Room } from '@/Types/property';
-import { useForm } from '@inertiajs/react';
+import { Link, useForm } from '@inertiajs/react';
 import { formatFloor, parseLocalDate } from '@/Utils/formatters';
 import { useState } from 'react';
 import EquipmentItem from '@/Pages/Properties/Partials/EquipmentItem';
@@ -10,6 +10,7 @@ import RoomModal from '@/Pages/Properties/Partials/RoomModal';
 import ConfirmModal from '@/Components/ConfirmModal';
 import { Lease } from '@/Types/lease';
 import TerminateLeaseModal from '@/Pages/Leases/Partials/TerminateLeaseModal';
+import MissingPdfDataModal from '@/Pages/Properties/Partials/MissingPdfDataModal';
 
 interface Props {
   property: Property;
@@ -27,6 +28,7 @@ export default function Show({ property }: Props) {
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
   const [equipmentToDelete, setEquipmentToDelete] = useState<Equipment | null>(null);
   const [leaseToTerminate, setLeaseToTerminate] = useState<Lease | null>(null);
+  const [showPdfMissingModal, setShowPdfMissingModal] = useState(false);
 
   const handleArchiveClick = () => {
     setIsArchiveModalOpen(true);
@@ -250,100 +252,143 @@ export default function Show({ property }: Props) {
 
           <div className="space-y-8">
             <section className={sectionClass}>
-              <h2 className="mb-4 text-lg font-semibold text-[rgb(var(--primary-500))]">
-                Occupation & Baux
-              </h2>
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-lg font-semibold text-[rgb(var(--primary-500))]">
+                  Occupation & Baux
+                </h2>
+              </div>
 
-              {/* CAS 1 : Aucun bail du tout */}
-              {!property.leases || property.leases.length === 0 ? (
+              {/* ZONE DU BAIL ACTIF OU ZONE VIDE */}
+              {!activeLease ? (
                 <div className="rounded-lg border border-[rgb(var(--border))] bg-surface-2 p-8 text-center">
                   <p className="mb-4 text-sm italic text-muted">
-                    Aucun bail n'est rattaché à ce bien pour le moment.
+                    {property.leases && property.leases.length > 0
+                      ? 'Ce bien est actuellement inoccupé.'
+                      : "Aucun bail n'est rattaché à ce bien pour le moment."}
                   </p>
                   <Button
                     href={route('leases.create', { property_id: property.id })}
                     variant="primary"
                     size="sm"
                   >
-                    + Créer le premier bail
+                    {property.leases && property.leases.length > 0
+                      ? '+ Créer un nouveau bail'
+                      : '+ Créer le premier bail'}
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {/* CAS 2 : Des baux existent, mais aucun n'est actif */}
-                  {!activeLease ? (
-                    <Button
-                      href={route('leases.create', { property_id: property.id })}
-                      variant="primary"
-                      size="sm"
-                      className="w-full justify-center"
-                    >
-                      + Nouveau Bail
-                    </Button>
-                  ) : (
-                    <div className="flex gap-2">
-                      <Button
-                        href={route('leases.edit', activeLease.id)}
-                        variant="warning"
-                        size="sm"
-                        className="w-full justify-center"
-                      >
-                        Modifier Bail
-                      </Button>
-                      <Button
-                        onClick={() => setLeaseToTerminate(activeLease)}
-                        variant="danger"
-                        size="sm"
-                        className="w-full justify-center"
-                      >
-                        Arrêter Bail
-                      </Button>
+                <div className="border border-[rgb(var(--border))] rounded-lg p-4 bg-surface-2 mb-6">
+                  <div className="flex flex-col gap-3 mb-4">
+                    <div className="flex items-center justify-between">
+                      {/* BADGE DYNAMIQUE INTERACTIF */}
+                      {activeLease.missing_pdf_data && activeLease.missing_pdf_data.length > 0 ? (
+                        <button
+                          onClick={() => setShowPdfMissingModal(true)}
+                          className="flex cursor-pointer items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-600 transition hover:bg-amber-500/20"
+                          title="Voir les éléments manquants"
+                        >
+                          <span>⚠️ Incomplet</span>
+                        </button>
+                      ) : (
+                        <span className="px-2 py-0.5 text-xs font-semibold rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-600">
+                          Prêt
+                        </span>
+                      )}
+
+                      <p className="text-xl font-bold text-app">
+                        {(
+                          Number(activeLease.rent_amount) + Number(activeLease.charges_amount)
+                        ).toFixed(2)}{' '}
+                        €
+                      </p>
                     </div>
-                  )}
 
-                  {/* Affichage de la liste des baux */}
-                  {property.leases.map((lease) => {
-                    const totalRent = Number(lease.rent_amount) + Number(lease.charges_amount);
+                    <div className="flex items-end justify-between">
+                      <span className="text-sm font-medium text-muted">
+                        Du {parseLocalDate(activeLease.start_date).toLocaleDateString()}
+                        {activeLease.end_date
+                          ? ` au ${parseLocalDate(activeLease.end_date).toLocaleDateString()}`
+                          : " à aujourd'hui"}
+                      </span>
+                      <p className="text-xs text-muted text-right">
+                        Dont {Number(activeLease.charges_amount).toFixed(2)} € charges
+                      </p>
+                    </div>
+                  </div>
 
-                    return (
-                      <div
-                        key={lease.id}
-                        className="border border-[rgb(var(--border))] rounded-lg p-4 bg-surface-2"
-                      >
-                        <div className="flex flex-col gap-3 mb-4">
-                          <div className="flex items-center justify-between">
-                            <span
-                              className={`px-2 py-0.5 text-xs font-semibold rounded-full ${lease.status === 'active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-gray-500/10 text-gray-400'}`}
-                            >
-                              {lease.status === 'active' ? 'En cours' : 'Terminé'}
-                            </span>
-                            <p className="text-xl font-bold text-app">
-                              {totalRent.toFixed(2)} €{' '}
-                              <span className="text-sm font-normal text-muted">/ mois</span>
-                            </p>
-                          </div>
+                  <div className="pt-3 border-t border-[rgb(var(--border))]">
+                    <p className="text-xs font-medium text-muted mb-2">Locataires :</p>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {activeLease.tenants &&
+                        activeLease.tenants.map((tenant) => (
+                          <Link
+                            key={tenant.id}
+                            href={route('tenants.show', tenant.id)}
+                            className="inline-flex items-center gap-1 bg-surface px-2 py-1 rounded-md border border-[rgb(var(--border))] text-sm text-app transition-colors hover:border-[rgb(var(--primary-500))] hover:text-[rgb(var(--primary-500))] hover:bg-surface-2"
+                          >
+                            {tenant.pivot?.is_main_tenant && (
+                              <span title="Locataire principal">👑</span>
+                            )}
+                            {tenant.first_name} {tenant.last_name}
+                          </Link>
+                        ))}
+                    </div>
 
-                          <div className="flex items-end justify-between">
-                            <span className="text-sm font-medium text-muted">
-                              Du {parseLocalDate(lease.start_date).toLocaleDateString()}
-                              {lease.end_date
-                                ? ` au ${parseLocalDate(lease.end_date).toLocaleDateString()}`
-                                : " à aujourd'hui"}
-                            </span>
-                            <p className="text-xs text-muted">
-                              Dont {Number(lease.charges_amount).toFixed(2)} € charges
-                            </p>
-                          </div>
-                        </div>
+                    <div className="flex flex-col gap-5">
+                      {/* BOUTON PDF DYNAMIQUE */}
+                      {/* {activeLease.missing_pdf_data && activeLease.missing_pdf_data.length > 0 ? ( */}
+                      {activeLease.missing_pdf_data && activeLease.missing_pdf_data.length > 0 ? (
+                        <Button disabled>📄 Bail PDF (Bloqué)</Button>
+                      ) : (
+                        <Button href={route('leases.pdf', activeLease.id)}>
+                          📄 Télécharger le Bail
+                        </Button>
+                      )}
 
-                        <div className="pt-3 border-t border-[rgb(var(--border))]">
-                          <p className="text-xs font-medium text-muted mb-2">Locataires :</p>
-                          <div className="flex flex-wrap gap-2">
-                            {lease.tenants &&
-                              lease.tenants.map((tenant) => (
+                      <div className="flex gap-2">
+                        <Button
+                          href={route('leases.edit', activeLease.id)}
+                          variant="warning"
+                          size="sm"
+                          className="w-full justify-center"
+                        >
+                          Modifier Bail
+                        </Button>
+                        <Button
+                          onClick={() => setLeaseToTerminate(activeLease)}
+                          variant="danger"
+                          size="sm"
+                          className="w-full justify-center"
+                        >
+                          Arrêter Bail
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* HISTORIQUE DES ANCIENS BAUX */}
+              {property.leases &&
+                property.leases.filter((l) => l.status === 'terminated').length > 0 && (
+                  <div className="mt-8 pt-6 border-t border-[rgb(var(--border))]">
+                    <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted">
+                      Historique d'occupation
+                    </h3>
+                    <div className="space-y-3">
+                      {property.leases
+                        .filter((l) => l.status === 'terminated')
+                        .map((pastLease) => (
+                          <div
+                            key={pastLease.id}
+                            className="flex flex-col gap-2 rounded-lg border border-[rgb(var(--border))] bg-surface p-4"
+                          >
+                            {/* Ligne 1 : Noms des locataires séparés */}
+                            <div className="flex flex-wrap gap-3">
+                              {pastLease.tenants?.map((tenant) => (
                                 <span
                                   key={tenant.id}
-                                  className="inline-flex items-center gap-1 bg-surface px-2 py-1 rounded-md border border-[rgb(var(--border))] text-sm text-app"
+                                  className="inline-flex items-center gap-1 text-sm font-semibold text-app"
                                 >
                                   {tenant.pivot?.is_main_tenant && (
                                     <span title="Locataire principal">👑</span>
@@ -351,13 +396,33 @@ export default function Show({ property }: Props) {
                                   {tenant.first_name} {tenant.last_name}
                                 </span>
                               ))}
+                            </div>
+
+                            {/* Ligne 2 : Dates d'occupation */}
+                            <div className="text-xs text-muted">
+                              Du {parseLocalDate(pastLease.start_date).toLocaleDateString()} au{' '}
+                              {pastLease.end_date
+                                ? parseLocalDate(pastLease.end_date).toLocaleDateString()
+                                : 'Non défini'}
+                            </div>
+
+                            {/* Ligne 3 : Loyer (gauche) et Badge (droite) */}
+                            <div className="mt-1 flex items-center justify-between">
+                              <span className="text-sm font-bold text-app">
+                                {(
+                                  Number(pastLease.rent_amount) + Number(pastLease.charges_amount)
+                                ).toFixed(2)}{' '}
+                                €
+                              </span>
+                              <span className="rounded-full border border-[rgb(var(--border))] bg-surface-3 px-2 py-1 text-xs font-semibold text-muted">
+                                Terminé
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                        ))}
+                    </div>
+                  </div>
+                )}
             </section>
           </div>
         </div>
@@ -417,6 +482,14 @@ export default function Show({ property }: Props) {
         onClose={() => setLeaseToTerminate(null)}
         lease={leaseToTerminate}
       />
+
+      {activeLease && activeLease.missing_pdf_data && (
+        <MissingPdfDataModal
+          show={showPdfMissingModal}
+          onClose={() => setShowPdfMissingModal(false)}
+          missingData={activeLease.missing_pdf_data}
+        />
+      )}
     </AppLayout>
   );
 }

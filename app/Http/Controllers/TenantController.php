@@ -18,10 +18,26 @@ class TenantController extends Controller
      */
     public function index()
     {
-        // 1. On "Eager Load" les relations nécessaires pour éviter les requêtes N+1
-        $tenants = Tenant::with(['documents', 'guarantors.documents'])
+        $tenants = Tenant::with([
+            'documents',
+            'guarantors.documents',
+            'leases' => function ($query) {
+                // Tri des baux du plus récent au plus ancien
+                $query->orderBy('start_date', 'desc')->with('property');
+            }
+        ])
             ->get()
-            ->append('is_complete');
+            ->append('is_complete')
+            ->sortByDesc(function ($tenant) {
+                // Création d'une clé de tri magique !
+                // Ex: Si actif aujourd'hui -> "1_2026-03-13"
+                // Ex: Si ancien locataire -> "0_2024-12-01"
+                $isActive = $tenant->leases->contains('status', 'active') ? '1' : '0';
+                $latestDate = $tenant->leases->first()->start_date ?? '0000-00-00';
+
+                return $isActive . '_' . $latestDate;
+            })
+            ->values(); // IMPORTANT : On réinitialise l'index du tableau pour React
 
         return Inertia::render('Tenants/Index', [
             'tenants' => $tenants
@@ -169,10 +185,15 @@ class TenantController extends Controller
      */
     public function show(Tenant $tenant)
     {
-        // 1. On s'assure que toutes les relations du locataire sont chargées
-        $tenant->loadMissing(['documents', 'guarantors.documents']);
+        // On applique le meme tri decroissant pour la page de detail du locataire
+        $tenant->loadMissing([
+            'documents',
+            'guarantors.documents',
+            'leases' => function ($query) {
+                $query->orderBy('start_date', 'desc')->with('property');
+            }
+        ]);
 
-        // 2. On ajoute manuellement les deux attributs lourds pour cette vue précise
         $tenant->append(['is_complete', 'missing_items']);
 
         $availableGuarantors = Guarantor::orderBy('last_name')->get();

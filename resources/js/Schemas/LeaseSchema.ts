@@ -22,6 +22,12 @@ export const leaseSchema = z
       .number()
       .min(1, 'Le jour doit être au minimum 1')
       .max(31, 'Le jour doit être au maximum 31'),
+    insurer_name: z.string().nullable().optional(),
+    insurer_address: z.string().nullable().optional(),
+    insurer_phone: z.string().nullable().optional(),
+    keys_building_count: z.coerce.number().min(0).default(0),
+    keys_mailbox_count: z.coerce.number().min(0).default(0),
+    keys_apartment_count: z.coerce.number().min(0).default(0),
   })
   .refine(
     (data) => {

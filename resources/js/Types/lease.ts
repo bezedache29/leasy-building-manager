@@ -13,6 +13,17 @@ export interface Lease {
   payment_day: number;
   status: 'active' | 'terminated' | string;
 
+  // Nouveaux champs pour l'assurance et les cles
+  insurer_name: string | null;
+  insurer_address: string | null;
+  insurer_phone: string | null;
+  keys_building_count: number;
+  keys_mailbox_count: number;
+  keys_apartment_count: number;
+
+  // Attribut calcule renvoye par le backend pour bloquer/autoriser le PDF
+  missing_pdf_data?: string[];
+
   property?: Property;
   tenants?: Tenant[];
 

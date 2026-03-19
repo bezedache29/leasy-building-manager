@@ -49,6 +49,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/leases/{lease}', [LeaseController::class, 'update'])->name('leases.update');
     Route::patch('/leases/{lease}/terminate', [LeaseController::class, 'terminate'])->name('leases.terminate');
 
+    Route::get('/leases/{lease}/pdf', [App\Http\Controllers\LeaseController::class, 'pdf'])->name('leases.pdf');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

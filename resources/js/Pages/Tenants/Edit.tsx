@@ -11,6 +11,7 @@ import { Tenant } from '@/Types/tenant';
 import { TENANT_DOCUMENT_KEYS } from '@/Constants/documentCategories';
 import DocumentFieldItem from '@/Pages/Tenants/Partials/DocumentFieldItem';
 import ExistingDocumentItem from '@/Pages/Tenants/Partials/ExistingDocumentItem';
+import MissingDocumentsAlert from '@/Components/MissingDocumentsAlert';
 
 type EditTenantValues = z.infer<typeof editTenantSchema>;
 
@@ -74,6 +75,12 @@ export default function Edit({ tenant }: { tenant: Tenant }) {
 
   const sectionClass = 'rounded-xl border border-[rgb(var(--border))] bg-surface p-6 shadow-sm';
 
+  // 1. Calcul des pièces manquantes
+  const existingCategories = tenant.documents?.map((doc) => doc.category) || [];
+  const missingCategories = TENANT_DOCUMENT_KEYS.filter(
+    (key) => !existingCategories.includes(key) && key !== 'other' // On exclut "other" qui n'est pas vraiment une pièce "manquante"
+  );
+
   return (
     <AppLayout>
       <div className="mx-auto max-w-4xl pb-12">
@@ -133,6 +140,9 @@ export default function Edit({ tenant }: { tenant: Tenant }) {
                 + Joindre un fichier
               </Button>
             </div>
+
+            {/* 2. Affichage de l'encart si des pièces sont manquantes */}
+            <MissingDocumentsAlert missingCategories={missingCategories} />
 
             <div className="space-y-4">
               {docFields.map((field, index) => (
