@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 use RuntimeException;
 
 class UserSeeder extends Seeder
@@ -34,7 +33,8 @@ class UserSeeder extends Seeder
             ],
             [
                 'name'     => env('ADMIN_NAME', 'Admin Leasy'),
-                'password' => Hash::make($adminPassword),
+                // Haché automatiquement par le cast 'hashed' du modèle User
+                'password' => $adminPassword,
             ]
         );
     }
