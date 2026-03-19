@@ -58,37 +58,47 @@ it('stores a new lease successfully', function () {
 });
 
 it('updates an existing lease', function () {
-    // Création d'un bail existant avec son locataire
+    $user = User::factory()->create();
     $property = LeasyProperty::factory()->create();
     $tenant = Tenant::factory()->create();
-    $lease = Lease::factory()->create([
+
+    // 1. Création d'un bail initial avec 650 de loyer
+    $lease = Lease::create([
         'property_id' => $property->id,
-        'rent_amount' => 500.00,
+        'start_date' => now()->subMonth()->format('Y-m-d'),
+        'rent_amount' => 650.00,
+        'charges_amount' => 50.00,
+        'payment_day' => 1,
+        'status' => 'active',
+        'keys_building_count' => 0,
+        'keys_mailbox_count' => 0,
+        'keys_apartment_count' => 0,
     ]);
     $lease->tenants()->attach($tenant->id, ['is_main_tenant' => true]);
 
-    // Nouvelles données à mettre à jour
+    // 2. Les nouvelles données à envoyer (le loyer passe à 850)
     $updatedData = [
         'property_id' => $property->id,
         'tenant_ids' => [$tenant->id],
-        'start_date' => $lease->start_date->format('Y-m-d'),
-        'end_date' => null,
-        'rent_amount' => 650.00, // Le loyer augmente
+        'start_date' => now()->format('Y-m-d'),
+        'rent_amount' => 850.00,
         'charges_amount' => 60.00,
-        'deposit_amount' => 500.00,
         'payment_day' => 5,
         'keys_building_count' => 1,
         'keys_mailbox_count' => 1,
         'keys_apartment_count' => 2,
     ];
 
-    // Exécution de la requête PUT
-    $response = put(route('leases.update', $lease->id), $updatedData);
+    // 3. Exécution de la requête
+    $response = actingAs($user)->put(route('leases.update', $lease->id), $updatedData);
 
-    // Vérification de la redirection
+    // 4. On s'assure qu'aucune erreur n'est retournée par le serveur
+    $response->assertSessionHasNoErrors();
+
+    // 5. Vérification de la redirection
     $response->assertRedirect(route('properties.show', $property->id));
 
-    // Vérification que la modification est bien enregistrée
+    // 6. Vérification que la base de données a bien été mise à jour avec 850
     assertDatabaseHas('leases', [
         'id' => $lease->id,
         'rent_amount' => 850.00,
