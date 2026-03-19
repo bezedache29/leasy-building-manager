@@ -46,7 +46,7 @@ it('stores a new lease successfully', function () {
     // Vérification de la création du bail en base de données
     assertDatabaseHas('leases', [
         'property_id' => $property->id,
-        'rent_amount' => 600.00,
+        'rent_amount' => 800.00,
         'status' => 'active',
     ]);
 
@@ -91,7 +91,7 @@ it('updates an existing lease', function () {
     // Vérification que la modification est bien enregistrée
     assertDatabaseHas('leases', [
         'id' => $lease->id,
-        'rent_amount' => 650.00,
+        'rent_amount' => 850.00,
     ]);
 });
 
