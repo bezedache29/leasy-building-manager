@@ -2,8 +2,9 @@ import AppLayout from '@/Layouts/AppLayout';
 import { ReactNode, useState } from 'react';
 import Button from '@/Components/Button';
 import IncompleteTenantsModal from '@/Pages/Dashboard/Partials/IncompleteTenantsModal';
+import { Link } from '@inertiajs/react';
 
-type AlertLevel = 'info' | 'warning' | 'danger';
+type AlertLevel = 'success' | 'warning' | 'danger';
 
 type Alert = {
   key: string;
@@ -42,7 +43,7 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
 
 function AlertBox({ alerts }: { alerts: Alert[] }) {
   const levelClass: Record<AlertLevel, string> = {
-    info: 'text-blue-500',
+    success: 'text-green-400',
     warning: 'text-orange-500',
     danger: 'text-red-500',
   };
@@ -50,14 +51,46 @@ function AlertBox({ alerts }: { alerts: Alert[] }) {
   if (!alerts || alerts.length === 0) return null;
 
   return (
-    <div className="mb-6 rounded-xl border border-app bg-surface-2 p-4">
-      <h2 className="text-lg font-semibold mb-3">🔔 Alertes</h2>
-      <ul className="space-y-2 text-sm">
-        {alerts.map((alert) => (
-          <li key={alert.key} className={levelClass[alert.level]}>
-            {alert.icon} {alert.title}
-          </li>
-        ))}
+    <div className="mb-6 rounded-xl border border-[rgb(var(--border))] bg-surface-2 p-4 shadow-sm">
+      <h2 className="text-lg font-semibold text-app mb-3 flex items-center gap-2">
+        <span>🔔</span> Alertes
+      </h2>
+      <ul className="space-y-1 text-sm">
+        {alerts.map((alert) => {
+          // Le contenu de l'alerte (icône + texte + petite flèche optionnelle)
+          const content = (
+            <>
+              <span className="text-base">{alert.icon}</span>
+              <span className="flex-1">{alert.title}</span>
+              {alert.action_url && (
+                <span className="text-xs opacity-0 transition-opacity group-hover:opacity-100">
+                  Voir ➔
+                </span>
+              )}
+            </>
+          );
+
+          return (
+            <li key={alert.key}>
+              {alert.action_url ? (
+                // Si on a un lien, toute la zone devient cliquable avec un effet de survol
+                <Link
+                  href={alert.action_url}
+                  className={`group flex items-center gap-2 font-medium p-2 -mx-2 rounded-lg transition-colors hover:bg-[rgb(var(--border))]/30 ${levelClass[alert.level]}`}
+                >
+                  {content}
+                </Link>
+              ) : (
+                // Sinon, affichage classique
+                <div
+                  className={`flex items-center gap-2 font-medium p-2 -mx-2 ${levelClass[alert.level]}`}
+                >
+                  {content}
+                </div>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

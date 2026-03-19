@@ -43,8 +43,18 @@ class PropertyController extends Controller
 
     public function show(Property $property)
     {
-        // On charge les pièces, équipements, et l'historique des baux avec les locataires
-        $property->load(['rooms.equipments', 'leases.tenants']);
+        // On charge les pièces, équipements, et l'historique des baux.
+        // On inclut les documents et garants pour éviter les requêtes N+1 lors du calcul du PDF.
+        $property->load([
+            'rooms.equipments',
+            'leases.tenants.documents',
+            'leases.tenants.guarantors.documents'
+        ]);
+
+        // On expose explicitement nos attributs calculés uniquement pour cette vue
+        $property->leases->each(function ($lease) {
+            $lease->append(['missing_pdf_data', 'has_signed_lease']);
+        });
 
         return inertia('Properties/Show', [
             'property' => $property

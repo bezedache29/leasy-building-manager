@@ -141,7 +141,7 @@ class Tenant extends Model
     }
 
     /**
-     * Retourne la liste exacte des champs et documents manquants.
+     * Retourne la liste exacte des champs et documents manquants traduits en français.
      */
     public function getMissingItemsAttribute(): array
     {
@@ -150,16 +150,50 @@ class Tenant extends Model
             'guarantors' => []
         ];
 
-        $requiredFields = ['first_name', 'last_name', 'marital_status', 'email', 'phone', 'current_address', 'birth_date', 'birth_place', 'nationality', 'profession'];
+        // Dictionnaire de traduction pour les champs
+        $fieldLabels = [
+            'first_name' => 'Prénom',
+            'last_name' => 'Nom',
+            'marital_status' => 'Statut marital',
+            'email' => 'Email',
+            'phone' => 'Téléphone',
+            'current_address' => 'Adresse actuelle',
+            'birth_date' => 'Date de naissance',
+            'birth_place' => 'Lieu de naissance',
+            'nationality' => 'Nationalité',
+            'profession' => 'Profession'
+        ];
+
+        // Dictionnaire de traduction pour les documents
+        $docLabels = [
+            'id_card' => "Pièce d'identité",
+            'proof_of_address' => 'Justificatif de domicile',
+            'employment_contract' => 'Contrat de travail / Scolarité / Kbis',
+            'payslip' => 'Fiches de paie / Rémunération',
+            'tax_notice' => "Dernier avis d'imposition",
+            'bank_details' => 'RIB',
+            'insurance' => "Attestation d'assurance",
+            'lease' => 'Bail',
+            'inventory' => 'État des lieux',
+            'deposit_check' => 'Chèque de caution',
+            'guarantee_deed' => 'Acte de caution solidaire'
+        ];
+
         $tenantRequiredDocs = ['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice', 'bank_details', 'insurance', 'lease', 'inventory', 'deposit_check'];
         $guarantorRequiredDocs = ['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice', 'guarantee_deed'];
 
         // 1. Locataire
-        foreach ($requiredFields as $field) {
-            if (empty($this->{$field})) $missing['tenant']['fields'][] = $field;
+        foreach ($fieldLabels as $field => $label) {
+            if (empty($this->{$field})) {
+                $missing['tenant']['fields'][] = $label;
+            }
         }
+
         $tenantCategories = $this->documents->pluck('category')->toArray();
-        $missing['tenant']['documents'] = array_values(array_diff($tenantRequiredDocs, $tenantCategories));
+        $missingTenantDocs = array_diff($tenantRequiredDocs, $tenantCategories);
+        foreach ($missingTenantDocs as $docKey) {
+            $missing['tenant']['documents'][] = $docLabels[$docKey] ?? $docKey;
+        }
 
         // 2. Garants
         foreach ($this->guarantors as $guarantor) {
@@ -170,11 +204,19 @@ class Tenant extends Model
                 'documents' => []
             ];
 
-            foreach ($requiredFields as $field) {
-                if (empty($guarantor->{$field})) $gMissing['fields'][] = $field;
+            // Champs du garant
+            foreach ($fieldLabels as $field => $label) {
+                if (empty($guarantor->{$field})) {
+                    $gMissing['fields'][] = $label;
+                }
             }
+
+            // Documents du garant
             $gCategories = $guarantor->documents->pluck('category')->toArray();
-            $gMissing['documents'] = array_values(array_diff($guarantorRequiredDocs, $gCategories));
+            $missingGuarantorDocs = array_diff($guarantorRequiredDocs, $gCategories);
+            foreach ($missingGuarantorDocs as $docKey) {
+                $gMissing['documents'][] = $docLabels[$docKey] ?? $docKey;
+            }
 
             if (!empty($gMissing['fields']) || !empty($gMissing['documents'])) {
                 $missing['guarantors'][] = $gMissing;

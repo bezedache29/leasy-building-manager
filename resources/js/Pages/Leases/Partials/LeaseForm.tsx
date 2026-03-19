@@ -56,6 +56,12 @@ export default function LeaseForm({ properties, tenants, lease, defaultPropertyI
       rent_amount: lease?.rent_amount || 0,
       charges_amount: lease?.charges_amount || 0,
       deposit_amount: lease?.deposit_amount ?? null,
+      insurer_name: lease?.insurer_name || '',
+      insurer_address: lease?.insurer_address || '',
+      insurer_phone: lease?.insurer_phone || '',
+      keys_building_count: lease?.keys_building_count || 0,
+      keys_mailbox_count: lease?.keys_mailbox_count || 0,
+      keys_apartment_count: lease?.keys_apartment_count || 0,
     },
   });
 
@@ -206,7 +212,7 @@ export default function LeaseForm({ properties, tenants, lease, defaultPropertyI
                 type="button"
                 onClick={() => handleRemoveTenant(tenant.id)}
                 aria-label={`Retirer ${tenant.first_name} ${tenant.last_name}`}
-                className="flex h-5 w-5 items-center justify-center rounded-full text-muted transition-colors hover:bg-red-500 hover:text-white"
+                className="flex h-5 w-5 items-center justify-center rounded-full text-muted transition-colors hover:bg-red-500 hover:text-white cursor-pointer"
               >
                 &times;
               </button>
@@ -285,6 +291,85 @@ export default function LeaseForm({ properties, tenants, lease, defaultPropertyI
                 <span className="text-muted sm:text-sm">Le</span>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-[rgb(var(--border))] pt-8">
+        <h2 className={sectionTitleClass}>Assurance & Remise des clés</h2>
+
+        <div className="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div>
+            <InputLabel htmlFor="insurer_name" value="Compagnie d'assurance" className="mb-1" />
+            <TextInput
+              id="insurer_name"
+              {...register('insurer_name')}
+              placeholder="Ex: Macif, Allianz..."
+              className="w-full"
+              error={errors.insurer_name?.message}
+            />
+          </div>
+          <div>
+            <InputLabel htmlFor="insurer_phone" value="Téléphone assurance" className="mb-1" />
+            <TextInput
+              id="insurer_phone"
+              type="tel"
+              {...register('insurer_phone')}
+              className="w-full"
+              error={errors.insurer_phone?.message}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <InputLabel htmlFor="insurer_address" value="Adresse de l'assurance" className="mb-1" />
+            <TextInput
+              id="insurer_address"
+              {...register('insurer_address')}
+              error={errors.insurer_address?.message}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 rounded-lg border border-[rgb(var(--border))] bg-surface-2 p-4 sm:grid-cols-3">
+          <div>
+            <InputLabel
+              htmlFor="keys_building_count"
+              value="Clés Immeuble (Vigik)"
+              className="mb-1"
+            />
+            <TextInput
+              id="keys_building_count"
+              type="number"
+              min="0"
+              {...register('keys_building_count')}
+              className="w-full"
+              error={errors.keys_building_count?.message}
+            />
+          </div>
+          <div>
+            <InputLabel
+              htmlFor="keys_mailbox_count"
+              value="Clés Boîte aux lettres"
+              className="mb-1"
+            />
+            <TextInput
+              id="keys_mailbox_count"
+              type="number"
+              min="0"
+              {...register('keys_mailbox_count')}
+              className="w-full"
+              error={errors.keys_mailbox_count?.message}
+            />
+          </div>
+          <div>
+            <InputLabel htmlFor="keys_apartment_count" value="Clés Appartement" className="mb-1" />
+            <TextInput
+              id="keys_apartment_count"
+              type="number"
+              min="0"
+              {...register('keys_apartment_count')}
+              className="w-full"
+              error={errors.keys_apartment_count?.message}
+            />
           </div>
         </div>
       </section>

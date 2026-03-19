@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use Carbon\Carbon;
+use App\Models\Lease;
 
 class DashboardAlertService
 {
@@ -10,53 +10,45 @@ class DashboardAlertService
     {
         $alerts = [];
 
-        // TODO : Mettre des alertes dynamiques
-        // ⚠️ Pour l’instant on met des exemples statiques.
-        // Ensuite on branchera sur la BDD (leases, inventories, documents...).
+        $activeLeases = Lease::with([
+            'property',
+            'tenants.documents',
+            'tenants.guarantors.documents'
+        ])
+            ->where('status', 'active')
+            ->get();
 
-        $alerts[] = [
-            'key' => 'lease.annual_due.studio',
-            'icon' => '📅',
-            'level' => 'warning',
-            'title' => 'Échéance annuelle Studio dans 30 jours',
-            'entity_type' => 'lease',
-            'entity_id' => null,
-            'action_label' => 'Voir',
-            'action_url' => '#',
-        ];
+        foreach ($activeLeases as $lease) {
+            // Si le bail signé est déjà uploadé, c'est terminé, on passe au suivant
+            if ($lease->has_signed_lease) {
+                continue;
+            }
 
-        $alerts[] = [
-            'key' => 'inventory.entry_to_archive.t2',
-            'icon' => '🧾',
-            'level' => 'warning',
-            'title' => 'EDL entrant T2 à archiver',
-            'entity_type' => 'inventory',
-            'entity_id' => null,
-            'action_label' => 'Voir',
-            'action_url' => '#',
-        ];
+            // Le dossier est-il complet pour générer le PDF ?
+            $isReadyToGenerate = empty($lease->missing_pdf_data);
 
-        $alerts[] = [
-            'key' => 'tenant.missing_docs.t2',
-            'icon' => '📂',
-            'level' => 'danger',
-            'title' => 'Dossier T2 incomplet (2 pièces manquantes)',
-            'entity_type' => 'tenant',
-            'entity_id' => null,
-            'action_label' => 'Voir',
-            'action_url' => '#',
-        ];
-
-        $alerts[] = [
-            'key' => 'lease.expiring.t3',
-            'icon' => '📄',
-            'level' => 'warning',
-            'title' => 'Bail T3 arrive à échéance',
-            'entity_type' => 'lease',
-            'entity_id' => null,
-            'action_label' => 'Voir',
-            'action_url' => '#',
-        ];
+            if ($isReadyToGenerate) {
+                if (is_null($lease->pdf_downloaded_at)) {
+                    // ÉTAPE 1 : Le PDF est prêt, mais pas encore téléchargé
+                    $alerts[] = [
+                        'key' => 'lease_ready_' . $lease->id,
+                        'icon' => '📄',
+                        'level' => 'success',
+                        'title' => 'Le bail est prêt à être téléchargé pour : ' . $lease->property->name,
+                        'action_url' => route('properties.show', $lease->property->id),
+                    ];
+                } else {
+                    // ÉTAPE 2 : Le PDF a été téléchargé, on attend le retour signé
+                    $alerts[] = [
+                        'key' => 'lease_waiting_signature_' . $lease->id,
+                        'icon' => '✍️',
+                        'level' => 'warning',
+                        'title' => 'En attente d\'upload du bail signé pour : ' . $lease->property->name,
+                        'action_url' => route('properties.show', $lease->property->id),
+                    ];
+                }
+            }
+        }
 
         return $alerts;
     }

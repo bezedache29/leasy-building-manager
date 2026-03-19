@@ -53,6 +53,12 @@ class LeaseController extends Controller
             'tenant_ids' => 'required|array|min:1',
             // Garantit qu'un ID n'apparaît qu'une seule fois dans le tableau
             'tenant_ids.*' => 'distinct|exists:tenants,id',
+            'insurer_name' => 'nullable|string|max:255',
+            'insurer_address' => 'nullable|string|max:255',
+            'insurer_phone' => 'nullable|string|max:20',
+            'keys_building_count' => 'required|integer|min:0',
+            'keys_mailbox_count' => 'required|integer|min:0',
+            'keys_apartment_count' => 'required|integer|min:0',
         ]);
 
         return DB::transaction(function () use ($validated) {
@@ -92,6 +98,12 @@ class LeaseController extends Controller
                 'deposit_amount' => $validated['deposit_amount'] ?? null,
                 'payment_day' => $validated['payment_day'],
                 'status' => $this->calculateLeaseStatus($validated['start_date'], $validated['end_date'] ?? null),
+                'insurer_name' => $validated['insurer_name'] ?? null,
+                'insurer_address' => $validated['insurer_address'] ?? null,
+                'insurer_phone' => $validated['insurer_phone'] ?? null,
+                'keys_building_count' => $validated['keys_building_count'],
+                'keys_mailbox_count' => $validated['keys_mailbox_count'],
+                'keys_apartment_count' => $validated['keys_apartment_count'],
             ]);
 
             $pivotData = [];
@@ -157,6 +169,12 @@ class LeaseController extends Controller
             'tenant_ids' => 'required|array|min:1',
             // Application de la même protection pour la mise à jour
             'tenant_ids.*' => 'distinct|exists:tenants,id',
+            'insurer_name' => 'nullable|string|max:255',
+            'insurer_address' => 'nullable|string|max:255',
+            'insurer_phone' => 'nullable|string|max:20',
+            'keys_building_count' => 'required|integer|min:0',
+            'keys_mailbox_count' => 'required|integer|min:0',
+            'keys_apartment_count' => 'required|integer|min:0',
         ]);
 
         return DB::transaction(function () use ($validated, $lease) {
@@ -197,6 +215,12 @@ class LeaseController extends Controller
                 'deposit_amount' => $validated['deposit_amount'] ?? null,
                 'payment_day' => $validated['payment_day'],
                 'status' => $this->calculateLeaseStatus($validated['start_date'], $validated['end_date'] ?? null),
+                'insurer_name' => $validated['insurer_name'] ?? null,
+                'insurer_address' => $validated['insurer_address'] ?? null,
+                'insurer_phone' => $validated['insurer_phone'] ?? null,
+                'keys_building_count' => $validated['keys_building_count'],
+                'keys_mailbox_count' => $validated['keys_mailbox_count'],
+                'keys_apartment_count' => $validated['keys_apartment_count'],
             ]);
 
             $pivotData = [];
@@ -245,5 +269,10 @@ class LeaseController extends Controller
         }
 
         return 'active';
+    }
+
+    public function pdf(Lease $lease)
+    {
+        return "Le PDF du bail arrivera bientôt ici !";
     }
 }

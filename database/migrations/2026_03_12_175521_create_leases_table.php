@@ -26,6 +26,20 @@ return new class extends Migration
             // Modalités
             $table->integer('payment_day')->default(1);
             $table->string('status')->default('active');
+            $table->timestamp('pdf_downloaded_at')->nullable();
+
+            // Informations sur l'assurance
+            $table->string('insurer_name')->nullable();
+            $table->string('insurer_address')->nullable();
+            $table->string('insurer_phone')->nullable();
+
+            // Remise des clefs
+            $table->integer('keys_building_count')->default(0);
+            $table->integer('keys_mailbox_count')->default(0);
+            $table->integer('keys_apartment_count')->default(0);
+
+            // État des lieux
+            $table->boolean('has_entry_inventory')->default(false);
 
             $table->timestamps();
             $table->softDeletes();

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tenant;
-use App\Models\Property; // ✅ On importe le modèle Property
+use App\Models\Property;
 use App\Services\DashboardAlertService;
 use Inertia\Inertia;
 

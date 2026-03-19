@@ -53,9 +53,18 @@ export default function Index({ tenants }: Props) {
                         <div>{tenant.phone || '—'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[rgb(var(--primary-100))] text-[rgb(var(--primary-800))]">
-                          {tenant.property?.name || 'Aucun bien'}
-                        </span>
+                        {(() => {
+                          const activeLease = tenant.leases?.find((l) => l.status === 'active');
+                          return activeLease?.property ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                              {activeLease.property.name}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-3 text-muted">
+                              Aucun bail en cours
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <Link href={route('tenants.show', tenant.id)}>

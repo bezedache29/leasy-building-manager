@@ -9,6 +9,7 @@ import MissingItemsModal from '@/Pages/Tenants/Partials/MissingItemsModal';
 import ConfirmModal from '@/Components/ConfirmModal';
 import { AppDocument } from '@/Types';
 import ExistingDocumentItem from '@/Pages/Tenants/Partials/ExistingDocumentItem';
+import { parseLocalDate } from '@/Utils/formatters';
 
 export default function Show({
   tenant,
@@ -318,6 +319,70 @@ export default function Show({
                     <ExistingDocumentItem key={doc.id} doc={doc} onDelete={setDocToDelete} />
                   ))}
                 </ul>
+              )}
+            </section>
+
+            {/* NOUVELLE SECTION : Baux & Occupation */}
+            <section className={sectionClass}>
+              <h2 className="mb-5 text-lg font-semibold text-[rgb(var(--primary-500))]">
+                Baux & Occupation
+              </h2>
+              {!tenant.leases || tenant.leases.length === 0 ? (
+                <p className="text-sm text-muted italic">
+                  Ce locataire n'a encore jamais été rattaché à un bail.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {tenant.leases.map((lease) => {
+                    // Si le bien a été supprimé ou n'est pas dispo, on évite un crash de la route
+                    if (!lease.property) {
+                      return (
+                        <div
+                          key={lease.id}
+                          className="rounded-lg border border-[rgb(var(--border))] bg-surface-2 p-4 text-center text-sm text-muted"
+                        >
+                          Données du bien indisponibles
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <Link
+                        key={lease.id}
+                        href={route('properties.show', lease.property.id)}
+                        className="group block rounded-lg border border-[rgb(var(--border))] bg-surface-2 p-4 transition-all hover:border-[rgb(var(--primary-400))] hover:bg-surface hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))]"
+                      >
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className="font-semibold text-app group-hover:text-[rgb(var(--primary-500))] transition-colors">
+                            {lease.property.name}
+                          </span>
+                          {lease.status === 'active' ? (
+                            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-500">
+                              En cours
+                            </span>
+                          ) : (
+                            <span className="rounded-full border border-[rgb(var(--border))] bg-surface-3 px-2 py-0.5 text-xs font-semibold text-muted">
+                              Terminé
+                            </span>
+                          )}
+                        </div>
+                        <div className="mb-2 text-xs text-muted">
+                          Du {parseLocalDate(lease.start_date).toLocaleDateString()} au{' '}
+                          {lease.end_date
+                            ? parseLocalDate(lease.end_date).toLocaleDateString()
+                            : "aujourd'hui"}
+                        </div>
+                        <div className="flex items-center justify-between border-t border-[rgb(var(--border))] pt-2 text-sm">
+                          <span className="text-muted">Loyer cc :</span>
+                          <span className="font-bold text-app">
+                            {(Number(lease.rent_amount) + Number(lease.charges_amount)).toFixed(2)}{' '}
+                            €
+                          </span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
               )}
             </section>
           </div>

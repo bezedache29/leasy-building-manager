@@ -19,7 +19,7 @@ export default function ExistingDocumentItem({ doc, onDelete }: Props) {
         href={route('documents.show', doc.id)}
         target="_blank"
         rel="noreferrer"
-        className="text-sm text-primary hover:underline flex items-center gap-2 min-w-0 flex-1 pr-4"
+        className="text-sm text-[rgb(var(--primary-400))] hover:underline flex items-center gap-2 min-w-0 flex-1 pr-4"
         title={`Ouvrir ${doc.name}`}
       >
         <span className="shrink-0">📄</span>
