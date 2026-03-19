@@ -40,8 +40,6 @@ class Lease extends Model
         'pdf_downloaded_at' => 'datetime',
     ];
 
-    protected $appends = ['missing_pdf_data', 'has_signed_lease'];
-
     // Un bail appartient à un bien
     public function property(): BelongsTo
     {
@@ -64,28 +62,31 @@ class Lease extends Model
     {
         $missing = [];
 
-        if ($this->tenants->isEmpty()) {
-            $missing[] = "Aucun locataire n'est rattaché à ce bail";
-        } else {
-            foreach ($this->tenants as $tenant) {
-                $name = $tenant->first_name . ' ' . $tenant->last_name;
+        // Securite N+1
+        if (!$this->relationLoaded('tenants') || $this->tenants->isEmpty()) {
+            $missing[] = "Aucun locataire n'est rattaché à ce bail (ou données non chargées)";
+            return $missing;
+        }
 
-                if (!$tenant->current_address) $missing[] = "Adresse manquante pour le locataire ($name)";
-                if (!$tenant->birth_date || !$tenant->birth_place) $missing[] = "Date ou lieu de naissance manquant pour le locataire ($name)";
-                if (!$tenant->phone) $missing[] = "Téléphone manquant pour le locataire ($name)";
-                if (!$tenant->nationality) $missing[] = "Nationalité manquante pour le locataire ($name)";
+        foreach ($this->tenants as $tenant) {
+            $name = $tenant->first_name . ' ' . $tenant->last_name;
 
-                if ($tenant->guarantors->isEmpty()) {
-                    $missing[] = "Aucun garant renseigné pour le locataire ($name)";
-                } else {
-                    foreach ($tenant->guarantors as $guarantor) {
-                        $gName = $guarantor->first_name . ' ' . $guarantor->last_name;
+            if (!$tenant->current_address) $missing[] = "Adresse manquante pour le locataire ($name)";
+            if (!$tenant->birth_date || !$tenant->birth_place) $missing[] = "Date ou lieu de naissance manquant pour le locataire ($name)";
+            if (!$tenant->phone) $missing[] = "Téléphone manquant pour le locataire ($name)";
+            if (!$tenant->nationality) $missing[] = "Nationalité manquante pour le locataire ($name)";
 
-                        if (!$guarantor->current_address) $missing[] = "Adresse manquante pour le garant ($gName)";
-                        if (!$guarantor->phone) $missing[] = "Téléphone manquant pour le garant ($gName)";
+            if (!$tenant->relationLoaded('guarantors') || $tenant->guarantors->isEmpty()) {
+                $missing[] = "Aucun garant renseigné pour le locataire ($name)";
+            } else {
+                foreach ($tenant->guarantors as $guarantor) {
+                    $gName = $guarantor->first_name . ' ' . $guarantor->last_name;
 
+                    if (!$guarantor->current_address) $missing[] = "Adresse manquante pour le garant ($gName)";
+                    if (!$guarantor->phone) $missing[] = "Téléphone manquant pour le garant ($gName)";
+
+                    if ($guarantor->relationLoaded('documents')) {
                         $hasActe = $guarantor->documents->contains('category', 'guarantee_deed');
-
                         if (!$hasActe) {
                             $missing[] = "L'acte de caution solidaire n'est pas uploadé pour le garant ($gName)";
                         }
@@ -102,11 +103,26 @@ class Lease extends Model
      */
     public function getHasSignedLeaseAttribute(): bool
     {
+        // Securite : evite le N+1 si la relation n'est pas prechargee
+        if (!$this->relationLoaded('tenants')) {
+            return false;
+        }
+
         foreach ($this->tenants as $tenant) {
-            if ($tenant->documents && $tenant->documents->contains('category', 'lease')) {
+            if (!$tenant->relationLoaded('documents')) {
+                continue;
+            }
+
+            // On s'assure que le document "bail" correspond bien a CE bail precis via le lease_id
+            $hasLease = $tenant->documents->contains(function ($document) {
+                return $document->category === 'lease' && $document->lease_id === $this->id;
+            });
+
+            if ($hasLease) {
                 return true;
             }
         }
+
         return false;
     }
 }

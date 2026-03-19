@@ -350,7 +350,7 @@ export default function Show({
                       <Link
                         key={lease.id}
                         href={route('properties.show', lease.property.id)}
-                        className="block rounded-lg border border-[rgb(var(--border))] bg-surface-2 p-4 transition-all hover:border-[rgb(var(--primary-400))] hover:bg-surface hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))]"
+                        className="group block rounded-lg border border-[rgb(var(--border))] bg-surface-2 p-4 transition-all hover:border-[rgb(var(--primary-400))] hover:bg-surface hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))]"
                       >
                         <div className="mb-2 flex items-center justify-between">
                           <span className="font-semibold text-app group-hover:text-[rgb(var(--primary-500))] transition-colors">

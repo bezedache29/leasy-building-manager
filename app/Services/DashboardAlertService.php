@@ -10,9 +10,14 @@ class DashboardAlertService
     {
         $alerts = [];
 
-        $activeLeases = Lease::with(['property', 'tenants.documents'])
+        $activeLeases = Lease::with([
+            'property',
+            'tenants.documents',
+            'tenants.guarantors.documents'
+        ])
             ->where('status', 'active')
             ->get();
+
         foreach ($activeLeases as $lease) {
             // Si le bail signé est déjà uploadé, c'est terminé, on passe au suivant
             if ($lease->has_signed_lease) {

@@ -69,7 +69,6 @@ export default function LeaseForm({ properties, tenants, lease, defaultPropertyI
     if (isEdit) {
       router.put(route('leases.update', lease.id), data);
     } else {
-      console.log('data', data);
       router.post(route('leases.store'), data);
     }
   };
