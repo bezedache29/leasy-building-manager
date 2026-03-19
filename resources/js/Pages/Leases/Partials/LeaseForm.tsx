@@ -105,7 +105,7 @@ export default function LeaseForm({ properties, tenants, lease, defaultPropertyI
 
   return (
     <form
-      onSubmit={handleSubmit(onSubmit, (errs) => console.log('Erreurs Zod :', errs))}
+      onSubmit={handleSubmit(onSubmit)}
       className="rounded-xl border border-[rgb(var(--border))] bg-surface p-6 shadow-sm space-y-10"
     >
       <section>

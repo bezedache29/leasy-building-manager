@@ -4,18 +4,24 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\App;
+use Exception;
 
 class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Creation de ton compte administrateur unique
+        $password = env('ADMIN_PASSWORD');
+
+        if (!App::environment('local') && empty($password)) {
+            throw new Exception("Arrêt critique : ADMIN_PASSWORD est absent du fichier .env. Il est interdit d'utiliser un mot de passe par défaut en production.");
+        }
+
         User::updateOrCreate(
+            ['email' => env('ADMIN_EMAIL', 'admin@leasy.test')],
             [
                 'name' => env('ADMIN_NAME', 'Admin Leasy'),
-                'email' => env('ADMIN_EMAIL', 'admin@leasy.test'),
-                'password' => Hash::make(env('ADMIN_PASSWORD', 'password')),
+                'password' => !empty($password) ? $password : 'password',
             ]
         );
     }
