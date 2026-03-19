@@ -28,12 +28,13 @@ it('stores a new lease successfully', function () {
     $leaseData = [
         'property_id' => $property->id,
         'tenant_ids' => [$tenant->id],
-        'start_date' => '2026-03-01',
-        'end_date' => null,
-        'rent_amount' => 600.00,
-        'charges_amount' => 50.00,
-        'deposit_amount' => 600.00,
+        'start_date' => now()->addDays(5)->format('Y-m-d'),
+        'rent_amount' => 800,
+        'charges_amount' => 50,
         'payment_day' => 1,
+        'keys_building_count' => 1,
+        'keys_mailbox_count' => 1,
+        'keys_apartment_count' => 2,
     ];
 
     // Exécution de la requête POST
@@ -76,6 +77,9 @@ it('updates an existing lease', function () {
         'charges_amount' => 60.00,
         'deposit_amount' => 500.00,
         'payment_day' => 5,
+        'keys_building_count' => 1,
+        'keys_mailbox_count' => 1,
+        'keys_apartment_count' => 2,
     ];
 
     // Exécution de la requête PUT

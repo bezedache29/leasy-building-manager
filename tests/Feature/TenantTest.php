@@ -54,6 +54,6 @@ it('identifies a new tenant dossier as incomplete', function () {
     expect($tenant->missing_items)->not->toBeEmpty();
 
     // 4. Vérifier que les champs et documents spécifiques manquants sont correctement identifiés
-    expect($tenant->missing_items['tenant']['documents'])->toContain('id_card');
-    expect($tenant->missing_items['tenant']['fields'])->toContain('nationality');
+    expect($tenant->missing_items['tenant']['documents'])->toContain("Pièce d'identité");
+    expect($tenant->missing_items['tenant']['fields'])->toContain('Nationalité');
 });
