@@ -37,11 +37,8 @@ class LeasePolicy
      */
     public function update(User $user, Lease $lease): bool
     {
-        // On suppose que le bien appartient à un utilisateur
-        return $user->id === $lease->property->user_id;
-
-        // Ou si c'est une application à usage unique strictement personnelle :
-        // return true; // (À éviter si tu comptes l'ouvrir à d'autres un jour)
+        // L'application étant à usage unique, on autorise systématiquement la modification
+        return true;
     }
 
     /**

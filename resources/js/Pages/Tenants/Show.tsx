@@ -399,7 +399,14 @@ export default function Show({
                     const hasSignedInventory = leaseDocs.some(
                       (d) => d.category === 'signed_inventory'
                     );
-                    const isFullyUploaded = hasSignedLease && hasSignedInventory;
+                    const hasSignedGuarantee = leaseDocs.some(
+                      (d) => d.category === 'signed_guarantee'
+                    );
+                    const hasGuarantors = (lease.guarantors?.length ?? 0) > 0;
+                    const isFullyUploaded =
+                      hasSignedLease &&
+                      hasSignedInventory &&
+                      (!hasGuarantors || hasSignedGuarantee);
 
                     return (
                       <div

@@ -122,7 +122,8 @@ export default function LeaseForm({
       onError: (serverErrors: Record<string, string>) => {
         // Affiche les erreurs Laravel en rouge sous tes champs React !
         Object.entries(serverErrors).forEach(([name, message]) => {
-          setError(name as Path<FormInput>, { type: 'server', message });
+          const normalizedName = name.replace(/\.\d+$/, '') as Path<FormInput>;
+          setError(normalizedName, { type: 'server', message });
         });
       },
     };
