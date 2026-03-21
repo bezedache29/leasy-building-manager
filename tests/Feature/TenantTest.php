@@ -57,3 +57,51 @@ it('identifies a new tenant dossier as incomplete', function () {
     expect($tenant->missing_items['tenant']['documents'])->toContain("Pièce d'identité");
     expect($tenant->missing_items['tenant']['fields'])->toContain('Nationalité');
 });
+
+it('considers a tenant profile complete without bank details or lease documents', function () {
+    // 1. Création d'un locataire avec tous ses champs de profil remplis
+    $tenant = Tenant::create([
+        'first_name' => 'Claire',
+        'last_name' => 'Dubois',
+        'email' => 'claire.dubois@example.com',
+        'phone' => '0612345678',
+        'birth_date' => '1995-08-22',
+        'birth_place' => 'Lyon',
+        'nationality' => 'French',
+        'marital_status' => 'Single',
+        'profession' => 'Teacher',
+        'current_address' => '12 rue des écoles, 69000 Lyon',
+    ]);
+
+    // 2. Ajout des 5 documents strictement obligatoires
+    $requiredDocs = [
+        'id_card',
+        'proof_of_address',
+        'employment_contract',
+        'payslip',
+        'tax_notice'
+    ];
+
+    foreach ($requiredDocs as $docCategory) {
+        $tenant->documents()->create([
+            'name' => "document_{$docCategory}.pdf",
+            'file_path' => "path/to/{$docCategory}.pdf",
+            'category' => $docCategory,
+            'mime_type' => 'application/pdf',
+            'size' => 1024,
+        ]);
+    }
+
+    // 3. On recharge la relation
+    $tenant->load('documents');
+
+    // 4. Vérification : Le profil est complet
+    expect($tenant->is_complete)->toBeTrue();
+
+    // 5. Vérification de la structure vide dictée par Coderabbit
+    expect($tenant->missing_items)->toBeArray();
+    expect($tenant->missing_items['tenant']['fields'])->toBeEmpty();
+    expect($tenant->missing_items['tenant']['documents'])->toBeEmpty();
+    expect($tenant->missing_items['guarantors'])->toBeEmpty();
+    expect($tenant->missing_items['leases'])->toBeEmpty();
+});
