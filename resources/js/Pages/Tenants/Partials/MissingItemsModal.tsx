@@ -7,6 +7,10 @@ interface Props {
   show: boolean;
   onClose: () => void;
   tenant: Tenant;
+  computedMissingItems?: {
+    tenant: { fields: string[]; documents: string[] };
+    guarantors: Array<{ id: number; name: string; fields: string[]; documents: string[] }>;
+  };
 }
 
 const FIELD_LABELS: Record<string, string> = {
@@ -21,9 +25,9 @@ const FIELD_LABELS: Record<string, string> = {
   profession: 'Profession',
 };
 
-export default function MissingItemsModal({ show, onClose, tenant }: Props) {
-  // Sécurité au cas où on l'appelle sur un dossier déjà complet
-  if (!tenant.missing_items) return null;
+export default function MissingItemsModal({ show, onClose, tenant, computedMissingItems }: Props) {
+  if (!computedMissingItems) return null;
+  const { tenant: missingTenant, guarantors: missingGuarantors } = computedMissingItems;
 
   return (
     <Modal show={show} onClose={onClose} maxWidth="3xl">
@@ -39,19 +43,18 @@ export default function MissingItemsModal({ show, onClose, tenant }: Props) {
               />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-app">Éléments manquants</h2>
+          <h2 className="text-xl font-semibold text-app">Profil incomplet</h2>
         </div>
 
         <div className="space-y-6 text-sm max-h-[60vh] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {/* Ce qu'il manque au locataire */}
-          {(tenant.missing_items.tenant.fields.length > 0 ||
-            tenant.missing_items.tenant.documents.length > 0) && (
+          {/* Locataire */}
+          {(missingTenant.fields.length > 0 || missingTenant.documents.length > 0) && (
             <div className="rounded-lg border border-[rgb(var(--border))] bg-surface-2 p-4">
               <p className="font-medium text-app mb-3">
                 👤 Locataire ({tenant.first_name} {tenant.last_name}) :
               </p>
               <div className="flex flex-wrap gap-2">
-                {tenant.missing_items.tenant.fields.map((f) => (
+                {missingTenant.fields.map((f) => (
                   <span
                     key={`t-f-${f}`}
                     className="rounded bg-surface border border-[rgb(var(--border))] px-2 py-1 text-muted"
@@ -59,7 +62,7 @@ export default function MissingItemsModal({ show, onClose, tenant }: Props) {
                     ✍️ {FIELD_LABELS[f] || f}
                   </span>
                 ))}
-                {tenant.missing_items.tenant.documents.map((d) => (
+                {missingTenant.documents.map((d) => (
                   <span
                     key={`t-d-${d}`}
                     className="rounded bg-surface border border-[rgb(var(--border))] px-2 py-1 text-muted"
@@ -71,34 +74,33 @@ export default function MissingItemsModal({ show, onClose, tenant }: Props) {
             </div>
           )}
 
-          {/* Ce qu'il manque aux garants */}
-          {tenant.missing_items.guarantors &&
-            tenant.missing_items.guarantors.map((g) => (
-              <div
-                key={g.id}
-                className="rounded-lg border border-[rgb(var(--border))] bg-surface-2 p-4"
-              >
-                <p className="font-medium text-app mb-3">🛡️ Garant ({g.name}) :</p>
-                <div className="flex flex-wrap gap-2">
-                  {g.fields.map((f) => (
-                    <span
-                      key={`g-f-${f}`}
-                      className="rounded bg-surface border border-[rgb(var(--border))] px-2 py-1 text-muted"
-                    >
-                      ✍️ {FIELD_LABELS[f] || f}
-                    </span>
-                  ))}
-                  {g.documents.map((d) => (
-                    <span
-                      key={`g-d-${d}`}
-                      className="rounded bg-surface border border-[rgb(var(--border))] px-2 py-1 text-muted"
-                    >
-                      📄 {DOCUMENT_CATEGORIES[d] || d}
-                    </span>
-                  ))}
-                </div>
+          {/* Garants */}
+          {missingGuarantors.map((g) => (
+            <div
+              key={g.id}
+              className="rounded-lg border border-[rgb(var(--border))] bg-surface-2 p-4"
+            >
+              <p className="font-medium text-app mb-3">🛡️ Garant ({g.name}) :</p>
+              <div className="flex flex-wrap gap-2">
+                {g.fields.map((f) => (
+                  <span
+                    key={`g-f-${f}`}
+                    className="rounded bg-surface border border-[rgb(var(--border))] px-2 py-1 text-muted"
+                  >
+                    ✍️ {FIELD_LABELS[f] || f}
+                  </span>
+                ))}
+                {g.documents.map((d) => (
+                  <span
+                    key={`g-d-${d}`}
+                    className="rounded bg-surface border border-[rgb(var(--border))] px-2 py-1 text-muted"
+                  >
+                    📄 {DOCUMENT_CATEGORIES[d] || d}
+                  </span>
+                ))}
               </div>
-            ))}
+            </div>
+          ))}
         </div>
 
         <div className="mt-6 flex justify-end pt-4 border-t border-[rgb(var(--border))]">

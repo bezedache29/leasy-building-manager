@@ -5,41 +5,34 @@ namespace App\Http\Controllers;
 use App\Models\Lease;
 use App\Models\Property;
 use App\Models\Tenant;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class LeaseController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
         //
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create(Request $request)
     {
         $properties = Property::orderBy('name')->get();
 
-        $tenants = Tenant::whereDoesntHave('leases', function ($query) {
-            $query->where('status', 'active');
-        })->orderBy('last_name')->orderBy('first_name')->get();
+        // AJOUT DU with('guarantors') POUR LE FRONTEND REACT
+        $tenants = Tenant::with('guarantors')->orderBy('last_name')->orderBy('first_name')->get();
 
         return inertia('Leases/Create', [
             'properties' => $properties,
             'tenants' => $tenants,
             'defaultPropertyId' => $request->query('property_id') ? (int) $request->query('property_id') : 0,
+            'defaultTenantId' => $request->query('tenant_id') ? (int) $request->query('tenant_id') : 0,
         ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -51,8 +44,9 @@ class LeaseController extends Controller
             'deposit_amount' => 'nullable|numeric|min:0',
             'payment_day' => 'required|integer|min:1|max:31',
             'tenant_ids' => 'required|array|min:1',
-            // Garantit qu'un ID n'apparaît qu'une seule fois dans le tableau
             'tenant_ids.*' => 'distinct|exists:tenants,id',
+            'guarantor_ids' => 'nullable|array',
+            'guarantor_ids.*' => 'exists:guarantors,id',
             'insurer_name' => 'nullable|string|max:255',
             'insurer_address' => 'nullable|string|max:255',
             'insurer_phone' => 'nullable|string|max:20',
@@ -62,7 +56,6 @@ class LeaseController extends Controller
         ]);
 
         return DB::transaction(function () use ($validated) {
-            // Verrouillage du bien pour éviter toute concurrence (le fameux FOR UPDATE)
             $property = Property::lockForUpdate()->findOrFail($validated['property_id']);
 
             $activeLeaseExists = Lease::where('property_id', $property->id)
@@ -77,17 +70,6 @@ class LeaseController extends Controller
 
             $tenantIds = $validated['tenant_ids'];
             Tenant::whereIn('id', $tenantIds)->lockForUpdate()->get(['id']);
-
-            $unavailableTenantsExists = Tenant::whereIn('id', $tenantIds)
-                ->whereHas('leases', function ($query) {
-                    $query->where('status', 'active');
-                })->exists();
-
-            if ($unavailableTenantsExists) {
-                return back()->withErrors([
-                    'tenant_ids' => 'Un ou plusieurs locataires sélectionnés ont déjà un bail actif ailleurs.'
-                ])->withInput();
-            }
 
             $lease = Lease::create([
                 'property_id' => $property->id,
@@ -106,11 +88,16 @@ class LeaseController extends Controller
                 'keys_apartment_count' => $validated['keys_apartment_count'],
             ]);
 
+            // Attachement des garants
+            if (!empty($validated['guarantor_ids'])) {
+                $lease->guarantors()->sync($validated['guarantor_ids']);
+            }
+
+            // Attachement des locataires
             $pivotData = [];
             foreach ($validated['tenant_ids'] as $index => $tenantId) {
                 $pivotData[$tenantId] = ['is_main_tenant' => $index === 0];
             }
-
             $lease->tenants()->attach($pivotData);
 
             return redirect()->route('properties.show', $property->id)
@@ -118,33 +105,18 @@ class LeaseController extends Controller
         });
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Lease $lease)
     {
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Lease $lease)
     {
-        $lease->load('tenants');
+        $lease->load(['tenants.guarantors', 'guarantors']);
 
         $properties = Property::orderBy('name')->get();
 
-        $tenants = Tenant::where(function ($query) use ($lease) {
-            // Soit le locataire n'a pas de bail actif en cours...
-            $query->whereDoesntHave('leases', function ($q) {
-                $q->where('status', 'active');
-            })
-                // ... Soit il est lié au bail que l'on est en train d'éditer
-                ->orWhereHas('leases', function ($q) use ($lease) {
-                    $q->where('leases.id', $lease->id);
-                });
-        })->orderBy('last_name')->orderBy('first_name')->get();
+        $tenants = Tenant::with('guarantors')->orderBy('last_name')->orderBy('first_name')->get();
 
         return inertia('Leases/Edit', [
             'lease' => $lease,
@@ -153,9 +125,6 @@ class LeaseController extends Controller
         ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Lease $lease)
     {
         $validated = $request->validate([
@@ -167,8 +136,9 @@ class LeaseController extends Controller
             'deposit_amount' => 'nullable|numeric|min:0',
             'payment_day' => 'required|integer|min:1|max:31',
             'tenant_ids' => 'required|array|min:1',
-            // Application de la même protection pour la mise à jour
             'tenant_ids.*' => 'distinct|exists:tenants,id',
+            'guarantor_ids' => 'nullable|array',
+            'guarantor_ids.*' => 'exists:guarantors,id',
             'insurer_name' => 'nullable|string|max:255',
             'insurer_address' => 'nullable|string|max:255',
             'insurer_phone' => 'nullable|string|max:20',
@@ -194,18 +164,6 @@ class LeaseController extends Controller
             $tenantIds = $validated['tenant_ids'];
             Tenant::whereIn('id', $tenantIds)->lockForUpdate()->get(['id']);
 
-            $unavailableTenantsExists = Tenant::whereIn('id', $tenantIds)
-                ->whereHas('leases', function ($query) use ($lease) {
-                    $query->where('status', 'active')
-                        ->where('leases.id', '!=', $lease->id);
-                })->exists();
-
-            if ($unavailableTenantsExists) {
-                return back()->withErrors([
-                    'tenant_ids' => 'Un ou plusieurs locataires sélectionnés ont déjà un autre bail actif.'
-                ])->withInput();
-            }
-
             $lease->update([
                 'property_id' => $property->id,
                 'start_date' => $validated['start_date'],
@@ -223,6 +181,13 @@ class LeaseController extends Controller
                 'keys_apartment_count' => $validated['keys_apartment_count'],
             ]);
 
+            // SAUVEGARDE DES GARANTS EN MODIFICATION
+            if (isset($validated['guarantor_ids'])) {
+                $lease->guarantors()->sync($validated['guarantor_ids']);
+            } else {
+                $lease->guarantors()->detach();
+            }
+
             $pivotData = [];
             foreach ($validated['tenant_ids'] as $index => $tenantId) {
                 $pivotData[$tenantId] = ['is_main_tenant' => $index === 0];
@@ -235,18 +200,9 @@ class LeaseController extends Controller
         });
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Lease $lease)
-    {
-        //
-    }
-
     public function terminate(Request $request, Lease $lease)
     {
         $validated = $request->validate([
-            // On compare directement avec la date stockee dans le modele
             'end_date' => 'required|date|after_or_equal:' . $lease->start_date->toDateString(),
         ]);
 
@@ -258,12 +214,8 @@ class LeaseController extends Controller
         return back()->with('success', 'La cloture du bail a bien ete enregistree.');
     }
 
-    /**
-     * Determine le statut du bail en fonction de ses dates.
-     */
     private function calculateLeaseStatus($startDate, $endDate): string
     {
-        // Si une date de fin existe et qu'elle est strictement dans le passé
         if ($endDate && Carbon::parse($endDate)->startOfDay()->isPast()) {
             return 'terminated';
         }
@@ -273,6 +225,20 @@ class LeaseController extends Controller
 
     public function pdf(Lease $lease)
     {
-        return "Le PDF du bail arrivera bientôt ici !";
+        // ON CHARGE DIRECTEMENT "guarantors" (ceux rattachés au bail) 
+        // ET NON PLUS "tenants.guarantors"
+        $lease->load(['property', 'tenants', 'guarantors']);
+
+        if (is_null($lease->pdf_downloaded_at)) {
+            $lease->update(['pdf_downloaded_at' => Carbon::now()]);
+        }
+
+        $pdf = Pdf::loadView('pdfs.lease', [
+            'lease' => $lease
+        ]);
+
+        $filename = 'bail-' . Str::slug($lease->property->name) . '-' . date('Ymd') . '.pdf';
+
+        return $pdf->stream($filename);
     }
 }

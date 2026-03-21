@@ -8,8 +8,6 @@ export const DOCUMENT_CATEGORIES: Record<string, string> = {
   bank_details: 'RIB',
   guarantee_deed: 'Acte de caution solidaire',
   insurance: "Attestation d'assurance",
-  lease: 'Bail signé',
-  inventory: 'État des lieux signé',
   deposit_check: 'Chèque de caution',
   other: 'Autre document',
 };
@@ -23,8 +21,6 @@ export const TENANT_DOCUMENT_KEYS = [
   'tax_notice',
   'bank_details',
   'insurance',
-  'lease',
-  'inventory',
   'deposit_check',
   'other',
 ];

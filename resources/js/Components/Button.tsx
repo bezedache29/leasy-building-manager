@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes, ReactNode } from 'react';
+import { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react';
 import { Link, InertiaLinkProps } from '@inertiajs/react';
 
 export type ButtonVariant =
@@ -63,6 +63,15 @@ export default function Button({
   const combinedClasses = `${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`;
 
   if (props.href !== undefined) {
+    if (props.target === '_blank' || props.download) {
+      // On indique strictement à TypeScript de ne considérer que les propriétés valides pour une balise <a>
+      return (
+        <a {...(props as AnchorHTMLAttributes<HTMLAnchorElement>)} className={combinedClasses}>
+          {children}
+        </a>
+      );
+    }
+
     return (
       <Link {...props} className={combinedClasses}>
         {children}

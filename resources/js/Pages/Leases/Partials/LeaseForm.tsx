@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useEffect, useMemo, useState } from 'react';
+import { Path, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
 import { leaseSchema } from '@/Schemas/LeaseSchema';
@@ -20,27 +20,39 @@ interface Props {
   tenants: Tenant[];
   lease?: Lease;
   defaultPropertyId?: number;
+  defaultTenantId?: number;
 }
 
-export default function LeaseForm({ properties, tenants, lease, defaultPropertyId }: Props) {
+export default function LeaseForm({
+  properties,
+  tenants,
+  lease,
+  defaultPropertyId,
+  defaultTenantId,
+}: Props) {
   const isEdit = !!lease;
 
-  // Sécurisation de l'ordre : on s'assure que le locataire principal est TOUJOURS en premier
+  // On initialise les locataires soit via le bail existant, soit via l'ID passé en URL
   const initialTenants = lease?.tenants
     ? [...lease.tenants].sort((a, b) => {
         if (a.pivot?.is_main_tenant) return -1;
         if (b.pivot?.is_main_tenant) return 1;
         return 0;
       })
-    : [];
+    : defaultTenantId
+      ? tenants.filter((t) => t.id === defaultTenantId)
+      : [];
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTenants, setSelectedTenants] = useState<Tenant[]>(initialTenants);
+  const [isPosting, setIsPosting] = useState(false);
 
   const {
     register,
     handleSubmit,
     setValue,
+    setError,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(leaseSchema),
@@ -48,7 +60,6 @@ export default function LeaseForm({ properties, tenants, lease, defaultPropertyI
       property_id: lease?.property_id || defaultPropertyId || 0,
       tenant_ids: initialTenants.map((t) => t.id),
       payment_day: lease?.payment_day || 1,
-      // Utilisation du format local (en-CA donne YYYY-MM-DD) au lieu de l'UTC
       start_date: lease?.start_date
         ? String(lease.start_date).split('T')[0]
         : new Date().toLocaleDateString('en-CA'),
@@ -62,14 +73,65 @@ export default function LeaseForm({ properties, tenants, lease, defaultPropertyI
       keys_building_count: lease?.keys_building_count || 0,
       keys_mailbox_count: lease?.keys_mailbox_count || 0,
       keys_apartment_count: lease?.keys_apartment_count || 0,
+      guarantor_ids: lease?.guarantors?.map((g) => g.id) || [],
     },
   });
 
-  const onSubmit = (data: FormOutput) => {
-    if (isEdit) {
-      router.put(route('leases.update', lease.id), data);
+  const availableGuarantors = useMemo(
+    () =>
+      Array.from(
+        new Map(selectedTenants.flatMap((t) => (t.guarantors ?? []).map((g) => [g.id, g]))).values()
+      ),
+    [selectedTenants]
+  );
+
+  const currentGuarantorIds = watch('guarantor_ids') || [];
+
+  useEffect(() => {
+    const allowedIds = new Set(availableGuarantors.map((g) => g.id));
+    const normalizedIds = currentGuarantorIds.filter((id) => allowedIds.has(id));
+
+    if (normalizedIds.length !== currentGuarantorIds.length) {
+      setValue('guarantor_ids', normalizedIds, { shouldValidate: true });
+    }
+  }, [availableGuarantors, currentGuarantorIds, setValue]);
+
+  const handleToggleGuarantor = (guarantorId: number) => {
+    if (currentGuarantorIds.includes(guarantorId)) {
+      setValue(
+        'guarantor_ids',
+        currentGuarantorIds.filter((id) => id !== guarantorId),
+        { shouldValidate: true }
+      );
     } else {
-      router.post(route('leases.store'), data);
+      setValue('guarantor_ids', [...currentGuarantorIds, guarantorId], { shouldValidate: true });
+    }
+  };
+
+  const onSubmit = (data: FormOutput) => {
+    // On nettoie les chaînes vides pour Laravel
+    const payload = {
+      ...data,
+      end_date: data.end_date === '' ? null : data.end_date,
+    };
+
+    const options = {
+      preserveScroll: true,
+      onStart: () => setIsPosting(true),
+      onFinish: () => setIsPosting(false),
+      onError: (serverErrors: Record<string, string>) => {
+        // Affiche les erreurs Laravel en rouge sous tes champs React !
+        Object.entries(serverErrors).forEach(([name, message]) => {
+          const normalizedName = name.replace(/\.\d+$/, '') as Path<FormInput>;
+          setError(normalizedName, { type: 'server', message });
+        });
+      },
+    };
+
+    if (isEdit) {
+      router.put(route('leases.update', lease.id), payload, options);
+    } else {
+      router.post(route('leases.store'), payload, options);
     }
   };
 
@@ -157,6 +219,8 @@ export default function LeaseForm({ properties, tenants, lease, defaultPropertyI
 
       <section className="border-t border-[rgb(var(--border))] pt-8">
         <h2 className={sectionTitleClass}>Les Locataires</h2>
+
+        {/* 1. Barre de recherche */}
         <div className="mb-4">
           <InputLabel htmlFor="tenant_search" value="Rechercher un locataire *" className="mb-1" />
           <div className="relative mt-1">
@@ -191,7 +255,8 @@ export default function LeaseForm({ properties, tenants, lease, defaultPropertyI
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        {/* 2. Liste des locataires sélectionnés (Les pilules) */}
+        <div className="flex flex-wrap gap-3 mb-8">
           {selectedTenants.length === 0 && (
             <span className="text-sm text-muted italic">Aucun locataire sélectionné.</span>
           )}
@@ -219,6 +284,54 @@ export default function LeaseForm({ properties, tenants, lease, defaultPropertyI
             </div>
           ))}
         </div>
+
+        {/* 3. L'apparition conditionnelle des garants SOUS les locataires */}
+        {availableGuarantors.length > 0 && (
+          <div
+            className={`rounded-lg border p-6 bg-surface-2 ${
+              errors.guarantor_ids ? 'border-red-500' : 'border-[rgb(var(--border))]'
+            }`}
+          >
+            <h3 className="text-base font-semibold text-app mb-2">Les Garants (Optionnel)</h3>
+            <p className="text-sm text-muted mb-4">
+              Sélectionnez les garants qui s'engagent spécifiquement pour ce bail :
+            </p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {availableGuarantors.map((guarantor) => (
+                <label
+                  key={guarantor.id}
+                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${
+                    currentGuarantorIds.includes(guarantor.id)
+                      ? 'border-[rgb(var(--primary-500))] bg-[rgb(var(--primary-500))]/5'
+                      : 'border-[rgb(var(--border))] bg-surface hover:bg-surface'
+                  }`}
+                >
+                  <div className="flex h-5 items-center mt-0.5">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-gray-300 text-[rgb(var(--primary-500))] focus:ring-[rgb(var(--primary-500))]"
+                      checked={currentGuarantorIds.includes(guarantor.id)}
+                      onChange={() => handleToggleGuarantor(guarantor.id)}
+                    />
+                  </div>
+                  <div>
+                    <p className="font-medium text-app">
+                      {guarantor.first_name} {guarantor.last_name}
+                    </p>
+                    <p className="text-xs text-muted">Garant</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            {/* Affichage explicite de l'erreur de validation backend ou frontend */}
+            {errors.guarantor_ids && (
+              <p className="mt-3 text-sm font-medium text-red-500">
+                {errors.guarantor_ids.message as string}
+              </p>
+            )}
+          </div>
+        )}
       </section>
 
       <section className="border-t border-[rgb(var(--border))] pt-8">
@@ -375,8 +488,8 @@ export default function LeaseForm({ properties, tenants, lease, defaultPropertyI
       </section>
 
       <div className="mt-6 flex justify-end border-t border-[rgb(var(--border))] pt-6">
-        <Button type="submit" disabled={isSubmitting} variant="primary">
-          {isSubmitting
+        <Button type="submit" disabled={isSubmitting || isPosting} variant="primary">
+          {isSubmitting || isPosting
             ? 'Enregistrement...'
             : isEdit
               ? 'Enregistrer les modifications'

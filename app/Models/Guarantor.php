@@ -40,4 +40,9 @@ class Guarantor extends Model
             ->withPivot('relationship')
             ->withTimestamps();
     }
+
+    public function leases()
+    {
+        return $this->belongsToMany(Lease::class)->withTimestamps();
+    }
 }

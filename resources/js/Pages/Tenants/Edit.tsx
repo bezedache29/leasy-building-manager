@@ -103,23 +103,6 @@ export default function Edit({ tenant }: { tenant: Tenant }) {
             <TenantFormFields register={register} errors={errors} />
           </section>
 
-          {tenant.documents && tenant.documents.length > 0 && (
-            <section className={sectionClass}>
-              <h2 className="mb-5 text-lg font-semibold text-[rgb(var(--primary-500))]">
-                Documents déjà enregistrés
-              </h2>
-              <ul className="space-y-3">
-                {tenant.documents.map((doc) => (
-                  <ExistingDocumentItem
-                    key={doc.id}
-                    doc={doc}
-                    onDelete={(d) => deleteExistingDoc(d.id)}
-                  />
-                ))}
-              </ul>
-            </section>
-          )}
-
           <section className={sectionClass}>
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-[rgb(var(--primary-500))]">
@@ -159,6 +142,23 @@ export default function Edit({ tenant }: { tenant: Tenant }) {
               ))}
             </div>
           </section>
+
+          {tenant.documents && tenant.documents.length > 0 && (
+            <section className={sectionClass}>
+              <h2 className="mb-5 text-lg font-semibold text-[rgb(var(--primary-500))]">
+                Documents déjà enregistrés
+              </h2>
+              <ul className="space-y-3">
+                {tenant.documents.map((doc) => (
+                  <ExistingDocumentItem
+                    key={doc.id}
+                    doc={doc}
+                    onDelete={(d) => deleteExistingDoc(d.id)}
+                  />
+                ))}
+              </ul>
+            </section>
+          )}
 
           <div className="flex justify-end gap-4 pt-4">
             <Button href={route('tenants.show', tenant.id)} variant="danger">
