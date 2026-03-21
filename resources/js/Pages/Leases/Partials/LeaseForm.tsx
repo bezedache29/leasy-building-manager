@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Path, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
@@ -77,8 +77,24 @@ export default function LeaseForm({
     },
   });
 
-  const availableGuarantors = selectedTenants.flatMap((t) => t.guarantors || []);
+  const availableGuarantors = useMemo(
+    () =>
+      Array.from(
+        new Map(selectedTenants.flatMap((t) => (t.guarantors ?? []).map((g) => [g.id, g]))).values()
+      ),
+    [selectedTenants]
+  );
+
   const currentGuarantorIds = watch('guarantor_ids') || [];
+
+  useEffect(() => {
+    const allowedIds = new Set(availableGuarantors.map((g) => g.id));
+    const normalizedIds = currentGuarantorIds.filter((id) => allowedIds.has(id));
+
+    if (normalizedIds.length !== currentGuarantorIds.length) {
+      setValue('guarantor_ids', normalizedIds, { shouldValidate: true });
+    }
+  }, [availableGuarantors, currentGuarantorIds, setValue]);
 
   const handleToggleGuarantor = (guarantorId: number) => {
     if (currentGuarantorIds.includes(guarantorId)) {
@@ -270,7 +286,11 @@ export default function LeaseForm({
 
         {/* 3. L'apparition conditionnelle des garants SOUS les locataires */}
         {availableGuarantors.length > 0 && (
-          <div className="rounded-lg border border-[rgb(var(--border))] p-6 bg-surface-2">
+          <div
+            className={`rounded-lg border p-6 bg-surface-2 ${
+              errors.guarantor_ids ? 'border-red-500' : 'border-[rgb(var(--border))]'
+            }`}
+          >
             <h3 className="text-base font-semibold text-app mb-2">Les Garants (Optionnel)</h3>
             <p className="text-sm text-muted mb-4">
               Sélectionnez les garants qui s'engagent spécifiquement pour ce bail :
@@ -302,6 +322,13 @@ export default function LeaseForm({
                 </label>
               ))}
             </div>
+
+            {/* Affichage explicite de l'erreur de validation backend ou frontend */}
+            {errors.guarantor_ids && (
+              <p className="mt-3 text-sm font-medium text-red-500">
+                {errors.guarantor_ids.message as string}
+              </p>
+            )}
           </div>
         )}
       </section>

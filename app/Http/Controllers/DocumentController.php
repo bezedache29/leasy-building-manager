@@ -33,6 +33,8 @@ class DocumentController extends Controller
      */
     public function storeForLease(Request $request, Lease $lease)
     {
+        Gate::authorize('update', $lease);
+
         // Validation des tableaux de fichiers envoyes par React
         $request->validate([
             'signed_lease' => 'nullable|array',

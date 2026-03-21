@@ -336,7 +336,7 @@ export default function Show({ property }: Props) {
                       {/* BOUTON PDF DYNAMIQUE */}
                       {activeLease.missing_pdf_data && activeLease.missing_pdf_data.length > 0 ? (
                         <Button onClick={() => setShowPdfMissingModal(true)}>
-                          📄 Infos manquante pour Bail
+                          📄 Infos manquantes pour Bail
                         </Button>
                       ) : (
                         <Button

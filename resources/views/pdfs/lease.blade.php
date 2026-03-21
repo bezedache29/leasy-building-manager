@@ -90,7 +90,7 @@
         
         <div class="row">
             <span class="strong">Adresse du logement :</span> 
-            {{ env('BUILDING_ADDRESS') }}, {{ env('BUILDING_ZIP') }} {{ env('BUILDING_CITY') }}
+            {{ config('building.address') }}, {{ config('building.zip') }} {{ config('building.city') }}
         </div>
         
         <div class="row">
@@ -299,7 +299,7 @@
         </ul>
     </div>
 
-    <h2>XII. REMISE DES CLÉS</h2>
+    <h2>XIII. REMISE DES CLÉS</h2>
         <p>Le bailleur remet ce jour au locataire les clés suivantes, que ce dernier s'oblige à restituer en fin de jouissance :</p>
         <div class="highlight-box">
             <table class="dotted-table">

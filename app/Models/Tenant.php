@@ -225,7 +225,7 @@ class Tenant extends Model
             empty($missing['guarantors']) &&
             empty($missing['leases'])
         ) {
-            return [];
+            return $missing;
         }
 
         return $missing;
