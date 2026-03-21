@@ -76,11 +76,6 @@ class Tenant extends Model
             'employment_contract',
             'payslip',
             'tax_notice',
-            'bank_details',
-            'insurance',
-            'lease',
-            'inventory',
-            'deposit_check'
         ];
 
         // On récupère juste la liste des catégories uploadées
@@ -110,8 +105,7 @@ class Tenant extends Model
             'proof_of_address',
             'employment_contract',
             'payslip',
-            'tax_notice',
-            'guarantee_deed'
+            'tax_notice'
         ];
 
         foreach ($this->guarantors as $guarantor) {
@@ -147,7 +141,8 @@ class Tenant extends Model
     {
         $missing = [
             'tenant' => ['fields' => [], 'documents' => []],
-            'guarantors' => []
+            'guarantors' => [],
+            'leases' => [],
         ];
 
         // Dictionnaire de traduction pour les champs
@@ -179,8 +174,8 @@ class Tenant extends Model
             'guarantee_deed' => 'Acte de caution solidaire'
         ];
 
-        $tenantRequiredDocs = ['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice', 'bank_details', 'insurance', 'lease', 'inventory', 'deposit_check'];
-        $guarantorRequiredDocs = ['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice', 'guarantee_deed'];
+        $tenantRequiredDocs = ['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice'];
+        $guarantorRequiredDocs = ['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice'];
 
         // 1. Locataire
         foreach ($fieldLabels as $field => $label) {
@@ -221,6 +216,16 @@ class Tenant extends Model
             if (!empty($gMissing['fields']) || !empty($gMissing['documents'])) {
                 $missing['guarantors'][] = $gMissing;
             }
+        }
+
+        // Si absolument tout est complet, on retourne null
+        if (
+            empty($missing['tenant']['fields']) &&
+            empty($missing['tenant']['documents']) &&
+            empty($missing['guarantors']) &&
+            empty($missing['leases'])
+        ) {
+            return [];
         }
 
         return $missing;

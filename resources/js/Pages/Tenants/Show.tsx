@@ -4,12 +4,14 @@ import { Link, router, useForm } from '@inertiajs/react';
 import Button from '@/Components/Button';
 import { Tenant } from '@/Types/tenant';
 import { Guarantor } from '@/Types/guarantor';
+import { Lease } from '@/Types/lease';
 import GuarantorModal from './Partials/GuarantorModal';
 import MissingItemsModal from '@/Pages/Tenants/Partials/MissingItemsModal';
 import ConfirmModal from '@/Components/ConfirmModal';
 import { AppDocument } from '@/Types';
 import ExistingDocumentItem from '@/Pages/Tenants/Partials/ExistingDocumentItem';
 import { parseLocalDate } from '@/Utils/formatters';
+import UploadSignedDocsModal from '@/Pages/Tenants/Partials/UploadSignedDocsModal';
 
 export default function Show({
   tenant,
@@ -26,6 +28,8 @@ export default function Show({
   const [showMissingModal, setShowMissingModal] = useState(false);
   const [guarantorToDetach, setGuarantorToDetach] = useState<Guarantor | null>(null);
   const [showArchiveTenantModal, setShowArchiveTenantModal] = useState(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [selectedLease, setSelectedLease] = useState<Lease | null>(null);
 
   const openModalForAdd = () => {
     setEditingGuarantor(null);
@@ -67,7 +71,6 @@ export default function Show({
     });
   };
 
-  // --- Styles et Utilitaires d'affichage ---
   const sectionClass = 'rounded-xl border border-[rgb(var(--border))] bg-surface p-6 shadow-sm';
   const labelClass = 'text-sm font-medium text-muted';
   const valueClass = 'mt-1 text-base text-app font-medium';
@@ -98,9 +101,57 @@ export default function Show({
     return relationships[rel] || rel;
   };
 
+  // --- CALCUL DE LA COMPLÉTUDE DU PROFIL (Locataire + Garants) ---
+  const backendMissingDocs = tenant.missing_items?.tenant?.documents || [];
+
+  // 1. On ignore les contrats pour le locataire (Bail, État des lieux)
+  const missingTenantDocs = backendMissingDocs.filter((d) => {
+    const key = String(d).toLowerCase();
+    return (
+      !key.includes('bail') &&
+      !key.includes('lease') &&
+      !key.includes('etat') &&
+      !key.includes('état') &&
+      !key.includes('inventory')
+    );
+  });
+
+  const missingTenantFields = tenant.missing_items?.tenant?.fields || [];
+
+  // 2. NOUVEAU : On filtre aussi les documents des garants pour ignorer l'acte de caution !
+  const missingGuarantors = (tenant.missing_items?.guarantors || []).map((g) => {
+    const filteredDocs = (g.documents || []).filter((d) => {
+      const key = String(d).toLowerCase();
+      // On exclut tous les mots-clés liés à l'acte solidaire
+      return (
+        !key.includes('acte') &&
+        !key.includes('caution') &&
+        !key.includes('solidaire') &&
+        !key.includes('guarantee')
+      );
+    });
+    return { ...g, documents: filteredDocs };
+  });
+
+  // 3. On recalcule si les garants ont des VRAIES pièces manquantes (ex: CNI, Fiches de paie)
+  let missingGuarantorsCount = 0;
+  missingGuarantors.forEach((g) => {
+    missingGuarantorsCount += (g.fields?.length || 0) + (g.documents?.length || 0);
+  });
+
+  const isProfileComplete =
+    missingTenantFields.length === 0 &&
+    missingTenantDocs.length === 0 &&
+    missingGuarantorsCount === 0;
+
+  const computedMissingItems = {
+    tenant: { fields: missingTenantFields, documents: missingTenantDocs },
+    guarantors: missingGuarantors, // On passe les garants filtrés à la modale
+  };
+
   return (
     <AppLayout>
-      <div className="mx-auto max-w-5xl pb-12">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-12">
         <header className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-4">
@@ -108,13 +159,17 @@ export default function Show({
                 Dossier de {tenant.first_name} {tenant.last_name}
               </h1>
 
-              {!tenant.is_complete && tenant.missing_items && (
+              {!isProfileComplete && (
                 <button
                   onClick={() => setShowMissingModal(true)}
                   className="flex items-center gap-2 rounded-full bg-amber-500/10 px-3 py-1 text-sm font-medium text-amber-500 transition-colors hover:bg-amber-500/20 focus:outline-none cursor-pointer"
-                  title="Voir les éléments manquants"
                 >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg
+                    className="h-4 w-4 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -152,7 +207,6 @@ export default function Show({
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* COLONNE GAUCHE (Infos Locataire + Garants) */}
           <div className="lg:col-span-2 space-y-8">
             <section className={sectionClass}>
               <h2 className="mb-5 text-lg font-semibold text-[rgb(var(--primary-500))]">
@@ -305,8 +359,224 @@ export default function Show({
             </section>
           </div>
 
-          {/* COLONNE DROITE (Documents du Locataire) */}
           <div className="space-y-8">
+            <section className={sectionClass}>
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-lg font-semibold text-[rgb(var(--primary-500))]">
+                  Baux & Occupation
+                </h2>
+              </div>
+
+              {!tenant.leases || tenant.leases.length === 0 ? (
+                <div className="rounded-lg border border-[rgb(var(--border))] bg-surface-2 p-6 text-center">
+                  <p className="text-sm text-muted italic mb-3">
+                    Ce locataire n'a encore jamais été rattaché à un bail.
+                  </p>
+                  <Link
+                    href={route('leases.create', { tenant_id: tenant.id })}
+                    className="inline-block text-sm font-medium text-[rgb(var(--primary-500))] hover:underline"
+                  >
+                    Rattacher à un bien
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {tenant.leases.map((lease) => {
+                    if (!lease.property) {
+                      return (
+                        <div
+                          key={lease.id}
+                          className="rounded-lg border border-[rgb(var(--border))] bg-surface-2 p-4 text-center text-sm text-muted"
+                        >
+                          Données du bien indisponibles
+                        </div>
+                      );
+                    }
+
+                    const canUploadSignedDocs = lease.pdf_downloaded_at !== null;
+                    const leaseDocs = lease.documents || [];
+                    const hasSignedLease = leaseDocs.some((d) => d.category === 'signed_lease');
+                    const hasSignedInventory = leaseDocs.some(
+                      (d) => d.category === 'signed_inventory'
+                    );
+                    const isFullyUploaded = hasSignedLease && hasSignedInventory;
+
+                    return (
+                      <div
+                        key={lease.id}
+                        className="rounded-xl border border-[rgb(var(--border))] bg-surface-2 p-5 shadow-sm"
+                      >
+                        <div className="mb-3 flex items-center justify-between">
+                          <h3 className="font-bold text-lg text-app">{lease.property.name}</h3>
+                          {lease.status === 'active' ? (
+                            <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-500">
+                              En cours
+                            </span>
+                          ) : (
+                            <span className="rounded-full border border-[rgb(var(--border))] bg-surface-3 px-2.5 py-1 text-xs font-semibold text-muted">
+                              Terminé
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="mb-4 text-sm text-muted">
+                          Du {parseLocalDate(lease.start_date).toLocaleDateString()} au{' '}
+                          {lease.end_date
+                            ? parseLocalDate(lease.end_date).toLocaleDateString()
+                            : "aujourd'hui"}
+                        </div>
+
+                        <div className="flex items-center justify-between border-t border-[rgb(var(--border))] py-4 text-base">
+                          <span className="text-muted">Loyer mensuel cc :</span>
+                          <span className="font-extrabold text-app text-lg">
+                            {(Number(lease.rent_amount) + Number(lease.charges_amount)).toFixed(2)}{' '}
+                            €
+                          </span>
+                        </div>
+
+                        <div className="border-t border-[rgb(var(--border))] pt-4 flex flex-col gap-3">
+                          <Link
+                            href={route('properties.show', lease.property.id)}
+                            className="w-full"
+                          >
+                            <Button size="sm" variant="secondary" className="w-full justify-center">
+                              Voir l'appartement
+                            </Button>
+                          </Link>
+
+                          {!isFullyUploaded ? (
+                            canUploadSignedDocs ? (
+                              <Button
+                                size="sm"
+                                className="w-full justify-center shadow-sm"
+                                onClick={() => {
+                                  setSelectedLease(lease);
+                                  setIsUploadModalOpen(true);
+                                }}
+                              >
+                                <svg
+                                  className="mr-2 h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                                  />
+                                </svg>
+                                Uploader docuemnts signés
+                              </Button>
+                            ) : (
+                              <div className="p-2 border border-[rgb(var(--border))] border-dashed rounded text-xs text-center text-muted italic bg-surface-3">
+                                Générez le Bail, l'état des lieux et l'acte solidaire pour débloquer
+                                l'upload
+                              </div>
+                            )
+                          ) : (
+                            <div className="p-2 border border-emerald-500/30 rounded text-xs text-center font-medium text-emerald-600 flex items-center justify-center bg-emerald-500/10">
+                              <svg
+                                className="mr-1.5 h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                              Docuemnts signés uploadé !
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="border-t border-[rgb(var(--border))] mt-4 pt-4">
+                          <h4 className="text-sm font-semibold text-muted mb-3 flex items-center">
+                            <svg
+                              className="mr-2 h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.414a4 4 0 00-5.656-5.656l-6.415 6.414a6 6 0 108.486 8.486L20.5 13"
+                              />
+                            </svg>
+                            Documents joints
+                          </h4>
+
+                          {leaseDocs.length === 0 ? (
+                            <p className="text-xs text-muted italic px-1">
+                              Aucun document n'a encore été uploadé pour ce bail.
+                            </p>
+                          ) : (
+                            <div className="space-y-2">
+                              {leaseDocs.map((doc) => (
+                                <div
+                                  key={doc.id}
+                                  className="flex items-center justify-between p-2 rounded bg-surface-3 border border-[rgb(var(--border))] hover:border-[rgb(var(--primary-400))] transition-colors group"
+                                >
+                                  <a
+                                    href={route('documents.show', doc.id)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="flex items-center text-xs text-app overflow-hidden flex-1"
+                                  >
+                                    <svg
+                                      className="mr-2 h-4 w-4 text-emerald-500 shrink-0"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                      />
+                                    </svg>
+                                    <span className="truncate group-hover:underline">
+                                      {doc.name}
+                                    </span>
+                                  </a>
+                                  <button
+                                    onClick={() => setDocToDelete(doc)}
+                                    className="text-muted hover:text-red-500 ml-2"
+                                  >
+                                    <svg
+                                      className="h-4 w-4"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                      />
+                                    </svg>
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
             <section className={sectionClass}>
               <h2 className="mb-5 text-lg font-semibold text-[rgb(var(--primary-500))]">
                 Documents du locataire
@@ -321,86 +591,17 @@ export default function Show({
                 </ul>
               )}
             </section>
-
-            {/* NOUVELLE SECTION : Baux & Occupation */}
-            <section className={sectionClass}>
-              <h2 className="mb-5 text-lg font-semibold text-[rgb(var(--primary-500))]">
-                Baux & Occupation
-              </h2>
-              {!tenant.leases || tenant.leases.length === 0 ? (
-                <p className="text-sm text-muted italic">
-                  Ce locataire n'a encore jamais été rattaché à un bail.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {tenant.leases.map((lease) => {
-                    // Si le bien a été supprimé ou n'est pas dispo, on évite un crash de la route
-                    if (!lease.property) {
-                      return (
-                        <div
-                          key={lease.id}
-                          className="rounded-lg border border-[rgb(var(--border))] bg-surface-2 p-4 text-center text-sm text-muted"
-                        >
-                          Données du bien indisponibles
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <Link
-                        key={lease.id}
-                        href={route('properties.show', lease.property.id)}
-                        className="group block rounded-lg border border-[rgb(var(--border))] bg-surface-2 p-4 transition-all hover:border-[rgb(var(--primary-400))] hover:bg-surface hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-500))]"
-                      >
-                        <div className="mb-2 flex items-center justify-between">
-                          <span className="font-semibold text-app group-hover:text-[rgb(var(--primary-500))] transition-colors">
-                            {lease.property.name}
-                          </span>
-                          {lease.status === 'active' ? (
-                            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-500">
-                              En cours
-                            </span>
-                          ) : (
-                            <span className="rounded-full border border-[rgb(var(--border))] bg-surface-3 px-2 py-0.5 text-xs font-semibold text-muted">
-                              Terminé
-                            </span>
-                          )}
-                        </div>
-                        <div className="mb-2 text-xs text-muted">
-                          Du {parseLocalDate(lease.start_date).toLocaleDateString()} au{' '}
-                          {lease.end_date
-                            ? parseLocalDate(lease.end_date).toLocaleDateString()
-                            : "aujourd'hui"}
-                        </div>
-                        <div className="flex items-center justify-between border-t border-[rgb(var(--border))] pt-2 text-sm">
-                          <span className="text-muted">Loyer cc :</span>
-                          <span className="font-bold text-app">
-                            {(Number(lease.rent_amount) + Number(lease.charges_amount)).toFixed(2)}{' '}
-                            €
-                          </span>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
           </div>
         </div>
       </div>
 
-      {/* --- MODALES --- */}
+      <MissingItemsModal
+        show={showMissingModal}
+        onClose={() => setShowMissingModal(false)}
+        tenant={tenant}
+        computedMissingItems={computedMissingItems}
+      />
 
-      {/* 1. Modale des éléments manquants */}
-      {tenant.missing_items && (
-        <MissingItemsModal
-          show={showMissingModal}
-          onClose={() => setShowMissingModal(false)}
-          tenant={tenant}
-        />
-      )}
-
-      {/* 2. Modale des garants */}
       <GuarantorModal
         show={isModalOpen}
         onClose={handleModalClose}
@@ -409,7 +610,6 @@ export default function Show({
         availableGuarantors={availableGuarantors}
       />
 
-      {/* 3. Modale demande suppression document */}
       <ConfirmModal
         show={docToDelete !== null}
         onClose={() => setDocToDelete(null)}
@@ -422,7 +622,6 @@ export default function Show({
         Cette action est réversible via l'archivage sécurisé (Soft delete).
       </ConfirmModal>
 
-      {/* 4. Modale demande détachement garant */}
       <ConfirmModal
         show={guarantorToDetach !== null}
         onClose={() => setGuarantorToDetach(null)}
@@ -438,7 +637,6 @@ export default function Show({
         Ses données resteront archivées dans le système.
       </ConfirmModal>
 
-      {/* 5. Modale demande archivage locataire */}
       <ConfirmModal
         show={showArchiveTenantModal}
         onClose={() => setShowArchiveTenantModal(false)}
@@ -453,6 +651,12 @@ export default function Show({
         ? <br /> <br />
         Il ne sera plus visible dans la liste principale des locataires actifs.
       </ConfirmModal>
+
+      <UploadSignedDocsModal
+        show={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        lease={selectedLease}
+      />
     </AppLayout>
   );
 }

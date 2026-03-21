@@ -326,9 +326,7 @@ export default function Show({ property }: Props) {
                             href={route('tenants.show', tenant.id)}
                             className="inline-flex items-center gap-1 bg-surface px-2 py-1 rounded-md border border-[rgb(var(--border))] text-sm text-app transition-colors hover:border-[rgb(var(--primary-500))] hover:text-[rgb(var(--primary-500))] hover:bg-surface-2"
                           >
-                            {tenant.pivot?.is_main_tenant && (
-                              <span title="Locataire principal">👑</span>
-                            )}
+                            {tenant.pivot?.is_main_tenant ? <span>👑 </span> : null}
                             {tenant.first_name} {tenant.last_name}
                           </Link>
                         ))}
@@ -336,11 +334,16 @@ export default function Show({ property }: Props) {
 
                     <div className="flex flex-col gap-5">
                       {/* BOUTON PDF DYNAMIQUE */}
-                      {/* {activeLease.missing_pdf_data && activeLease.missing_pdf_data.length > 0 ? ( */}
                       {activeLease.missing_pdf_data && activeLease.missing_pdf_data.length > 0 ? (
-                        <Button disabled>📄 Bail PDF (Bloqué)</Button>
+                        <Button onClick={() => setShowPdfMissingModal(true)}>
+                          📄 Infos manquante pour Bail
+                        </Button>
                       ) : (
-                        <Button href={route('leases.pdf', activeLease.id)}>
+                        <Button
+                          href={route('leases.pdf', activeLease.id)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           📄 Télécharger le Bail
                         </Button>
                       )}

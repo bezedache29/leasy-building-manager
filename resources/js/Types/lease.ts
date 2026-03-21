@@ -1,3 +1,5 @@
+import { AppDocument } from '@/Types/document';
+import { Guarantor } from '@/Types/guarantor';
 import { Property } from '@/Types/property';
 import { Tenant } from '@/Types/tenant';
 
@@ -20,12 +22,15 @@ export interface Lease {
   keys_building_count: number;
   keys_mailbox_count: number;
   keys_apartment_count: number;
+  pdf_downloaded_at?: string | null;
 
   // Attribut calcule renvoye par le backend pour bloquer/autoriser le PDF
   missing_pdf_data?: string[];
 
   property?: Property;
   tenants?: Tenant[];
+  documents?: AppDocument[];
+  guarantors?: Guarantor[];
 
   created_at: string;
   updated_at: string;

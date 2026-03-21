@@ -185,12 +185,11 @@ class TenantController extends Controller
      */
     public function show(Tenant $tenant)
     {
-        // On applique le meme tri decroissant pour la page de detail du locataire
         $tenant->loadMissing([
             'documents',
             'guarantors.documents',
             'leases' => function ($query) {
-                $query->orderBy('start_date', 'desc')->with('property');
+                $query->orderBy('start_date', 'desc')->with(['property', 'documents', 'guarantors']);
             }
         ]);
 

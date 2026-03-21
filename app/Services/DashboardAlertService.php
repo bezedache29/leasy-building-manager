@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Lease;
+use App\Models\Tenant;
 
 class DashboardAlertService
 {
@@ -47,6 +48,22 @@ class DashboardAlertService
                         'action_url' => route('properties.show', $lease->property->id),
                     ];
                 }
+            }
+        }
+
+        // On récupère les locataires avec leurs relations pour que l'attribut is_complete puisse faire ses calculs
+        $tenants = Tenant::with(['documents', 'guarantors.documents'])->get();
+
+        foreach ($tenants as $tenant) {
+            if (!$tenant->is_complete) {
+                $alerts[] = [
+                    'key' => 'incomplete_tenant_' . $tenant->id,
+                    'icon' => '⚠️',
+                    'level' => 'warning', // S'affichera en orange (amber-400)
+                    'title' => "Dossier incomplet pour le locataire : {$tenant->first_name} {$tenant->last_name}",
+                    // On redirige vers la page d'édition pour pouvoir compléter le dossier
+                    'action_url' => route('tenants.show', $tenant->id),
+                ];
             }
         }
 

@@ -48,7 +48,9 @@ class PropertyController extends Controller
         $property->load([
             'rooms.equipments',
             'leases.tenants.documents',
-            'leases.tenants.guarantors.documents'
+            'leases.guarantors',
+            'leases.guarantors.documents',
+            'leases.documents',
         ]);
 
         // On expose explicitement nos attributs calculés uniquement pour cette vue
