@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Guarantor;
 use App\Models\Lease;
 use App\Models\Property;
 use App\Models\Tenant;
@@ -239,6 +240,47 @@ class LeaseController extends Controller
 
         $filename = 'bail-' . Str::slug($lease->property->name) . '-' . date('Ymd') . '.pdf';
 
+        return $pdf->stream($filename);
+    }
+
+    public function downloadGuarantee(Lease $lease, Guarantor $guarantor)
+    {
+        // On s'assure que le garant est bien lie a ce bail pour des raisons de securite
+        abort_unless($lease->guarantors->contains($guarantor), 404);
+
+        $lease->load(['property', 'tenants']);
+
+        // Utilisation de NumberFormatter pour ecrire les montants en toutes lettres
+        $formatter = new \NumberFormatter('fr_FR', \NumberFormatter::SPELLOUT);
+        $rentInWords = $formatter->format($lease->rent_amount);
+        $chargesInWords = $formatter->format($lease->charges_amount);
+
+        // On calcule un plafond d'engagement arbitraire mais securisant (ex: 36 mois de loyer charges comprises)
+        $monthlyTotal = $lease->rent_amount + $lease->charges_amount;
+        $maxGuaranteeAmount = $monthlyTotal * 36;
+        $maxGuaranteeInWords = $formatter->format($maxGuaranteeAmount);
+
+        $pdf = Pdf::loadView('pdfs.guarantee', [
+            'lease' => $lease,
+            'guarantor' => $guarantor,
+            'property' => $lease->property,
+            'tenants' => $lease->tenants,
+            'rentInWords' => $rentInWords,
+            'chargesInWords' => $chargesInWords,
+            'monthlyTotal' => $monthlyTotal,
+            'maxGuaranteeAmount' => $maxGuaranteeAmount,
+            'maxGuaranteeInWords' => $maxGuaranteeInWords,
+            // On recupere le proprietaire connecte
+            'landlord' => request()->user(),
+        ]);
+
+        // Optionnel : personnaliser le format du papier
+        $pdf->setPaper('A4', 'portrait');
+
+        // On formate le nom du fichier proprement
+        $filename = "acte_caution_" . Str::slug($guarantor->last_name) . "_" . Str::slug($lease->property->name) . ".pdf";
+
+        // Affichage direct dans le navigateur au lieu du téléchargement forcé
         return $pdf->stream($filename);
     }
 }

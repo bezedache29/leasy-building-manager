@@ -332,7 +332,7 @@ export default function Show({ property }: Props) {
                         ))}
                     </div>
 
-                    <div className="flex flex-col gap-5">
+                    <div className="flex flex-col gap-4">
                       {/* BOUTON PDF DYNAMIQUE */}
                       {activeLease.missing_pdf_data && activeLease.missing_pdf_data.length > 0 ? (
                         <Button onClick={() => setShowPdfMissingModal(true)}>
@@ -343,9 +343,30 @@ export default function Show({ property }: Props) {
                           href={route('leases.pdf', activeLease.id)}
                           target="_blank"
                           rel="noopener noreferrer"
+                          className="text-center"
                         >
                           📄 Télécharger le Bail
                         </Button>
+                      )}
+
+                      {/* On verifie que le bail possede bien des garants avant d'afficher la section */}
+                      {activeLease.guarantors && activeLease.guarantors.length > 0 && (
+                        <div className="mb-3 flex flex-wrap gap-3">
+                          {activeLease.guarantors.map((guarantor) => (
+                            <Button
+                              href={route('leases.guarantors.pdf', {
+                                lease: activeLease.id,
+                                guarantor: guarantor.id,
+                              })}
+                              className="text-center"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              📄 Télécharger l'acte de caution : {guarantor.first_name}{' '}
+                              {guarantor.last_name}
+                            </Button>
+                          ))}
+                        </div>
                       )}
 
                       <div className="flex gap-2">
