@@ -25,6 +25,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/tenants/{tenant}/guarantors', [GuarantorController::class, 'store'])->name('tenants.guarantors.store');
     Route::put('/tenants/{tenant}/guarantors/{guarantor}', [GuarantorController::class, 'update'])->name('tenants.guarantors.update');
     Route::delete('/tenants/{tenant}/guarantors/{guarantor}', [GuarantorController::class, 'destroy'])->name('tenants.guarantors.destroy');
+    Route::get('/leases/{lease}/guarantors/{guarantor}/pdf', [App\Http\Controllers\LeaseController::class, 'downloadGuarantee'])
+        ->name('leases.guarantors.pdf');
 
     // Routes pour la gestion des documents
     Route::get('/documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
@@ -50,7 +52,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/leases/{lease}/terminate', [LeaseController::class, 'terminate'])->name('leases.terminate');
 
     Route::get('/leases/{lease}/pdf', [LeaseController::class, 'pdf'])->name('leases.pdf');
-
     Route::post('/leases/{lease}/documents', [DocumentController::class, 'storeForLease'])->name('leases.documents.store');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
