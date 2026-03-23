@@ -28,14 +28,18 @@
 
     <div class="section">
         <h2>1. LE BAILLEUR (Propriétaire)</h2>
-        <div class="row">Je soussigné(e), <span class="text-bold">Eliane Salou</span>,</div>
-        <div class="row">Adresse : 5 hent kerliver, 29890 Kerlouan</div>
+        <div class="row">Je soussigné(e), <span class="text-bold">{{ config('building.landlord_name') }}</span>,</div>
+        <div class="row">Adresse : {{ config('building.landlord_address') }}</div>
     </div>
 
     <div class="section">
         <h2>2. LA CAUTION (Garant)</h2>
         <div class="row">Je soussigné(e), <span class="text-bold">{{ $guarantor->first_name }} {{ $guarantor->last_name }}</span>,</div>
-        <div class="row">Né(e) le : {{ \Carbon\Carbon::parse($guarantor->birth_date)->format('d/m/Y') }} à {{ $guarantor->birth_place }}</div>
+         @if($guarantor->birth_date && $guarantor->birth_place)
+            <div class="row">Né(e) le : {{ \Carbon\Carbon::parse($guarantor->birth_date)->format('d/m/Y') }} à {{ $guarantor->birth_place }}</div>
+        @else
+            <div class="row"><span class="text-small" style="color: #d32f2f;">Informations de naissance non renseignées</span></div>
+        @endif
         <div class="row">Demeurant au : {{ $guarantor->current_address }}</div>
         <div class="row">Déclare me porter caution solidaire pour le(s) locataire(s) désigné(s) ci-dessous.</div>
     </div>

@@ -354,6 +354,7 @@ export default function Show({ property }: Props) {
                         <div className="mb-3 flex flex-wrap gap-3">
                           {activeLease.guarantors.map((guarantor) => (
                             <Button
+                              key={guarantor.id}
                               href={route('leases.guarantors.pdf', {
                                 lease: activeLease.id,
                                 guarantor: guarantor.id,

@@ -245,10 +245,11 @@ class LeaseController extends Controller
 
     public function downloadGuarantee(Lease $lease, Guarantor $guarantor)
     {
+        // On charge les relations necessaires
+        $lease->load(['property', 'tenants']);
+
         // On s'assure que le garant est bien lie a ce bail pour des raisons de securite
         abort_unless($lease->guarantors->contains($guarantor), 404);
-
-        $lease->load(['property', 'tenants']);
 
         // Utilisation de NumberFormatter pour ecrire les montants en toutes lettres
         $formatter = new \NumberFormatter('fr_FR', \NumberFormatter::SPELLOUT);
@@ -270,8 +271,6 @@ class LeaseController extends Controller
             'monthlyTotal' => $monthlyTotal,
             'maxGuaranteeAmount' => $maxGuaranteeAmount,
             'maxGuaranteeInWords' => $maxGuaranteeInWords,
-            // On recupere le proprietaire connecte
-            'landlord' => request()->user(),
         ]);
 
         // Optionnel : personnaliser le format du papier
