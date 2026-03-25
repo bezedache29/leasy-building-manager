@@ -1,9 +1,9 @@
 import AppLayout from '@/Layouts/AppLayout';
 import Button from '@/Components/Button';
 import { Equipment, Property, Room } from '@/Types/property';
-import { Link, useForm } from '@inertiajs/react';
+import { Link, router, useForm } from '@inertiajs/react';
 import { formatFloor, parseLocalDate } from '@/Utils/formatters';
-import { useState } from 'react';
+import { ChangeEvent, useState } from 'react';
 import EquipmentItem from '@/Pages/Properties/Partials/EquipmentItem';
 import EquipmentModal from '@/Pages/Properties/Partials/EquipmentModal';
 import RoomModal from '@/Pages/Properties/Partials/RoomModal';
@@ -11,6 +11,11 @@ import ConfirmModal from '@/Components/ConfirmModal';
 import { Lease } from '@/Types/lease';
 import TerminateLeaseModal from '@/Pages/Leases/Partials/TerminateLeaseModal';
 import MissingPdfDataModal from '@/Pages/Properties/Partials/MissingPdfDataModal';
+import PhotoGallery from '@/Components/PhotoGallery';
+import InputLabel from '@/Components/InputLabel';
+import Modal from '@/Components/Modal';
+import { Disclosure } from '@headlessui/react';
+import SelectInput from '@/Components/SelectInput';
 
 interface Props {
   property: Property;
@@ -29,6 +34,15 @@ export default function Show({ property }: Props) {
   const [equipmentToDelete, setEquipmentToDelete] = useState<Equipment | null>(null);
   const [leaseToTerminate, setLeaseToTerminate] = useState<Lease | null>(null);
   const [showPdfMissingModal, setShowPdfMissingModal] = useState(false);
+  const [photoToDelete, setPhotoToDelete] = useState<number | null>(null);
+  // États pour l'upload d'une photo avec légende
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+  const [pendingPhotoType, setPendingPhotoType] = useState<
+    'inventory_photo_in' | 'inventory_photo_out' | null
+  >(null);
+  const [pendingCaption, setPendingCaption] = useState('');
+  const [pendingRoomId, setPendingRoomId] = useState('');
+  const [pendingEquipmentId, setPendingEquipmentId] = useState('');
 
   const handleArchiveClick = () => {
     setIsArchiveModalOpen(true);
@@ -88,6 +102,57 @@ export default function Show({ property }: Props) {
     });
   };
 
+  const confirmDeletePhoto = () => {
+    if (!photoToDelete) return;
+
+    router.delete(route('documents.destroy', photoToDelete), {
+      preserveScroll: true,
+      onSuccess: () => setPhotoToDelete(null),
+      onFinish: () => setPhotoToDelete(null),
+    });
+  };
+
+  const handleFileSelect = (
+    e: ChangeEvent<HTMLInputElement>,
+    type: 'inventory_photo_in' | 'inventory_photo_out'
+  ) => {
+    if (e.target.files && e.target.files[0]) {
+      setPendingPhoto(e.target.files[0]);
+      setPendingPhotoType(type);
+      setPendingCaption('');
+      setPendingRoomId(''); // On reinitialise la piece
+      setPendingEquipmentId(''); // On reinitialise l'equipement
+
+      e.target.value = '';
+    }
+  };
+
+  const confirmUploadPhoto = () => {
+    if (!pendingPhoto || !pendingPhotoType || !activeLease) return;
+
+    router.post(
+      route('leases.photos.store', activeLease.id),
+      {
+        photo: pendingPhoto,
+        type: pendingPhotoType,
+        name: pendingCaption,
+        room_id: pendingRoomId || null, // On envoie l'ID ou null
+        equipment_id: pendingEquipmentId || null,
+      },
+      {
+        preserveScroll: true,
+        forceFormData: true,
+        onSuccess: () => {
+          setPendingPhoto(null);
+          setPendingPhotoType(null);
+          setPendingCaption('');
+          setPendingRoomId('');
+          setPendingEquipmentId('');
+        },
+      }
+    );
+  };
+
   const sectionClass = 'rounded-xl border border-[rgb(var(--border))] bg-surface p-6 shadow-sm';
   const labelClass = 'text-sm font-medium text-muted';
   const valueClass = 'mt-1 text-base text-app font-medium';
@@ -95,6 +160,9 @@ export default function Show({ property }: Props) {
   const activeLease: Lease | undefined = property.leases?.find(
     (lease) => lease.status === 'active'
   );
+
+  // On trouve la piece selectionnee pour afficher ses equipements
+  const selectedRoomForPhoto = property.rooms?.find((r) => r.id.toString() === pendingRoomId);
 
   return (
     <AppLayout>
@@ -118,8 +186,8 @@ export default function Show({ property }: Props) {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-7 space-y-8">
             <section className={sectionClass}>
               <div className="flex justify-between">
                 <h2 className="mb-5 text-lg font-semibold text-[rgb(var(--primary-500))]">
@@ -226,21 +294,86 @@ export default function Show({ property }: Props) {
                         </div>
                       </div>
 
+                      {/* NOUVEAU : Collapse des photos globales de la pièce */}
+                      {activeLease?.documents &&
+                        activeLease.documents.some(
+                          (doc) =>
+                            doc.category === 'inventory_photo_in' &&
+                            doc.room_id === room.id &&
+                            !doc.equipment_id
+                        ) && (
+                          <Disclosure
+                            as="div"
+                            className="mb-4 rounded-lg bg-surface-2 border border-[rgb(var(--border))] p-3"
+                          >
+                            {({ open }) => {
+                              const roomPhotos = activeLease.documents!.filter(
+                                (doc) =>
+                                  doc.category === 'inventory_photo_in' &&
+                                  doc.room_id === room.id &&
+                                  !doc.equipment_id
+                              );
+
+                              return (
+                                <>
+                                  <Disclosure.Button className="cursor-pointer flex w-full items-center justify-between text-sm font-medium text-app hover:text-[rgb(var(--primary-500))] focus:outline-none">
+                                    <span className="flex items-center gap-2">
+                                      📸 Voir les photos générales de la pièce ({roomPhotos.length})
+                                    </span>
+                                    <svg
+                                      className={`h-5 w-5 transform transition-transform ${open ? 'rotate-180' : ''}`}
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M19 9l-7 7-7-7"
+                                      />
+                                    </svg>
+                                  </Disclosure.Button>
+                                  <Disclosure.Panel className="pt-4 mt-2 border-t border-[rgb(var(--border))]">
+                                    <PhotoGallery
+                                      photos={roomPhotos}
+                                      rooms={property.rooms}
+                                      title="Photos de la pièce"
+                                    />
+                                  </Disclosure.Panel>
+                                </>
+                              );
+                            }}
+                          </Disclosure>
+                        )}
+
                       {/* Liste des équipements de la pièce */}
                       {!room.equipments || room.equipments.length === 0 ? (
                         <p className="text-sm text-muted italic mt-3">
                           Aucun équipement enregistré.
                         </p>
                       ) : (
-                        <ul className="mt-3">
-                          {room.equipments.map((eq) => (
-                            <EquipmentItem
-                              key={eq.id}
-                              equipment={eq}
-                              onEdit={openEquipmentModalForEdit}
-                              onDelete={setEquipmentToDelete}
-                            />
-                          ))}
+                        <ul className="mt-3 space-y-2">
+                          {room.equipments.map((eq) => {
+                            // On filtre les photos specifiques a cet equipement
+                            const equipmentPhotos =
+                              activeLease?.documents?.filter(
+                                (doc) =>
+                                  doc.category === 'inventory_photo_in' &&
+                                  doc.equipment_id === eq.id
+                              ) || [];
+
+                            return (
+                              <EquipmentItem
+                                key={eq.id}
+                                equipment={eq}
+                                onEdit={openEquipmentModalForEdit}
+                                onDelete={setEquipmentToDelete}
+                                photos={equipmentPhotos}
+                                rooms={property.rooms}
+                              />
+                            );
+                          })}
                         </ul>
                       )}
                     </div>
@@ -250,7 +383,7 @@ export default function Show({ property }: Props) {
             </section>
           </div>
 
-          <div className="space-y-8">
+          <div className="lg:col-span-5 space-y-8">
             <section className={sectionClass}>
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-semibold text-[rgb(var(--primary-500))]">
@@ -332,6 +465,25 @@ export default function Show({ property }: Props) {
                         ))}
                     </div>
 
+                    <div className="flex gap-2 mb-6">
+                      <Button
+                        href={route('leases.edit', activeLease.id)}
+                        variant="warning"
+                        size="sm"
+                        className="w-full justify-center"
+                      >
+                        Modifier Bail
+                      </Button>
+                      <Button
+                        onClick={() => setLeaseToTerminate(activeLease)}
+                        variant="danger"
+                        size="sm"
+                        className="w-full justify-center"
+                      >
+                        Arrêter Bail
+                      </Button>
+                    </div>
+
                     <div className="flex flex-col gap-4">
                       {/* BOUTON PDF DYNAMIQUE */}
                       {activeLease.missing_pdf_data && activeLease.missing_pdf_data.length > 0 ? (
@@ -351,7 +503,7 @@ export default function Show({ property }: Props) {
 
                       {/* On verifie que le bail possede bien des garants avant d'afficher la section */}
                       {activeLease.guarantors && activeLease.guarantors.length > 0 && (
-                        <div className="mb-3 flex flex-wrap gap-3">
+                        <div className="flex flex-wrap gap-3">
                           {activeLease.guarantors.map((guarantor) => (
                             <Button
                               key={guarantor.id}
@@ -370,23 +522,59 @@ export default function Show({ property }: Props) {
                         </div>
                       )}
 
-                      <div className="flex gap-2">
-                        <Button
-                          href={route('leases.edit', activeLease.id)}
-                          variant="warning"
-                          size="sm"
-                          className="w-full justify-center"
-                        >
-                          Modifier Bail
-                        </Button>
-                        <Button
-                          onClick={() => setLeaseToTerminate(activeLease)}
-                          variant="danger"
-                          size="sm"
-                          className="w-full justify-center"
-                        >
-                          Arrêter Bail
-                        </Button>
+                      <Button
+                        href={route('leases.inventory.pdf', {
+                          lease: activeLease.id,
+                          type: 'in',
+                        })}
+                        className="w-full justify-center text-center mb-3"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        📄 Télécharger l'état des lieux (Entrée)
+                      </Button>
+
+                      {/* Bouton prise de photos */}
+                      <div>
+                        <label className="w-full justify-center inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[rgb(var(--warning-700))] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[rgb(var(--warning-900))]">
+                          <svg
+                            className="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                            />
+                          </svg>
+                          Photo État des lieux (Entrée)
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            className="hidden"
+                            onChange={(e) => handleFileSelect(e, 'inventory_photo_in')}
+                          />
+                        </label>
+                        {/* Mini-galerie des photos uploadées */}
+                        <PhotoGallery
+                          photos={
+                            activeLease.documents?.filter(
+                              (doc) => doc.category === 'inventory_photo_in'
+                            ) || []
+                          }
+                          title="Photos de l'état des lieux entrant"
+                          rooms={property.rooms}
+                        />
                       </div>
                     </div>
                   </div>
@@ -507,6 +695,95 @@ export default function Show({ property }: Props) {
         onClose={() => setLeaseToTerminate(null)}
         lease={leaseToTerminate}
       />
+
+      <ConfirmModal
+        show={photoToDelete !== null}
+        onClose={() => setPhotoToDelete(null)}
+        onConfirm={confirmDeletePhoto}
+        title="Retirer la photo"
+        confirmText="Retirer"
+      >
+        Es-tu sûr de vouloir retirer cette photo de l'état des lieux ? <br /> <br />
+        Elle sera conservée dans les archives (soft delete) mais n'apparaîtra plus sur le dossier de
+        ce bail.
+      </ConfirmModal>
+
+      {/* Modale d'ajout de légende avant upload */}
+      <Modal show={pendingPhoto !== null} onClose={() => setPendingPhoto(null)} maxWidth="sm">
+        <div className="bg-surface p-8 rounded-xl border border-[rgb(var(--border))] shadow-2xl">
+          <h2 className="text-xl font-bold text-app mb-6">Légender la photo</h2>
+
+          {pendingPhoto && (
+            <div className="mb-6 overflow-hidden rounded-lg border border-[rgb(var(--border))]">
+              {/* Prévisualisation de l'image locale */}
+              <img
+                src={URL.createObjectURL(pendingPhoto)}
+                alt="Aperçu"
+                className="w-full h-48 object-cover"
+              />
+            </div>
+          )}
+
+          {/* Champ Légende : Utilisation de ton InputLabel */}
+          <div className="mb-6">
+            <InputLabel value="Description / Légende" className="mb-2" />
+            <input
+              type="text"
+              value={pendingCaption}
+              onChange={(e) => setPendingCaption(e.target.value)}
+              className="w-full rounded-md border border-[rgb(var(--border))] bg-surface-2 px-3 py-2 text-app focus:border-[rgb(var(--primary-500))] focus:ring-1 focus:ring-[rgb(var(--primary-500))] focus:outline-none"
+              placeholder="Ex: Rayure profonde sur le parquet..."
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && confirmUploadPhoto()}
+            />
+          </div>
+
+          <div className="mb-8 flex flex-col sm:flex-row gap-4">
+            <div className="w-full sm:w-1/2">
+              <InputLabel value="Pièce (Optionnel)" className="mb-2" />
+              <SelectInput
+                value={pendingRoomId}
+                onChange={(e) => {
+                  setPendingRoomId(e.target.value);
+                  setPendingEquipmentId(''); // On vide l'equipement si on change de piece
+                }}
+              >
+                <option value="">-- Aucune --</option>
+                {property.rooms?.map((room) => (
+                  <option key={room.id} value={room.id}>
+                    {room.name}
+                  </option>
+                ))}
+              </SelectInput>
+            </div>
+
+            <div className="w-full sm:w-1/2">
+              <InputLabel value="Équipement (Optionnel)" className="mb-2" />
+              <SelectInput
+                value={pendingEquipmentId}
+                onChange={(e) => setPendingEquipmentId(e.target.value)}
+                disabled={!pendingRoomId || !selectedRoomForPhoto?.equipments?.length}
+              >
+                <option value="">-- Aucun --</option>
+                {selectedRoomForPhoto?.equipments?.map((eq) => (
+                  <option key={eq.id} value={eq.id}>
+                    {eq.name}
+                  </option>
+                ))}
+              </SelectInput>
+            </div>
+          </div>
+
+          <div className="mt-8 flex flex-col sm:flex-row justify-end gap-3">
+            <Button variant="secondary" onClick={() => setPendingPhoto(null)}>
+              Annuler
+            </Button>
+            <Button variant="primary" onClick={confirmUploadPhoto}>
+              Enregistrer
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {activeLease && activeLease.missing_pdf_data && (
         <MissingPdfDataModal

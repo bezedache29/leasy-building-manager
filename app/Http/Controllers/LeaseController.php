@@ -8,6 +8,8 @@ use App\Models\Property;
 use App\Models\Tenant;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use chillerlan\QRCode\QRCode;
+use chillerlan\QRCode\QROptions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -23,7 +25,6 @@ class LeaseController extends Controller
     {
         $properties = Property::orderBy('name')->get();
 
-        // AJOUT DU with('guarantors') POUR LE FRONTEND REACT
         $tenants = Tenant::with('guarantors')->orderBy('last_name')->orderBy('first_name')->get();
 
         return inertia('Leases/Create', [
@@ -281,5 +282,54 @@ class LeaseController extends Controller
 
         // Affichage direct dans le navigateur au lieu du téléchargement forcé
         return $pdf->stream($filename);
+    }
+
+    public function generateInventoryPdf(Lease $lease, $type = 'in')
+    {
+        $lease->load(['tenants', 'property.rooms.equipments', 'documents']);
+
+        $baseUrl = config('app.url');
+
+        $rooms = $lease->property->rooms->map(function ($room) use ($lease, $baseUrl, $type) {
+            // 1. On récupère les IDs de tous les équipements de cette pièce
+            $equipmentIds = $room->equipments->pluck('id');
+
+            // 2. On compte s'il y a des photos liées à ces équipements pour ce bail
+            $hasPhotos = $lease->documents
+                ->whereIn('equipment_id', $equipmentIds)
+                ->where('category', 'inventory_photo_' . $type)
+                ->count() > 0;
+
+            // 3. On ne génère le QR Code QUE s'il y a des photos
+            if ($hasPhotos) {
+                $destinationUrl = "{$baseUrl}/properties/{$lease->property_id}/inventory?room={$room->id}";
+
+                $options = new QROptions([
+                    'version'      => 5,
+                    'outputType'   => 'svg',
+                    'eccLevel'     => 'L',
+                    'imageBase64'  => true,
+                ]);
+
+                try {
+                    $room->qr_code_svg = (new QRCode($options))->render($destinationUrl);
+                } catch (\Exception $e) {
+                    $room->qr_code_svg = null;
+                }
+            } else {
+                $room->qr_code_svg = null;
+            }
+
+            return $room;
+        });
+
+        $pdf = Pdf::loadView('pdfs.inventory', [
+            'lease' => $lease,
+            'type' => $type,
+            'rooms' => $rooms,
+        ]);
+
+        $fileName = 'EDL_' . ($type === 'in' ? 'Entree' : 'Sortie') . '_' . $lease->id . '.pdf';
+        return $pdf->stream($fileName);
     }
 }

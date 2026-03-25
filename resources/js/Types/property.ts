@@ -17,6 +17,18 @@ export interface Property {
   leases?: Lease[];
 }
 
+// Interface pour les pièces
+export interface Room {
+  id: number;
+  property_id: number;
+  name: string;
+  surface_area: number | null;
+  equipments?: Equipment[];
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
 // Interface pour les équipements
 export interface Equipment {
   id: number;
@@ -25,18 +37,6 @@ export interface Equipment {
   type: string | null;
   quantity: number;
   notes: string | null;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-}
-
-// Interface pour les pièces
-export interface Room {
-  id: number;
-  property_id: number;
-  name: string;
-  surface_area: number | null;
-  equipments?: Equipment[];
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
