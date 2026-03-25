@@ -150,18 +150,20 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
       {/* Grille des miniatures */}
       <div className="grid grid-cols-4 gap-3">
         {photos.map((photo, index) => (
-          <div
+          <button
+            type="button"
             key={photo.id}
             className="relative group overflow-hidden rounded-md border border-[rgb(var(--border))] cursor-pointer aspect-square"
+            onClick={() => openGallery(index)}
+            aria-label={`Ouvrir la photo ${index + 1}`}
           >
             <img
               src={`/storage/${photo.file_path.replace('public/', '')}`}
               alt={photo.name || `Photo ${index + 1}`}
               loading="lazy"
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-              onClick={() => openGallery(index)}
             />
-          </div>
+          </button>
         ))}
       </div>
 
@@ -230,6 +232,8 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
             {/* Flèches */}
             {safeIndex !== null && safeIndex > 0 && (
               <button
+                type="button"
+                aria-label="Photo précédente"
                 onClick={handlePrev}
                 className="absolute left-6 top-1/2 -translate-y-1/2 z-10 p-3 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-all"
               >
@@ -245,6 +249,8 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
             )}
             {safeIndex !== null && safeIndex < photos.length - 1 && (
               <button
+                type="button"
+                aria-label="Photo suivante"
                 onClick={handleNext}
                 className="absolute right-6 top-1/2 -translate-y-1/2 z-10 p-3 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-all"
               >
