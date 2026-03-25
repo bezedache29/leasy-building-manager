@@ -1,6 +1,6 @@
-ENV WEB_DOCUMENT_ROOT=/var/www/html/public
-
 FROM serversideup/php:8.4-fpm-nginx
+
+ENV WEB_DOCUMENT_ROOT=/var/www/html/public
 
 # Installation des dépendances système pour les PDF et images
 USER root
