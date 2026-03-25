@@ -1,25 +1,17 @@
 FROM serversideup/php:8.4-fpm-nginx
 
-# Installation de Node.js (pour npm) et des dependances systeme (PDF, Images) en root
+# On passe en root juste pour installer Node.js (Alpine Linux utilise apk, pas apt-get)
 USER root
-RUN apt-get update \
-    && apt-get install -y curl gnupg \
-    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y \
-    nodejs \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    zip \
-    libzip-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd zip bcmath intl pdo_mysql exif \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache nodejs npm
 
-# Copie du code (le .dockerignore filtrera le reste)
+# On repasse en www-data (utilisateur web securise)
+USER www-data
+
+# On copie tout le projet
 COPY --chown=www-data:www-data . /var/www/html
 
-# Installation des dependances dans l'image
-USER www-data
+# Installation des dependances PHP
 RUN composer install --no-dev --optimize-autoloader
+
+# Installation des dependances JS et compilation
 RUN npm install --legacy-peer-deps && npm run build
