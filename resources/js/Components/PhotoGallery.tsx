@@ -33,14 +33,17 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
     [photos]
   );
 
+  // quand on change d'image ou qu'Inertia met à jour la liste des photos.
+  useEffect(() => {
+    if (currentIndex !== null && photos[currentIndex]) {
+      syncEditStates(currentIndex);
+    }
+  }, [currentIndex, photos, syncEditStates]);
+
   // 2. Mémorisation des fonctions de navigation et d'action
-  const openGallery = useCallback(
-    (index: number) => {
-      setCurrentIndex(index);
-      syncEditStates(index);
-    },
-    [syncEditStates]
-  );
+  const openGallery = (index: number) => {
+    setCurrentIndex(index);
+  };
 
   const closeGallery = useCallback(() => {
     setCurrentIndex(null);
@@ -51,17 +54,15 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
     if (currentIndex !== null && currentIndex < photos.length - 1) {
       const nextIndex = currentIndex + 1;
       setCurrentIndex(nextIndex);
-      syncEditStates(nextIndex);
     }
-  }, [currentIndex, photos.length, syncEditStates]);
+  }, [currentIndex, photos.length]);
 
   const handlePrev = useCallback(() => {
     if (currentIndex !== null && currentIndex > 0) {
       const prevIndex = currentIndex - 1;
       setCurrentIndex(prevIndex);
-      syncEditStates(prevIndex);
     }
-  }, [currentIndex, syncEditStates]);
+  }, [currentIndex]);
 
   const confirmDelete = useCallback(() => {
     if (!photoToDelete || currentIndex === null) return;
@@ -71,22 +72,17 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
       onSuccess: () => {
         setPhotoToDelete(null);
 
-        // On calcule la nouvelle longueur attendue du tableau
         const expectedNewLength = photos.length - 1;
 
         if (expectedNewLength <= 0) {
-          // S'il n'y a plus de photos, on ferme tout
           closeGallery();
         } else {
-          // Sinon, on recadre l'index (si on a supprimé la dernière photo, on recule d'un cran)
           const newIndex = Math.min(currentIndex, expectedNewLength - 1);
           setCurrentIndex(newIndex);
-          // On n'oublie pas de resynchroniser les formulaires d'édition avec la nouvelle image affichée
-          syncEditStates(newIndex);
         }
       },
     });
-  }, [photoToDelete, currentIndex, photos.length, closeGallery, syncEditStates]);
+  }, [photoToDelete, currentIndex, photos.length, closeGallery]);
 
   const saveDetails = useCallback(() => {
     if (currentIndex === null) return;
