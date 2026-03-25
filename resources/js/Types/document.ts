@@ -6,6 +6,9 @@ export interface AppDocument {
   file_path: string;
   category: string | null;
   mime_type: string | null;
+  size: number | null;
+  room_id: number | null;
+  equipment_id: number | null;
   created_at: string;
   updated_at: string;
 }

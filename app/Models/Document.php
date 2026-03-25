@@ -17,11 +17,23 @@ class Document extends Model
         'file_path',
         'category',
         'mime_type',
+        'room_id',
+        'equipment_id',
     ];
 
     // Permet de retrouver à qui appartient le document (Locataire, Garant, Bail...)
     public function documentable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function room()
+    {
+        return $this->belongsTo(Room::class);
+    }
+
+    public function equipment()
+    {
+        return $this->belongsTo(Equipment::class);
     }
 }

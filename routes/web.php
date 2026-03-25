@@ -4,6 +4,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\GuarantorController;
+use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LeaseController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropertyController;
@@ -15,6 +16,10 @@ Route::get('/', function () {
     return redirect()->route('dashboard');
 });
 
+Route::get('/properties/{property}/inventory', [InventoryController::class, 'show'])
+    ->name('properties.inventory')
+    ->middleware('signed');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
@@ -25,11 +30,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/tenants/{tenant}/guarantors', [GuarantorController::class, 'store'])->name('tenants.guarantors.store');
     Route::put('/tenants/{tenant}/guarantors/{guarantor}', [GuarantorController::class, 'update'])->name('tenants.guarantors.update');
     Route::delete('/tenants/{tenant}/guarantors/{guarantor}', [GuarantorController::class, 'destroy'])->name('tenants.guarantors.destroy');
-    Route::get('/leases/{lease}/guarantors/{guarantor}/pdf', [App\Http\Controllers\LeaseController::class, 'downloadGuarantee'])
+    Route::get('/leases/{lease}/guarantors/{guarantor}/pdf', [LeaseController::class, 'downloadGuarantee'])
         ->name('leases.guarantors.pdf');
 
     // Routes pour la gestion des documents
     Route::get('/documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
+    Route::put('/documents/{document}', [DocumentController::class, 'update'])->name('documents.update');
     Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
 
     Route::resource('properties', PropertyController::class);
@@ -53,6 +59,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/leases/{lease}/pdf', [LeaseController::class, 'pdf'])->name('leases.pdf');
     Route::post('/leases/{lease}/documents', [DocumentController::class, 'storeForLease'])->name('leases.documents.store');
+    Route::post('/leases/{lease}/photos', [DocumentController::class, 'storePhotoForLease'])->name('leases.photos.store');
+    Route::get('/leases/{lease}/inventory/{type}/pdf', [LeaseController::class, 'generateInventoryPdf'])->name('leases.inventory.pdf');
+
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

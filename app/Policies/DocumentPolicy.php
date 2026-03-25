@@ -37,7 +37,8 @@ class DocumentPolicy
      */
     public function update(User $user, Document $document): bool
     {
-        return false;
+        // On vérifie que l'utilisateur connecté est bien le propriétaire du document
+        return $user->id === $document->user_id;
     }
 
     /**

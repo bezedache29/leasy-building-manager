@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class DocumentController extends Controller
 {
@@ -26,6 +27,25 @@ class DocumentController extends Controller
 
         // 3. Retourne le fichier pour affichage dans le navigateur
         return response()->file(Storage::disk('public')->path($document->file_path));
+    }
+
+    public function update(Request $request, Document $document)
+    {
+        Gate::authorize('update', $document);
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'room_id' => 'nullable|exists:rooms,id',
+            'equipment_id' => 'nullable|exists:equipments,id',
+        ]);
+
+        $document->update([
+            'name' => $request->name,
+            'room_id' => $request->room_id,
+            'equipment_id' => $request->equipment_id,
+        ]);
+
+        return back();
     }
 
     /**
@@ -111,5 +131,39 @@ class DocumentController extends Controller
 
         // On renvoie l'utilisateur sur la page ou il etait
         return back()->with('success', 'Le document a ete retire du dossier.');
+    }
+
+    public function storePhotoForLease(Request $request, Lease $lease)
+    {
+        Gate::authorize('update', $lease);
+
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'type' => 'required|in:inventory_photo_in,inventory_photo_out',
+            'name' => 'nullable|string|max:255',
+            'room_id' => 'nullable|exists:rooms,id',
+            'equipment_id' => 'nullable|exists:equipments,id',
+        ]);
+
+        $file = $request->file('photo');
+        $extension = $file->getClientOriginalExtension();
+        $filename = time() . '_' . Str::random(10) . '.' . $extension;
+
+        $path = $file->storeAs("leases/{$lease->id}/inventory", $filename, 'public');
+
+        // Si l'utilisateur a tapé une légende, on l'utilise. Sinon on garde le nom par défaut.
+        $documentName = $request->name ?: ('Photo ' . ($request->type === 'inventory_photo_in' ? 'Entrée' : 'Sortie'));
+
+        $lease->documents()->create([
+            'name' => $documentName,
+            'file_path' => $path,
+            'category' => $request->type,
+            'mime_type' => $file->getClientMimeType(),
+            'size' => $file->getSize(),
+            'room_id' => $request->room_id,
+            'equipment_id' => $request->equipment_id,
+        ]);
+
+        return back();
     }
 }
