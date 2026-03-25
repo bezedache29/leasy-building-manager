@@ -9,6 +9,19 @@ export default defineConfig(({ mode }) => {
   // Vite charge les variables du fichier .env
   const env = loadEnv(mode, process.cwd(), '');
 
+  // Definition des chemins des certificats Traefik
+  const keyPath = '/etc/traefik/certs/wildcard-key.pem';
+  const certPath = '/etc/traefik/certs/wildcard.pem';
+
+  let httpsConfig;
+
+  if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+    httpsConfig = {
+      key: fs.readFileSync(keyPath),
+      cert: fs.readFileSync(certPath),
+    };
+  }
+
   return {
     plugins: [
       laravel({
@@ -27,13 +40,12 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       port: 5173,
       strictPort: true,
-      https: {
-        key: fs.readFileSync(`/etc/traefik/certs/wildcard-key.pem`),
-        cert: fs.readFileSync(`/etc/traefik/certs/wildcard.pem`),
-      },
+      // On injecte la configuration HTTPS seulement si elle est definie
+      ...(httpsConfig ? { https: httpsConfig } : {}),
       hmr: {
         host: env.APP_DOMAIN || 'localhost',
-        protocol: 'wss',
+        // On adapte le protocole websocket (wss si httpsConfig est defini, ws sinon)
+        protocol: httpsConfig ? 'wss' : 'ws',
       },
     },
   };
