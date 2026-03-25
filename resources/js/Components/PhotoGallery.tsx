@@ -23,9 +23,16 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
   const [roomValue, setRoomValue] = useState<string>('');
   const [equipmentValue, setEquipmentValue] = useState<string>('');
 
-  // 1. Mémorisation de la synchronisation des états
+  // 1. Calcul sécurisé de l'index et de la photo active (Anti-Crash)
+  const safeIndex =
+    currentIndex !== null && photos.length > 0 ? Math.min(currentIndex, photos.length - 1) : null;
+
+  const activePhoto = safeIndex !== null ? photos[safeIndex] : null;
+
+  // 2. Mémorisation de la synchronisation des états
   const syncEditStates = useCallback(
     (index: number) => {
+      if (!photos[index]) return;
       setCaptionValue(photos[index].name || '');
       setRoomValue(photos[index].room_id ? photos[index].room_id.toString() : '');
       setEquipmentValue(photos[index].equipment_id ? photos[index].equipment_id.toString() : '');
@@ -33,17 +40,18 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
     [photos]
   );
 
-  // quand on change d'image ou qu'Inertia met à jour la liste des photos.
+  // 3. Effet de synchronisation automatique (Anti-Race Condition)
   useEffect(() => {
-    if (currentIndex !== null && photos[currentIndex]) {
-      syncEditStates(currentIndex);
+    if (safeIndex !== null && activePhoto) {
+      syncEditStates(safeIndex);
     }
-  }, [currentIndex, photos, syncEditStates]);
+  }, [safeIndex, activePhoto, syncEditStates]);
 
-  // 2. Mémorisation des fonctions de navigation et d'action
-  const openGallery = (index: number) => {
+  // 4. Fonctions de navigation mémorisées
+  const openGallery = useCallback((index: number) => {
     setCurrentIndex(index);
-  };
+    // Le useEffect prend le relais pour syncEditStates
+  }, []);
 
   const closeGallery = useCallback(() => {
     setCurrentIndex(null);
@@ -51,21 +59,19 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
   }, []);
 
   const handleNext = useCallback(() => {
-    if (currentIndex !== null && currentIndex < photos.length - 1) {
-      const nextIndex = currentIndex + 1;
-      setCurrentIndex(nextIndex);
+    if (safeIndex !== null && safeIndex < photos.length - 1) {
+      setCurrentIndex(safeIndex + 1);
     }
-  }, [currentIndex, photos.length]);
+  }, [safeIndex, photos.length]);
 
   const handlePrev = useCallback(() => {
-    if (currentIndex !== null && currentIndex > 0) {
-      const prevIndex = currentIndex - 1;
-      setCurrentIndex(prevIndex);
+    if (safeIndex !== null && safeIndex > 0) {
+      setCurrentIndex(safeIndex - 1);
     }
-  }, [currentIndex]);
+  }, [safeIndex]);
 
   const confirmDelete = useCallback(() => {
-    if (!photoToDelete || currentIndex === null) return;
+    if (!photoToDelete || safeIndex === null) return;
 
     router.delete(route('documents.destroy', photoToDelete), {
       preserveScroll: true,
@@ -77,18 +83,17 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
         if (expectedNewLength <= 0) {
           closeGallery();
         } else {
-          const newIndex = Math.min(currentIndex, expectedNewLength - 1);
-          setCurrentIndex(newIndex);
+          setCurrentIndex(Math.min(safeIndex, expectedNewLength - 1));
         }
       },
     });
-  }, [photoToDelete, currentIndex, photos.length, closeGallery]);
+  }, [photoToDelete, safeIndex, photos.length, closeGallery]);
 
   const saveDetails = useCallback(() => {
-    if (currentIndex === null) return;
+    if (!activePhoto) return;
 
     router.put(
-      route('documents.update', photos[currentIndex].id),
+      route('documents.update', activePhoto.id),
       {
         name: captionValue,
         room_id: roomValue || null,
@@ -99,12 +104,31 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
         onSuccess: () => setEditingDetails(false),
       }
     );
-  }, [currentIndex, photos, captionValue, roomValue, equipmentValue]);
+  }, [activePhoto, captionValue, roomValue, equipmentValue]);
 
-  // 3. Gestion optimisée du clavier avec les fonctions mémorisées
+  // 5. Mémorisation des calculs lourds
+  const selectedRoomForEdit = useMemo(
+    () => rooms.find((r) => r.id.toString() === roomValue),
+    [rooms, roomValue]
+  );
+
+  const currentRoom = useMemo(
+    () => (activePhoto ? rooms.find((r) => r.id === activePhoto.room_id) : null),
+    [activePhoto, rooms]
+  );
+
+  const currentEquipment = useMemo(
+    () =>
+      currentRoom && activePhoto
+        ? currentRoom.equipments?.find((e) => e.id === activePhoto.equipment_id)
+        : null,
+    [currentRoom, activePhoto]
+  );
+
+  // 6. Écouteur clavier sécurisé
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (currentIndex === null || editingDetails) return;
+      if (safeIndex === null || editingDetails) return;
 
       if (e.key === 'ArrowRight') handleNext();
       if (e.key === 'ArrowLeft') handlePrev();
@@ -113,26 +137,7 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex, editingDetails, handleNext, handlePrev, closeGallery]);
-
-  // 4. Mémorisation des calculs lourds (find sur des tableaux)
-  const selectedRoomForEdit = useMemo(
-    () => rooms.find((r) => r.id.toString() === roomValue),
-    [rooms, roomValue]
-  );
-
-  const currentRoom = useMemo(
-    () => (currentIndex !== null ? rooms.find((r) => r.id === photos[currentIndex].room_id) : null),
-    [currentIndex, rooms, photos]
-  );
-
-  const currentEquipment = useMemo(
-    () =>
-      currentRoom && currentIndex !== null
-        ? currentRoom.equipments?.find((e) => e.id === photos[currentIndex].equipment_id)
-        : null,
-    [currentRoom, currentIndex, photos]
-  );
+  }, [safeIndex, editingDetails, handleNext, handlePrev, closeGallery]);
 
   if (!photos || photos.length === 0) return null;
 
@@ -152,7 +157,7 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
             <img
               src={`/storage/${photo.file_path.replace('public/', '')}`}
               alt={photo.name || `Photo ${index + 1}`}
-              loading="lazy" // <-- Optimisation du chargement natif
+              loading="lazy"
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
               onClick={() => openGallery(index)}
             />
@@ -160,18 +165,17 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
         ))}
       </div>
 
-      {/* Lightbox Plein Ecran */}
-      {currentIndex !== null && (
+      {/* Lightbox Plein Ecran - LA CORRECTION TS EST ICI */}
+      {activePhoto && (
         <div className="fixed inset-0 z-50 flex bg-black/95 backdrop-blur-sm overflow-hidden text-app">
-          {/* ZONE PRINCIPALE (Image + Légende) */}
+          {/* ZONE PRINCIPALE */}
           <div className="relative flex-1 flex flex-col min-w-0">
-            {/* Header de la Lightbox */}
+            {/* Header */}
             <div className="absolute top-0 left-0 w-full flex justify-between items-center p-6 bg-gradient-to-b from-black/60 to-transparent z-20 pointer-events-none">
               <span className="text-white font-semibold text-sm bg-black/50 px-4 py-1.5 rounded-full border border-white/10 pointer-events-auto">
-                {currentIndex + 1} / {photos.length}
+                {(safeIndex ?? 0) + 1} / {photos.length}
               </span>
               <div className="flex gap-3 pointer-events-auto">
-                {/* Icône Stylo (Édition) */}
                 <IconButton
                   variant="warning"
                   className="rounded-full"
@@ -202,7 +206,7 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
                     </svg>
                   }
                   aria-label="Supprimer"
-                  onClick={() => setPhotoToDelete(photos[currentIndex].id)}
+                  onClick={() => setPhotoToDelete(activePhoto.id)}
                 />
                 <IconButton
                   variant="ghost"
@@ -223,8 +227,8 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
               </div>
             </div>
 
-            {/* Flèches de navigation */}
-            {currentIndex > 0 && (
+            {/* Flèches */}
+            {safeIndex !== null && safeIndex > 0 && (
               <button
                 onClick={handlePrev}
                 className="absolute left-6 top-1/2 -translate-y-1/2 z-10 p-3 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-all"
@@ -239,7 +243,7 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
                 </svg>
               </button>
             )}
-            {currentIndex < photos.length - 1 && (
+            {safeIndex !== null && safeIndex < photos.length - 1 && (
               <button
                 onClick={handleNext}
                 className="absolute right-6 top-1/2 -translate-y-1/2 z-10 p-3 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-all"
@@ -255,20 +259,20 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
               </button>
             )}
 
-            {/* ZONE D'IMAGE */}
+            {/* Image */}
             <div className="flex-1 min-h-0 w-full flex items-center justify-center p-8 pt-24 pb-4">
               <img
-                src={`/storage/${photos[currentIndex].file_path.replace('public/', '')}`}
-                alt={photos[currentIndex].name}
+                src={`/storage/${activePhoto.file_path.replace('public/', '')}`}
+                alt={activePhoto.name}
                 className="max-h-full max-w-full object-contain shadow-2xl rounded-lg"
               />
             </div>
 
-            {/* LÉGENDE */}
+            {/* Légende */}
             {!editingDetails && (
               <div className="shrink-0 w-full p-4 pb-8 flex flex-col items-center justify-center min-h-[100px]">
                 <p className="text-white text-lg font-medium text-center">
-                  {photos[currentIndex].name || 'Photo sans légende'}
+                  {activePhoto.name || 'Photo sans légende'}
                 </p>
 
                 {(currentRoom || currentEquipment) && (
@@ -315,7 +319,7 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
             )}
           </div>
 
-          {/* PANNEAU LATÉRAL (Sidebar d'édition) */}
+          {/* Sidebar */}
           <div
             className={`h-full bg-surface border-l border-[rgb(var(--border))] shadow-2xl flex flex-col transition-all duration-300 ease-in-out shrink-0 overflow-hidden ${editingDetails ? 'w-full sm:w-[400px] opacity-100' : 'w-0 opacity-0'}`}
           >
