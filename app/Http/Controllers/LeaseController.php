@@ -12,6 +12,7 @@ use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 class LeaseController extends Controller
@@ -284,13 +285,15 @@ class LeaseController extends Controller
         return $pdf->stream($filename);
     }
 
-    public function generateInventoryPdf(Lease $lease, $type = 'in')
+    public function generateInventoryPdf(Lease $lease,  string $type = 'in')
     {
+        if (!in_array($type, ['in', 'out'])) {
+            abort(400, 'Le type d\'état des lieux doit être "in" (entrée) ou "out" (sortie).');
+        }
+
         $lease->load(['tenants', 'property.rooms.equipments', 'documents']);
 
-        $baseUrl = config('app.url');
-
-        $rooms = $lease->property->rooms->map(function ($room) use ($lease, $baseUrl, $type) {
+        $rooms = $lease->property->rooms->map(function ($room) use ($lease, $type) {
             // 1. On récupère les IDs de tous les équipements de cette pièce
             $equipmentIds = $room->equipments->pluck('id');
 
@@ -302,13 +305,20 @@ class LeaseController extends Controller
 
             // 3. On ne génère le QR Code QUE s'il y a des photos
             if ($hasPhotos) {
-                $destinationUrl = "{$baseUrl}/properties/{$lease->property_id}/inventory?room={$room->id}";
+                // On génère une URL signée temporaire valable 24 heures (soit 1440 minutes)
+                $destinationUrl = URL::temporarySignedRoute(
+                    'properties.inventory',          // Le nom de ta route (défini dans web.php)
+                    now()->addHours(24),             // L'expiration
+                    [                                // Les paramètres de la route
+                        'property' => $lease->property_id,
+                        'room'     => $room->id
+                    ]
+                );
 
                 $options = new QROptions([
-                    'version'      => 5,
                     'outputType'   => 'svg',
                     'eccLevel'     => 'L',
-                    'imageBase64'  => true,
+                    'outputBase64' => true,
                 ]);
 
                 try {

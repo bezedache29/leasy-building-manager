@@ -118,6 +118,7 @@
             border-left: 4px solid #8b5cf6;
             padding: 8px 15px;
             vertical-align: middle;
+            height: 75px;
         }
     </style>
 </head>
@@ -143,7 +144,7 @@
                 <strong>{{ $lease->property->name ?? 'Nom du bien' }}</strong> - {{ $propertyType }}<br>
                 Étage : {{ $lease->property->floor ?? 'Non précisé' }}<br>
                 Surface : {{ $lease->property->surface_area ?? '-' }} m²<br>
-                Adresse : {{ env('BUILDING_ADDRESS', 'Adresse (à définir dans .env)') }}, {{ env('BUILDING_ZIP', 'Adresse (à définir dans .env)') }} {{ env('BUILDING_CITY', 'Adresse (à définir dans .env)') }}
+                Adresse : {{ config('building.address') }}, {{ config('building.zip') }} {{ config('building.city') }}
             </td>
             <td>
                 <div class="info-title">Détails du document</div>
@@ -154,8 +155,8 @@
         <tr>
             <td>
                 <div class="info-title">Bailleur</div>
-                <strong>{{ env('LANDLORD_NAME', 'Bailleur (à définir dans .env)') }}</strong><br>
-                Adresse : {{ env('LANDLORD_ADDRESS', 'Adresse (à définir dans .env)') }}
+                <strong>{{ config('building.landlord_name') }}</strong><br>
+                Adresse : {{ config('building.landlord_address') }}
             </td>
             <td>
                 <div class="info-title">Locataire(s)</div>
@@ -180,17 +181,18 @@
                 {{-- En-tête de la pièce avec Barre Grise extensible --}}
                 <table width="100%" style="border-collapse: collapse; margin-bottom: 10px;">
                     <tr>
-                        {{-- Cette cellule prend tout l'espace restant --}}
-                        <td class="room-header-bar">
+                        <td class="room-header-bar" width="100%">
                             <h2 style="text-transform: uppercase;">{{ $room->name }}</h2>
                         </td>
 
                         {{-- Cette cellule ne s'affiche que si le QR Code existe --}}
                         @if($room->qr_code_svg)
-                            <td style="width: 80px; text-align: right; vertical-align: middle; padding-left: 10px;">
+                            {{-- On agrandit la cellule pour accommoder le QR Code plus dense --}}
+                            <td style="width: 110px; text-align: right; vertical-align: middle; padding-left: 10px; white-space: nowrap;">
                                 <div style="display: inline-block; text-align: center;">
-                                    <img src="{{ $room->qr_code_svg }}" width="55" height="55" style="display: block; margin-left: auto;">
-                                    <div style="font-size: 6px; color: #8b5cf6; font-weight: bold; text-transform: uppercase; margin-top: 2px; white-space: nowrap;">
+                                    {{-- On agrandit aussi l'image du QR Code pour faciliter le scan --}}
+                                    <img src="{{ $room->qr_code_svg }}" width="70" height="70" style="display: block; margin-left: auto;">
+                                    <div style="font-size: 6px; color: #8b5cf6; font-weight: bold; text-transform: uppercase; margin-top: 2px;">
                                         Scanner pour photos
                                     </div>
                                 </div>
@@ -236,7 +238,7 @@
 
                                     @if($eqPhotos->count() > 0)
                                         <span style="float: right; font-style: italic; color: #4f46e5; font-size: 10px;">
-                                            📸 {{ $eqPhotos->count() }} photo(s) disponible(s) via le scan ci-dessus
+                                            {{ $eqPhotos->count() }} photo(s) disponible(s) via le scan ci-dessus
                                         </span>
                                     @endif
                                 </td>
@@ -307,7 +309,7 @@
         @php $photoCount = 0; @endphp
         @foreach($lease->property->rooms as $room)
             @foreach($room->equipments as $equipment)
-                @foreach($lease->documents->where('equipment_id', $equipment->id) as $photo)
+                @foreach($lease->documents->where('equipment_id', $equipment->id)->where('category', 'inventory_photo_' . $type) as $photo)
                     @php $photoCount++; @endphp
                     <div style="display: inline-block; width: 30%; margin: 1%; vertical-align: top; border: 1px solid #eee; padding: 5px;">
                         <img src="{{ public_path('storage/' . str_replace('public/', '', $photo->file_path)) }}" 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { router } from '@inertiajs/react';
 import IconButton from '@/Components/IconButton';
 import ConfirmModal from '@/Components/ConfirmModal';
@@ -23,64 +23,72 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
   const [roomValue, setRoomValue] = useState<string>('');
   const [equipmentValue, setEquipmentValue] = useState<string>('');
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (currentIndex === null) return;
-      if (editingDetails) return;
+  // 1. Mémorisation de la synchronisation des états
+  const syncEditStates = useCallback(
+    (index: number) => {
+      setCaptionValue(photos[index].name || '');
+      setRoomValue(photos[index].room_id ? photos[index].room_id.toString() : '');
+      setEquipmentValue(photos[index].equipment_id ? photos[index].equipment_id.toString() : '');
+    },
+    [photos]
+  );
 
-      if (e.key === 'ArrowRight') handleNext();
-      if (e.key === 'ArrowLeft') handlePrev();
-      if (e.key === 'Escape') closeGallery();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex, photos, editingDetails]);
+  // 2. Mémorisation des fonctions de navigation et d'action
+  const openGallery = useCallback(
+    (index: number) => {
+      setCurrentIndex(index);
+      syncEditStates(index);
+    },
+    [syncEditStates]
+  );
 
-  const syncEditStates = (index: number) => {
-    setCaptionValue(photos[index].name || '');
-    setRoomValue(photos[index].room_id ? photos[index].room_id.toString() : '');
-    setEquipmentValue(photos[index].equipment_id ? photos[index].equipment_id.toString() : '');
-  };
-
-  const openGallery = (index: number) => {
-    setCurrentIndex(index);
-    syncEditStates(index);
-  };
-
-  const closeGallery = () => {
+  const closeGallery = useCallback(() => {
     setCurrentIndex(null);
     setEditingDetails(false);
-  };
+  }, []);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentIndex !== null && currentIndex < photos.length - 1) {
       const nextIndex = currentIndex + 1;
       setCurrentIndex(nextIndex);
       syncEditStates(nextIndex);
     }
-  };
+  }, [currentIndex, photos.length, syncEditStates]);
 
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     if (currentIndex !== null && currentIndex > 0) {
       const prevIndex = currentIndex - 1;
       setCurrentIndex(prevIndex);
       syncEditStates(prevIndex);
     }
-  };
+  }, [currentIndex, syncEditStates]);
 
-  const confirmDelete = () => {
-    if (!photoToDelete) return;
+  const confirmDelete = useCallback(() => {
+    if (!photoToDelete || currentIndex === null) return;
+
     router.delete(route('documents.destroy', photoToDelete), {
       preserveScroll: true,
       onSuccess: () => {
         setPhotoToDelete(null);
-        if (photos.length <= 1) closeGallery();
-        else if (currentIndex === photos.length - 1) handlePrev();
+
+        // On calcule la nouvelle longueur attendue du tableau
+        const expectedNewLength = photos.length - 1;
+
+        if (expectedNewLength <= 0) {
+          // S'il n'y a plus de photos, on ferme tout
+          closeGallery();
+        } else {
+          // Sinon, on recadre l'index (si on a supprimé la dernière photo, on recule d'un cran)
+          const newIndex = Math.min(currentIndex, expectedNewLength - 1);
+          setCurrentIndex(newIndex);
+          // On n'oublie pas de resynchroniser les formulaires d'édition avec la nouvelle image affichée
+          syncEditStates(newIndex);
+        }
       },
     });
-  };
+  }, [photoToDelete, currentIndex, photos.length, closeGallery, syncEditStates]);
 
-  const saveDetails = () => {
+  const saveDetails = useCallback(() => {
     if (currentIndex === null) return;
 
     router.put(
@@ -95,15 +103,40 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
         onSuccess: () => setEditingDetails(false),
       }
     );
-  };
+  }, [currentIndex, photos, captionValue, roomValue, equipmentValue]);
 
-  const selectedRoomForEdit = rooms.find((r) => r.id.toString() === roomValue);
-  const currentRoom =
-    currentIndex !== null ? rooms.find((r) => r.id === photos[currentIndex].room_id) : null;
-  const currentEquipment =
-    currentRoom && currentIndex !== null
-      ? currentRoom.equipments?.find((e) => e.id === photos[currentIndex].equipment_id)
-      : null;
+  // 3. Gestion optimisée du clavier avec les fonctions mémorisées
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (currentIndex === null || editingDetails) return;
+
+      if (e.key === 'ArrowRight') handleNext();
+      if (e.key === 'ArrowLeft') handlePrev();
+      if (e.key === 'Escape') closeGallery();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentIndex, editingDetails, handleNext, handlePrev, closeGallery]);
+
+  // 4. Mémorisation des calculs lourds (find sur des tableaux)
+  const selectedRoomForEdit = useMemo(
+    () => rooms.find((r) => r.id.toString() === roomValue),
+    [rooms, roomValue]
+  );
+
+  const currentRoom = useMemo(
+    () => (currentIndex !== null ? rooms.find((r) => r.id === photos[currentIndex].room_id) : null),
+    [currentIndex, rooms, photos]
+  );
+
+  const currentEquipment = useMemo(
+    () =>
+      currentRoom && currentIndex !== null
+        ? currentRoom.equipments?.find((e) => e.id === photos[currentIndex].equipment_id)
+        : null,
+    [currentRoom, currentIndex, photos]
+  );
 
   if (!photos || photos.length === 0) return null;
 
@@ -122,7 +155,8 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
           >
             <img
               src={`/storage/${photo.file_path.replace('public/', '')}`}
-              alt={photo.name}
+              alt={photo.name || `Photo ${index + 1}`}
+              loading="lazy" // <-- Optimisation du chargement natif
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
               onClick={() => openGallery(index)}
             />
@@ -156,7 +190,7 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
                     </svg>
                   }
                   aria-label="Modifier"
-                  onClick={() => setEditingDetails(!editingDetails)}
+                  onClick={() => setEditingDetails((prev) => !prev)}
                 />
                 <IconButton
                   variant="danger"
@@ -193,7 +227,7 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
               </div>
             </div>
 
-            {/* Flèches de navigation (Centrées verticalement) */}
+            {/* Flèches de navigation */}
             {currentIndex > 0 && (
               <button
                 onClick={handlePrev}
@@ -225,7 +259,7 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
               </button>
             )}
 
-            {/* ZONE D'IMAGE (Prend l'espace restant sans dépasser) */}
+            {/* ZONE D'IMAGE */}
             <div className="flex-1 min-h-0 w-full flex items-center justify-center p-8 pt-24 pb-4">
               <img
                 src={`/storage/${photos[currentIndex].file_path.replace('public/', '')}`}
@@ -234,7 +268,7 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
               />
             </div>
 
-            {/* LÉGENDE (Flux normal en bas, ne chevauche jamais l'image) */}
+            {/* LÉGENDE */}
             {!editingDetails && (
               <div className="shrink-0 w-full p-4 pb-8 flex flex-col items-center justify-center min-h-[100px]">
                 <p className="text-white text-lg font-medium text-center">

@@ -3,7 +3,7 @@ import Button from '@/Components/Button';
 import { Equipment, Property, Room } from '@/Types/property';
 import { Link, router, useForm } from '@inertiajs/react';
 import { formatFloor, parseLocalDate } from '@/Utils/formatters';
-import { ChangeEvent, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import EquipmentItem from '@/Pages/Properties/Partials/EquipmentItem';
 import EquipmentModal from '@/Pages/Properties/Partials/EquipmentModal';
 import RoomModal from '@/Pages/Properties/Partials/RoomModal';
@@ -43,6 +43,24 @@ export default function Show({ property }: Props) {
   const [pendingCaption, setPendingCaption] = useState('');
   const [pendingRoomId, setPendingRoomId] = useState('');
   const [pendingEquipmentId, setPendingEquipmentId] = useState('');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    // S'il n'y a pas de photo, on vide l'URL
+    if (!pendingPhoto) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    // On crée l'URL une seule fois
+    const objectUrl = URL.createObjectURL(pendingPhoto);
+    setPreviewUrl(objectUrl);
+
+    // Fonction de nettoyage (cleanup) : exécutée quand pendingPhoto change ou au démontage
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [pendingPhoto]);
 
   const handleArchiveClick = () => {
     setIsArchiveModalOpen(true);
@@ -713,14 +731,10 @@ export default function Show({ property }: Props) {
         <div className="bg-surface p-8 rounded-xl border border-[rgb(var(--border))] shadow-2xl">
           <h2 className="text-xl font-bold text-app mb-6">Légender la photo</h2>
 
-          {pendingPhoto && (
+          {previewUrl && (
             <div className="mb-6 overflow-hidden rounded-lg border border-[rgb(var(--border))]">
               {/* Prévisualisation de l'image locale */}
-              <img
-                src={URL.createObjectURL(pendingPhoto)}
-                alt="Aperçu"
-                className="w-full h-48 object-cover"
-              />
+              <img src={previewUrl} alt="Aperçu" className="w-full h-48 object-cover" />
             </div>
           )}
 

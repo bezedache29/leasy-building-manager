@@ -16,7 +16,9 @@ Route::get('/', function () {
     return redirect()->route('dashboard');
 });
 
-Route::get('/properties/{property}/inventory', [InventoryController::class, 'show'])->name('properties.inventory');
+Route::get('/properties/{property}/inventory', [InventoryController::class, 'show'])
+    ->name('properties.inventory')
+    ->middleware('signed');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');

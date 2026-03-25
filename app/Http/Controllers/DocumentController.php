@@ -31,6 +31,8 @@ class DocumentController extends Controller
 
     public function update(Request $request, Document $document)
     {
+        Gate::authorize('update', $document);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'room_id' => 'nullable|exists:rooms,id',
