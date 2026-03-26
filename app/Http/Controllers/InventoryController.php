@@ -13,24 +13,23 @@ class InventoryController extends Controller
             'room' => 'required|integer|exists:rooms,id',
         ])['room'];
 
-        $room = $property->rooms()->findOrFail($roomId);
+        // On charge la pièce avec ses équipements pour la nouvelle vue
+        $room = $property->rooms()->with('equipments')->findOrFail($roomId);
 
-        // On récupère toutes les photos liées aux équipements de cette pièce.
-        // On vérifie que l'équipement appartient bien à la pièce, 
-        // ET on s'assure via la relation que la pièce appartient bien au bon bien (sécurité).
-        $photos = Document::where('category', 'like', 'inventory_photo_%')
-            ->whereHas('equipment', function ($query) use ($roomId, $property) {
-                $query->where('room_id', $roomId)
-                    ->whereHas('room', function ($roomQuery) use ($property) {
-                        $roomQuery->where('property_id', $property->id);
-                    });
-            })
+        // On récupère toutes les photos liées à la pièce (générales) 
+        // OU liées aux équipements de cette pièce.
+        $photos = Document::where(function ($query) use ($roomId) {
+            $query->where('room_id', $roomId)
+                ->orWhereHas('equipment', function ($q) use ($roomId) {
+                    $q->where('room_id', $roomId);
+                });
+        })
+            // On commente temporairement la restriction de catégorie
             ->latest()
             ->get();
 
-        // Si tu as besoin de savoir de quel bail provient chaque photo dans la vue, 
-        // tu peux charger la relation 'documentable' si tes documents sont polymorphiques.
+        $equipments = $room->equipments;
 
-        return view('inventory.show', compact('property', 'photos', 'roomId'));
+        return view('inventory.show', compact('property', 'photos', 'room', 'roomId', 'equipments'));
     }
 }
