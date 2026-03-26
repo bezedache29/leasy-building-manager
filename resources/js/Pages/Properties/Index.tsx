@@ -63,95 +63,110 @@ export default function Index({ properties }: Props) {
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {properties.map((property) => (
-              <div
-                key={property.id}
-                className="flex flex-col rounded-xl border border-[rgb(var(--border))] bg-surface shadow-sm transition-shadow hover:shadow-md"
-              >
-                {/* En-tête de la carte */}
-                <div className="border-b border-[rgb(var(--border))] p-5">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl" title={getTypeLabel(property.type)}>
-                        {getTypeIcon(property.type)}
-                      </span>
-                      <div>
-                        <h2
-                          className="text-lg font-bold text-app line-clamp-1"
-                          title={property.name}
-                        >
-                          {property.name}
-                        </h2>
-                        <span className="inline-block mt-1 rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-muted border border-[rgb(var(--border))]">
-                          {getTypeLabel(property.type)}
+            {properties.map((property) => {
+              // On vérifie si le bien est actuellement loué.
+              // (À adapter si tu as une prop "is_rented" ou "current_tenant_id" directement sur le modèle)
+              const isRented = property.leases?.some((lease) => lease.status === 'active');
+
+              return (
+                <div
+                  key={property.id}
+                  className="flex flex-col rounded-xl border border-[rgb(var(--border))] bg-surface shadow-sm transition-shadow hover:shadow-md"
+                >
+                  {/* En-tête de la carte */}
+                  <div className="border-b border-[rgb(var(--border))] p-5">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl" title={getTypeLabel(property.type)}>
+                          {getTypeIcon(property.type)}
                         </span>
+                        <div>
+                          <h2
+                            className="text-lg font-bold text-app line-clamp-1"
+                            title={property.name}
+                          >
+                            {property.name}
+                          </h2>
+                          <span className="inline-block mt-1 rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-muted border border-[rgb(var(--border))]">
+                            {getTypeLabel(property.type)}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Corps de la carte (Informations clés) */}
-                <div className="flex-1 p-5">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-xs font-medium text-muted uppercase tracking-wider">
-                        Étage
-                      </p>
-                      <p className="mt-1 text-sm text-app">{formatFloor(property.floor)}</p>
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-medium text-muted uppercase tracking-wider">
-                        Loyer
-                      </p>
-                      <p className="mt-1 text-sm text-app">600 €</p>
-                    </div>
-                    <div className="col-span-2 grid grid-cols-2 rounded bg-surface-2 p-2 border border-[rgb(var(--border))]">
+                      {/* BADGE STATUT DU BIEN */}
                       <div>
-                        <p className="text-xs font-medium text-muted uppercase tracking-wider">
-                          💧 Eau
-                        </p>
-                        <p className="mt-1 text-sm text-app">
-                          {property.tantiemes_water !== null
-                            ? `${property.tantiemes_water} / 10000`
-                            : '—'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-muted uppercase tracking-wider">
-                          ⚡ Communs
-                        </p>
-                        <p className="mt-1 text-sm text-app">
-                          {property.tantiemes_commons !== null
-                            ? `${property.tantiemes_commons} / 1000`
-                            : '—'}
-                        </p>
+                        {isRented ? (
+                          <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-600 border border-emerald-500/20">
+                            Loué
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-medium text-rose-600 border border-rose-500/20">
+                            Vide
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  {property.description && (
-                    <div className="mt-4 pt-4 border-t border-[rgb(var(--border))]">
-                      <p className="text-sm text-muted line-clamp-2">{property.description}</p>
-                    </div>
-                  )}
-                </div>
+                  {/* Corps de la carte (Informations clés) */}
+                  <div className="flex-1 p-5">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs font-medium text-muted uppercase tracking-wider">
+                          Étage
+                        </p>
+                        <p className="mt-1 text-sm text-app">{formatFloor(property.floor)}</p>
+                      </div>
 
-                {/* Pied de la carte (Actions) */}
-                <div className="flex items-center gap-2 border-t border-[rgb(var(--border))] bg-surface-2 p-4 rounded-b-xl">
-                  <Button
-                    href={route('properties.show', property.id)}
-                    variant="secondary"
-                    className="flex-1"
-                  >
-                    Voir le dossier
-                  </Button>
-                  <Button href={route('properties.edit', property.id)} variant="warning">
-                    Modifier
-                  </Button>
+                      <div>
+                        <p className="text-xs font-medium text-muted uppercase tracking-wider">
+                          Loyer
+                        </p>
+                        <p className="mt-1 text-sm text-app">600 €</p>
+                      </div>
+                      <div className="col-span-2 grid grid-cols-2 rounded bg-surface-2 p-2 border border-[rgb(var(--border))]">
+                        <div>
+                          <p className="text-xs font-medium text-muted uppercase tracking-wider">
+                            💧 Eau
+                          </p>
+                          <p className="mt-1 text-sm text-app">
+                            {property.tantiemes_water !== null
+                              ? `${property.tantiemes_water} / 10000`
+                              : '—'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-muted uppercase tracking-wider">
+                            ⚡ Communs
+                          </p>
+                          <p className="mt-1 text-sm text-app">
+                            {property.tantiemes_commons !== null
+                              ? `${property.tantiemes_commons} / 1000`
+                              : '—'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {property.description && (
+                      <div className="mt-4 pt-4 border-t border-[rgb(var(--border))]">
+                        <p className="text-sm text-muted line-clamp-2">{property.description}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Pied de la carte (Actions) */}
+                  <div className="flex items-center gap-2 border-t border-[rgb(var(--border))] bg-surface-2 p-4 rounded-b-xl">
+                    <Button href={route('properties.show', property.id)} className="flex-1">
+                      Voir le dossier
+                    </Button>
+                    <Button href={route('properties.edit', property.id)} variant="warning">
+                      Modifier
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

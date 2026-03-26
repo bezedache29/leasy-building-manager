@@ -32,6 +32,5 @@ export const GUARANTOR_DOCUMENT_KEYS = [
   'employment_contract',
   'payslip',
   'tax_notice',
-  'guarantee_deed',
   'other',
 ];

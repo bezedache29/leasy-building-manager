@@ -43,19 +43,31 @@ export default function Index({ tenants }: Props) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[rgb(var(--border))]">
-                  {tenants.map((tenant) => (
-                    <tr key={tenant.id} className="hover:bg-surface-2 transition-colors">
-                      <td className="px-6 py-4 font-medium whitespace-nowrap">
-                        {tenant.first_name} {tenant.last_name}
-                      </td>
-                      <td className="px-6 py-4 text-muted whitespace-nowrap">
-                        <div>{tenant.email || '—'}</div>
-                        <div>{tenant.phone || '—'}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {(() => {
-                          const activeLease = tenant.leases?.find((l) => l.status === 'active');
-                          return activeLease?.property ? (
+                  {tenants.map((tenant) => {
+                    // 1. On verifie le statut des baux
+                    const activeLease = tenant.leases?.find((l) => l.status === 'active');
+                    const hasActiveLease = !!activeLease;
+                    const hasAnyLease = tenant.leases && tenant.leases.length > 0;
+
+                    // 2. On determine la couleur du bouton de maniere definitive
+                    const buttonVariant =
+                      !hasActiveLease && hasAnyLease
+                        ? 'danger'
+                        : tenant.is_complete
+                          ? 'success'
+                          : 'warning';
+
+                    return (
+                      <tr key={tenant.id} className="hover:bg-surface-2 transition-colors">
+                        <td className="px-6 py-4 font-medium whitespace-nowrap">
+                          {tenant.first_name} {tenant.last_name}
+                        </td>
+                        <td className="px-6 py-4 text-muted whitespace-nowrap">
+                          <div>{tenant.email || '—'}</div>
+                          <div>{tenant.phone || '—'}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {activeLease?.property ? (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
                               {activeLease.property.name}
                             </span>
@@ -63,18 +75,18 @@ export default function Index({ tenants }: Props) {
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-3 text-muted">
                               Aucun bail en cours
                             </span>
-                          );
-                        })()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <Link href={route('tenants.show', tenant.id)}>
-                          <Button variant={tenant.is_complete ? 'primary' : 'warning'} size="sm">
-                            Voir
-                          </Button>
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <Link href={route('tenants.show', tenant.id)}>
+                            <Button variant={buttonVariant} size="sm">
+                              Voir
+                            </Button>
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
