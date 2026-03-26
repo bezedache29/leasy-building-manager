@@ -1,7 +1,9 @@
 FROM serversideup/php:8.4-fpm-nginx
 
-# On passe en root pour installer Node.js (Système Ubuntu)
+# ROOT pour installer packages
 USER root
+
+# Node.js
 RUN apt-get update \
     && apt-get install -y curl \
     && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
@@ -9,14 +11,17 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# On repasse en utilisateur web sécurisé
+# ✅ Installer extensions PHP
+RUN install-php-extensions intl zip opcache
+
+# Revenir user sécurisé
 USER www-data
 
-# On copie tout le projet
+# Copier projet
 COPY --chown=www-data:www-data . /var/www/html
 
-# Installation des dépendances PHP
+# Composer
 RUN composer install --no-dev --optimize-autoloader
 
-# Installation des dépendances JS et compilation
+# Build front
 RUN npm install --legacy-peer-deps && npm run build
