@@ -11,8 +11,8 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# ✅ Installer extensions PHP
-RUN install-php-extensions intl zip opcache
+# ✅ Installer extensions PHP (ajout de l'extension gd pour Intervention Image)
+RUN install-php-extensions intl zip opcache gd
 
 # Revenir user sécurisé
 USER www-data
