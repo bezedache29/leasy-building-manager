@@ -208,12 +208,16 @@ export default function Show({ property }: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-7 space-y-8">
             <section className={sectionClass}>
-              <div className="flex justify-between">
+              <div className="flex items-start justify-between">
                 <h2 className="mb-5 text-lg font-semibold text-[rgb(var(--primary-500))]">
                   Informations du lot
                 </h2>
-                {/* TODO: Display actual rent from lease when implemented */}
-                <p className="text-muted text-sm">Loyer : 600 €</p>
+                <p className="text-muted text-sm font-medium">
+                  Loyer (CC) :{' '}
+                  {activeLease
+                    ? `${(Number(activeLease.rent_amount) + Number(activeLease.charges_amount)).toFixed(2)} €`
+                    : '—'}
+                </p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>

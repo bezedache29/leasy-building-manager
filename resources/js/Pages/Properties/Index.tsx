@@ -64,9 +64,9 @@ export default function Index({ properties }: Props) {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {properties.map((property) => {
-              // On vérifie si le bien est actuellement loué.
-              // (À adapter si tu as une prop "is_rented" ou "current_tenant_id" directement sur le modèle)
-              const isRented = property.leases?.some((lease) => lease.status === 'active');
+              // On récupère le bail actif complet pour pouvoir afficher son loyer
+              const activeLease = property.leases?.find((lease) => lease.status === 'active');
+              const isRented = !!activeLease;
 
               return (
                 <div
@@ -120,9 +120,13 @@ export default function Index({ properties }: Props) {
 
                       <div>
                         <p className="text-xs font-medium text-muted uppercase tracking-wider">
-                          Loyer
+                          Loyer (CC)
                         </p>
-                        <p className="mt-1 text-sm text-app">600 €</p>
+                        <p className="mt-1 text-sm text-app">
+                          {activeLease
+                            ? `${(Number(activeLease.rent_amount) + Number(activeLease.charges_amount)).toFixed(2)} €`
+                            : '—'}
+                        </p>
                       </div>
                       <div className="col-span-2 grid grid-cols-2 rounded bg-surface-2 p-2 border border-[rgb(var(--border))]">
                         <div>
