@@ -20,6 +20,10 @@ Route::get('/properties/{property}/inventory', [InventoryController::class, 'sho
     ->name('properties.inventory')
     ->middleware('signed');
 
+Route::get('/documents/{document}/public', [DocumentController::class, 'showPublic'])
+    ->name('documents.public')
+    ->middleware('signed');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 

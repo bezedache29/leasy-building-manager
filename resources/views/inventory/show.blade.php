@@ -4,7 +4,7 @@
     <div class="grid grid-cols-2 gap-4">
         @foreach($photos as $photo)
             <div class="border rounded shadow-sm">
-                <img src="{{ asset('storage/' . $photo->file_path) }}" class="w-full h-auto">
+                <img src="{{ URL::temporarySignedRoute('documents.public', now()->addHours(24), ['document' => $photo->id]) }}" class="w-full h-auto">
                 <p class="p-2 text-sm">{{ $photo->name }}</p>
             </div>
         @endforeach

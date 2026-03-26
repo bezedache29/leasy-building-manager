@@ -166,4 +166,18 @@ class DocumentController extends Controller
 
         return back();
     }
+
+    public function showPublic(Document $document)
+    {
+        // Sécurité supplémentaire : on s'assure que le fichier est bien une image
+        if (!Str::startsWith($document->mime_type, 'image/')) {
+            abort(403, 'Ce type de document ne peut pas être affiché publiquement.');
+        }
+
+        if (!Storage::disk('public')->exists($document->file_path)) {
+            abort(404, 'Le fichier est introuvable sur le serveur.');
+        }
+
+        return response()->file(Storage::disk('public')->path($document->file_path));
+    }
 }
