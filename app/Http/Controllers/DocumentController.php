@@ -166,4 +166,15 @@ class DocumentController extends Controller
 
         return back();
     }
+
+    public function showPublic(Document $document)
+    {
+        // Pas besoin de Gate ici, la signature de l'URL prouve que l'accès est légitime.
+
+        if (!Storage::disk('public')->exists($document->file_path)) {
+            abort(404, 'Le fichier est introuvable sur le serveur.');
+        }
+
+        return response()->file(Storage::disk('public')->path($document->file_path));
+    }
 }
