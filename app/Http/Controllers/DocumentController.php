@@ -149,7 +149,7 @@ class DocumentController extends Controller
         $extension = $file->getClientOriginalExtension();
         $filename = time() . '_' . Str::random(10) . '.' . $extension;
 
-        $path = $file->storeAs("leases/{$lease->id}/inventory", $filename, 'public');
+        $path = $file->storeAs("documents/leases/{$lease->id}/inventory", $filename, 'public');
 
         // Si l'utilisateur a tapé une légende, on l'utilise. Sinon on garde le nom par défaut.
         $documentName = $request->name ?: ('Photo ' . ($request->type === 'inventory_photo_in' ? 'Entrée' : 'Sortie'));

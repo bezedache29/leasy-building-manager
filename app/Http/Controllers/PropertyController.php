@@ -11,7 +11,8 @@ class PropertyController extends Controller
 {
     public function index()
     {
-        $properties = Property::orderBy('name')->get();
+        // On charge la relation "leases" avec les biens pour gérer le badge "Loué/Vide"
+        $properties = Property::with('leases')->orderBy('name')->get();
 
         return Inertia::render('Properties/Index', [
             'properties' => $properties

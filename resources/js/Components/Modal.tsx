@@ -5,7 +5,7 @@ export default function Modal({
   children,
   show = false,
   maxWidth = 'md',
-  closeable = true,
+  closeable = false,
   onClose = () => {},
   id,
 }: PropsWithChildren<{

@@ -78,7 +78,7 @@ export default function EquipmentItem({
         <Disclosure as="div" className="mt-2">
           {({ open }) => (
             <>
-              <Disclosure.Button className="cursor-pointer flex items-center text-xs font-medium text-[rgb(var(--primary-300))] hover:text-[rgb(var(--primary-400))] focus:outline-none">
+              <Disclosure.Button className="cursor-pointer flex items-center text-xs font-medium text-[rgb(var(--success-500))] hover:text-[rgb(var(--success-600))] focus:outline-none">
                 <svg
                   className={`mr-1 h-4 w-4 transform transition-transform ${open ? 'rotate-90' : ''}`}
                   fill="none"

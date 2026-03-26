@@ -44,6 +44,7 @@ export default function Show({ property }: Props) {
   const [pendingRoomId, setPendingRoomId] = useState('');
   const [pendingEquipmentId, setPendingEquipmentId] = useState('');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showInventoryConfirmModal, setShowInventoryConfirmModal] = useState(false);
 
   useEffect(() => {
     // S'il n'y a pas de photo, on vide l'URL
@@ -207,12 +208,16 @@ export default function Show({ property }: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-7 space-y-8">
             <section className={sectionClass}>
-              <div className="flex justify-between">
+              <div className="flex items-start justify-between">
                 <h2 className="mb-5 text-lg font-semibold text-[rgb(var(--primary-500))]">
                   Informations du lot
                 </h2>
-                {/* TODO: Display actual rent from lease when implemented */}
-                <p className="text-muted text-sm">Loyer : 600 €</p>
+                <p className="text-muted text-sm font-medium">
+                  Loyer (CC) :{' '}
+                  {activeLease
+                    ? `${(Number(activeLease.rent_amount) + Number(activeLease.charges_amount)).toFixed(2)} €`
+                    : '—'}
+                </p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
@@ -541,13 +546,8 @@ export default function Show({ property }: Props) {
                       )}
 
                       <Button
-                        href={route('leases.inventory.pdf', {
-                          lease: activeLease.id,
-                          type: 'in',
-                        })}
+                        onClick={() => setShowInventoryConfirmModal(true)}
                         className="w-full justify-center text-center mb-3"
-                        target="_blank"
-                        rel="noopener noreferrer"
                       >
                         📄 Télécharger l'état des lieux (Entrée)
                       </Button>
@@ -798,6 +798,39 @@ export default function Show({ property }: Props) {
           </div>
         </div>
       </Modal>
+
+      <ConfirmModal
+        show={showInventoryConfirmModal}
+        onClose={() => setShowInventoryConfirmModal(false)}
+        onConfirm={() => {
+          setShowInventoryConfirmModal(false);
+          if (activeLease) {
+            window.open(
+              route('leases.inventory.pdf', { lease: activeLease.id, type: 'in' }),
+              '_blank'
+            );
+          }
+        }}
+        title="Générer l'état des lieux entrant"
+        confirmText="Générer le PDF"
+        variant="primary"
+      >
+        <div className="space-y-4">
+          <div className="rounded-lg bg-[rgb(var(--warning-500))]/10 p-4 border border-[rgb(var(--warning-500))]/20">
+            <p className="text-sm font-semibold text-[rgb(var(--warning-700))] flex items-center gap-2">
+              <span>⚠️</span> Rappel important
+            </p>
+            <p className="mt-2 text-sm text-app">
+              As-tu bien vérifié et mis à jour les photos des pièces et équipements ?
+            </p>
+          </div>
+          <p className="text-sm text-muted">
+            Si des réparations ont été effectuées depuis le départ du précédent locataire (ex: trou
+            rebouché, peinture refaite), pense à supprimer les anciennes photos et à ajouter les
+            nouvelles avant de générer ce document.
+          </p>
+        </div>
+      </ConfirmModal>
 
       {activeLease && activeLease.missing_pdf_data && (
         <MissingPdfDataModal
