@@ -158,7 +158,8 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
             aria-label={`Ouvrir la photo ${index + 1}`}
           >
             <img
-              src={`/storage/${photo.file_path.replace('public/', '')}`}
+              // On utilise la route sécurisée au lieu du chemin direct
+              src={route('documents.show', photo.id)}
               alt={photo.name || `Photo ${index + 1}`}
               loading="lazy"
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
@@ -173,7 +174,7 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
           {/* ZONE PRINCIPALE */}
           <div className="relative flex-1 flex flex-col min-w-0">
             {/* Header */}
-            <div className="absolute top-0 left-0 w-full flex justify-between items-center p-6 bg-gradient-to-b from-black/60 to-transparent z-20 pointer-events-none">
+            <div className="absolute top-0 left-0 w-full flex justify-between items-center p-6 bg-linear-to-b from-black/60 to-transparent z-20 pointer-events-none">
               <span className="text-white font-semibold text-sm bg-black/50 px-4 py-1.5 rounded-full border border-white/10 pointer-events-auto">
                 {(safeIndex ?? 0) + 1} / {photos.length}
               </span>
@@ -268,7 +269,8 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
             {/* Image */}
             <div className="flex-1 min-h-0 w-full flex items-center justify-center p-8 pt-24 pb-4">
               <img
-                src={`/storage/${activePhoto.file_path.replace('public/', '')}`}
+                // Pareil ici pour le mode plein écran
+                src={route('documents.show', activePhoto.id)}
                 alt={activePhoto.name}
                 className="max-h-full max-w-full object-contain shadow-2xl rounded-lg"
               />
@@ -276,7 +278,7 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
 
             {/* Légende */}
             {!editingDetails && (
-              <div className="shrink-0 w-full p-4 pb-8 flex flex-col items-center justify-center min-h-[100px]">
+              <div className="shrink-0 w-full p-4 pb-8 flex flex-col items-center justify-center min-h-25">
                 <p className="text-white text-lg font-medium text-center">
                   {activePhoto.name || 'Photo sans légende'}
                 </p>
@@ -327,7 +329,7 @@ export default function PhotoGallery({ photos, title = 'Photos', rooms = [] }: P
 
           {/* Sidebar */}
           <div
-            className={`h-full bg-surface border-l border-[rgb(var(--border))] shadow-2xl flex flex-col transition-all duration-300 ease-in-out shrink-0 overflow-hidden ${editingDetails ? 'w-full sm:w-[400px] opacity-100' : 'w-0 opacity-0'}`}
+            className={`h-full bg-surface border-l border-[rgb(var(--border))] shadow-2xl flex flex-col transition-all duration-300 ease-in-out shrink-0 overflow-hidden ${editingDetails ? 'w-full sm:w-100 opacity-100' : 'w-0 opacity-0'}`}
           >
             <div className="flex items-center justify-between p-5 border-b border-[rgb(var(--border))] shrink-0">
               <h3 className="text-lg font-bold text-app">Détails de la photo</h3>
