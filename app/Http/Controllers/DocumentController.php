@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 
 class DocumentController extends Controller
 {
@@ -146,20 +148,42 @@ class DocumentController extends Controller
         ]);
 
         $file = $request->file('photo');
-        $extension = $file->getClientOriginalExtension();
-        $filename = time() . '_' . Str::random(10) . '.' . $extension;
 
-        $path = $file->storeAs("documents/leases/{$lease->id}/inventory", $filename, 'public');
+        // On force l'extension webp pour toutes les images uploadees
+        $filename = time() . '_' . Str::random(10) . '.webp';
+        $folderPath = "documents/leases/{$lease->id}/inventory";
 
-        // Si l'utilisateur a tapé une légende, on l'utilise. Sinon on garde le nom par défaut.
+        // On s'assure que le dossier de destination existe
+        if (!Storage::disk('public')->exists($folderPath)) {
+            Storage::disk('public')->makeDirectory($folderPath);
+        }
+
+        // Initialisation de Intervention avec le driver GD par defaut
+        $manager = new ImageManager(new Driver());
+
+        // Lecture de l'image originale
+        $image = $manager->read($file->getRealPath());
+
+        // Redimensionnement proportionnel : max 1920px de large
+        // Si l'image est plus petite, elle ne sera pas etiree
+        $image->scaleDown(width: 1920);
+
+        // Encodage en format WebP avec une qualite de 80%
+        $encoded = $image->toWebp(100);
+
+        // Sauvegarde sur le disque public
+        $path = $folderPath . '/' . $filename;
+        Storage::disk('public')->put($path, $encoded->toString());
+
         $documentName = $request->name ?: ('Photo ' . ($request->type === 'inventory_photo_in' ? 'Entrée' : 'Sortie'));
 
         $lease->documents()->create([
             'name' => $documentName,
             'file_path' => $path,
             'category' => $request->type,
-            'mime_type' => $file->getClientMimeType(),
-            'size' => $file->getSize(),
+            'mime_type' => 'image/webp',
+            // On calcule le poids reel du nouveau fichier WebP
+            'size' => Storage::disk('public')->size($path),
             'room_id' => $request->room_id,
             'equipment_id' => $request->equipment_id,
         ]);
