@@ -17,14 +17,14 @@ class InventoryController extends Controller
         $room = $property->rooms()->with('equipments')->findOrFail($roomId);
 
         // On récupère toutes les photos liées à la pièce (générales) 
-        // OU liées aux équipements de cette pièce.
+        // OU liées aux équipements de cette pièce, en filtrant strictement sur la catégorie.
         $photos = Document::where(function ($query) use ($roomId) {
             $query->where('room_id', $roomId)
                 ->orWhereHas('equipment', function ($q) use ($roomId) {
                     $q->where('room_id', $roomId);
                 });
         })
-            // On commente temporairement la restriction de catégorie
+            ->where('category', 'like', 'inventory_photo_%')
             ->latest()
             ->get();
 
