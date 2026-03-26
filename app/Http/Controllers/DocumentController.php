@@ -169,7 +169,10 @@ class DocumentController extends Controller
 
     public function showPublic(Document $document)
     {
-        // Pas besoin de Gate ici, la signature de l'URL prouve que l'accès est légitime.
+        // Sécurité supplémentaire : on s'assure que le fichier est bien une image
+        if (!Str::startsWith($document->mime_type, 'image/')) {
+            abort(403, 'Ce type de document ne peut pas être affiché publiquement.');
+        }
 
         if (!Storage::disk('public')->exists($document->file_path)) {
             abort(404, 'Le fichier est introuvable sur le serveur.');
