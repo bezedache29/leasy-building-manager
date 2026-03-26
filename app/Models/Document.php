@@ -17,6 +17,7 @@ class Document extends Model
         'file_path',
         'category',
         'mime_type',
+        'size',
         'room_id',
         'equipment_id',
     ];

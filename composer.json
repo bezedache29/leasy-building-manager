@@ -11,6 +11,7 @@
   "require": {
     "php": "^8.2",
     "ext-intl": "*",
+    "ext-gd": "*",
     "bacon/bacon-qr-code": "^3.0",
     "barryvdh/laravel-dompdf": "^3.1",
     "chillerlan/php-qrcode": "^6.0",

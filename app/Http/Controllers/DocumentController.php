@@ -168,25 +168,41 @@ class DocumentController extends Controller
         // Si l'image est plus petite, elle ne sera pas etiree
         $image->scaleDown(width: 1920);
 
-        // Encodage en format WebP avec une qualite de 80%
-        $encoded = $image->toWebp(100);
+        // Encodage en format WebP avec une qualite de 80
+        $encoded = $image->toWebp(80);
 
-        // Sauvegarde sur le disque public
         $path = $folderPath . '/' . $filename;
-        Storage::disk('public')->put($path, $encoded->toString());
-
         $documentName = $request->name ?: ('Photo ' . ($request->type === 'inventory_photo_in' ? 'Entrée' : 'Sortie'));
 
-        $lease->documents()->create([
-            'name' => $documentName,
-            'file_path' => $path,
-            'category' => $request->type,
-            'mime_type' => 'image/webp',
-            // On calcule le poids reel du nouveau fichier WebP
-            'size' => Storage::disk('public')->size($path),
-            'room_id' => $request->room_id,
-            'equipment_id' => $request->equipment_id,
-        ]);
+        try {
+            DB::beginTransaction();
+
+            // Sauvegarde sur le disque public
+            Storage::disk('public')->put($path, $encoded->toString());
+
+            // Creation de l'entree en base de donnees
+            $lease->documents()->create([
+                'name' => $documentName,
+                'file_path' => $path,
+                'category' => $request->type,
+                'mime_type' => 'image/webp',
+                // On calcule le poids reel du nouveau fichier WebP
+                'size' => Storage::disk('public')->size($path),
+                'room_id' => $request->room_id,
+                'equipment_id' => $request->equipment_id,
+            ]);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            // Nettoyage du fichier orphelin si l'insertion en base echoue
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+
+            throw $e;
+        }
 
         return back();
     }
