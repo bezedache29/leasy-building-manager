@@ -81,7 +81,7 @@ export default function DocumentFieldItem<T extends FieldValues>({
         <InputLabel value="Fichier PDF / Image" className="mb-1" />
         <input
           type="file"
-          className="block w-full text-xs text-muted file:mr-2 file:rounded-md file:border-0 file:bg-surface-2 file:px-2 file:py-1 file:text-xs file:font-medium file:text-app hover:file:bg-surface file:cursor-pointer file:border-[rgb(var(--border))]"
+          className="block w-full text-xs text-muted file:mr-2 file:rounded-md file:border-0 file:bg-surface-2 file:px-2 file:py-1 file:text-xs file:font-medium file:text-app hover:file:bg-surface file:cursor-pointer file:border-(rgb(var(--border)))"
           onChange={(e) => {
             if (e.target.files?.[0]) {
               setValue(

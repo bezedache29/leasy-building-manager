@@ -4,8 +4,8 @@ export interface Guarantor {
   id: number;
   type: 'human' | 'visale';
   visale_contract_number: string | null;
-  first_name: string;
-  last_name: string;
+  first_name: string | null;
+  last_name: string | null;
   marital_status: string | null;
   email: string | null;
   phone: string | null;

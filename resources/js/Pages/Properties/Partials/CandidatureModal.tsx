@@ -35,7 +35,7 @@ export default function CandidatureModal({ show, onClose, propertyId, tenants }:
   for (const tenant of tenants) {
     if (selectedTenantIds.includes(tenant.id) && tenant.guarantors) {
       for (const g of tenant.guarantors) {
-        if (!seenIds.has(g.id)) {
+        if (!seenIds.has(g.id) && g.type !== 'visale') {
           seenIds.add(g.id);
           availableGuarantors.push(g);
         }

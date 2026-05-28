@@ -59,7 +59,7 @@ class CandidatureController extends Controller
         $pdf->setPaper('A4', 'portrait');
 
         $filename = 'acte_caution_candidature_'
-            . Str::slug($guarantor->last_name) . '_'
+            . Str::slug($guarantor->last_name ?? 'visale') . '_'
             . Str::slug($property->name) . '.pdf';
 
         return $pdf->stream($filename);

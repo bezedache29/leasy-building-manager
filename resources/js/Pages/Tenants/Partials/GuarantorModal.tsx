@@ -60,8 +60,8 @@ export default function GuarantorModal({ show, onClose, tenantId, guarantor }: P
         reset({
           type: guarantor.type ?? 'human',
           visale_contract_number: guarantor.visale_contract_number || '',
-          first_name: guarantor.first_name,
-          last_name: guarantor.last_name,
+          first_name: guarantor.first_name ?? undefined,
+          last_name: guarantor.last_name ?? undefined,
           relationship: guarantor.pivot?.relationship || '',
           marital_status: guarantor.marital_status || '',
           email: guarantor.email || '',

@@ -185,8 +185,8 @@
     @php
         // On récupère uniquement les garants associés à CE bail
         $guarantors = $lease->guarantors;
-        $isVisale = $guarantors->isNotEmpty() && $guarantors->first()->type === 'visale';
-        $visaleGuarantor = $isVisale ? $guarantors->first() : null;
+        $isVisale = $guarantors->contains('type', 'visale');
+        $visaleGuarantor = $isVisale ? $guarantors->firstWhere('type', 'visale') : null;
     @endphp
 
     @if($guarantors->count() > 0)
