@@ -17,6 +17,7 @@ type TenantFormValues = z.infer<typeof createTenantSchema>;
 
 export default function CreateTenant() {
   const [isPosting, setIsPosting] = useState(false);
+  const [guarantorTypes, setGuarantorTypes] = useState<Array<'human' | 'visale'>>([]);
 
   const {
     register,
@@ -100,8 +101,9 @@ export default function CreateTenant() {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() =>
+                onClick={() => {
                   addGuarantor({
+                    type: 'human',
                     first_name: '',
                     last_name: '',
                     relationship: '',
@@ -111,8 +113,9 @@ export default function CreateTenant() {
                     current_address: '',
                     profession: '',
                     documents: [],
-                  })
-                }
+                  });
+                  setGuarantorTypes((prev) => [...prev, 'human']);
+                }}
               >
                 + Ajouter un garant
               </Button>
@@ -122,17 +125,82 @@ export default function CreateTenant() {
               <p className="text-sm text-muted italic">Aucun garant n'a été ajouté.</p>
             ) : (
               <div className="space-y-6">
-                {guarantorFields.map((field, index) => (
-                  <GuarantorCard
-                    key={field.id}
-                    prefix={`guarantors.${index}.`}
-                    control={control}
-                    register={register}
-                    setValue={setValue}
-                    errors={errors}
-                    onRemove={() => removeGuarantor(index)}
-                  />
-                ))}
+                {guarantorFields.map((field, index) => {
+                  const currentType = guarantorTypes[index] ?? 'human';
+                  const isVisale = currentType === 'visale';
+
+                  const handleTypeChange = (type: 'human' | 'visale') => {
+                    setGuarantorTypes((prev) => prev.map((t, i) => (i === index ? type : t)));
+                    setValue(`guarantors.${index}.type` as Path<TenantFormValues>, type);
+                  };
+
+                  return (
+                    <div
+                      key={field.id}
+                      className="relative rounded-lg border border-dashed border-[rgb(var(--border))] p-5 bg-surface-2 space-y-4"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          removeGuarantor(index);
+                          setGuarantorTypes((prev) => prev.filter((_, i) => i !== index));
+                        }}
+                        className="absolute right-4 top-4 text-sm font-medium text-red-400 hover:text-red-300 transition-colors"
+                      >
+                        Retirer le garant
+                      </button>
+
+                      {/* Toggle type */}
+                      <div className="flex gap-3 pr-28">
+                        <label
+                          className={`flex-1 flex items-center gap-3 rounded-lg border px-4 py-3 cursor-pointer transition-colors ${!isVisale ? 'border-[rgb(var(--primary-500))] bg-[rgb(var(--primary-500))]/5' : 'border-[rgb(var(--border))] hover:bg-surface'}`}
+                        >
+                          <input
+                            type="radio"
+                            checked={!isVisale}
+                            onChange={() => handleTypeChange('human')}
+                            className="h-4 w-4 text-[rgb(var(--primary-500))]"
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-app">Garant ordinaire</p>
+                            <p className="text-xs text-muted">Personne physique</p>
+                          </div>
+                        </label>
+                        <label
+                          className={`flex-1 flex items-center gap-3 rounded-lg border px-4 py-3 cursor-pointer transition-colors ${isVisale ? 'border-[rgb(var(--primary-500))] bg-[rgb(var(--primary-500))]/5' : 'border-[rgb(var(--border))] hover:bg-surface'}`}
+                        >
+                          <input
+                            type="radio"
+                            checked={isVisale}
+                            onChange={() => handleTypeChange('visale')}
+                            className="h-4 w-4 text-[rgb(var(--primary-500))]"
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-app">Garantie Visale</p>
+                            <p className="text-xs text-muted">Action Logement</p>
+                          </div>
+                        </label>
+                      </div>
+
+                      {isVisale && (
+                        <div className="rounded-lg border border-[rgb(var(--primary-500))]/30 bg-[rgb(var(--primary-500))]/5 px-4 py-3 text-sm text-muted">
+                          Le garant sera enregistré sous le nom{' '}
+                          <span className="font-semibold text-app">Action Logement / Visale</span>.
+                          Uploader le document Visale ci-dessous.
+                        </div>
+                      )}
+
+                      <GuarantorCard
+                        prefix={`guarantors.${index}.`}
+                        control={control}
+                        register={register}
+                        setValue={setValue}
+                        errors={errors}
+                        isVisale={isVisale}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             )}
           </section>

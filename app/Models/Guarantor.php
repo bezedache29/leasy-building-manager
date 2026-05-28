@@ -13,6 +13,8 @@ class Guarantor extends Model
     use HasFactory;
 
     protected $fillable = [
+        'type',
+        'visale_contract_number',
         'first_name',
         'marital_status',
         'last_name',

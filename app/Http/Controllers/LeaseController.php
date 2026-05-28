@@ -253,26 +253,38 @@ class LeaseController extends Controller
         // On s'assure que le garant est bien lie a ce bail pour des raisons de securite
         abort_unless($lease->guarantors->contains($guarantor), 404);
 
+        // Pas d'acte à générer pour une garantie Visale
+        abort_if($guarantor->type === 'visale', 403, 'La garantie Visale ne génère pas d\'acte de cautionnement.');
+
         // Utilisation de NumberFormatter pour ecrire les montants en toutes lettres
         $formatter = new \NumberFormatter('fr_FR', \NumberFormatter::SPELLOUT);
         $rentInWords = $formatter->format($lease->rent_amount);
         $chargesInWords = $formatter->format($lease->charges_amount);
 
-        // On calcule un plafond d'engagement arbitraire mais securisant (ex: 36 mois de loyer charges comprises)
+        // Plafond d'engagement = 36 mois de loyer CC
         $monthlyTotal = $lease->rent_amount + $lease->charges_amount;
         $maxGuaranteeAmount = $monthlyTotal * 36;
         $maxGuaranteeInWords = $formatter->format($maxGuaranteeAmount);
 
+        // Date anniversaire du bail = date de révision IRL
+        $start = $lease->start_date;
+        $revisionDay = (int) $start->format('j');
+        $revisionLabel = ($revisionDay === 1 ? '1er' : $revisionDay) . ' '
+            . $start->locale('fr')->translatedFormat('F');
+
         $pdf = Pdf::loadView('pdfs.guarantee', [
-            'lease' => $lease,
-            'guarantor' => $guarantor,
-            'property' => $lease->property,
-            'tenants' => $lease->tenants,
-            'rentInWords' => $rentInWords,
-            'chargesInWords' => $chargesInWords,
-            'monthlyTotal' => $monthlyTotal,
-            'maxGuaranteeAmount' => $maxGuaranteeAmount,
+            'guarantor'           => $guarantor,
+            'property'            => $lease->property,
+            'tenants'             => $lease->tenants,
+            'startDate'           => $lease->start_date,
+            'rentAmount'          => $lease->rent_amount,
+            'chargesAmount'       => $lease->charges_amount,
+            'rentInWords'         => $rentInWords,
+            'chargesInWords'      => $chargesInWords,
+            'monthlyTotal'        => $monthlyTotal,
+            'maxGuaranteeAmount'  => $maxGuaranteeAmount,
             'maxGuaranteeInWords' => $maxGuaranteeInWords,
+            'revisionLabel'       => $revisionLabel,
         ]);
 
         // Optionnel : personnaliser le format du papier

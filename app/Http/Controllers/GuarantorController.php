@@ -34,8 +34,10 @@ class GuarantorController extends Controller
     {
         $validated = $request->validate([
             'guarantor_id' => 'nullable|exists:guarantors,id',
-            'first_name' => 'required_without:guarantor_id|string|max:255|nullable',
-            'last_name' => 'required_without:guarantor_id|string|max:255|nullable',
+            'type' => 'nullable|in:human,visale',
+            'visale_contract_number' => 'nullable|string|max:255',
+            'first_name' => 'nullable|string|max:255',
+            'last_name' => 'nullable|string|max:255',
             'marital_status' => 'nullable|string|max:255',
             'relationship' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
@@ -59,6 +61,7 @@ class GuarantorController extends Controller
                     'payslip',
                     'tax_notice',
                     'guarantee_deed',
+                    'visale_guarantee',
                     'other'
                 ])
             ],
@@ -78,6 +81,13 @@ class GuarantorController extends Controller
             else {
                 // 1. On isole les infos du garant et on le crée
                 $guarantorDbData = Arr::except($validated, ['documents', 'relationship', 'guarantor_id']);
+
+                // Pour un garant Visale, le nom est fixé automatiquement
+                if (($guarantorDbData['type'] ?? 'human') === 'visale') {
+                    $guarantorDbData['first_name'] = 'Action Logement';
+                    $guarantorDbData['last_name']  = 'Visale';
+                }
+
                 $guarantor = Guarantor::create($guarantorDbData);
 
                 // 2. On l'attache au locataire avec le lien de parenté (Table Pivot)
@@ -135,8 +145,10 @@ class GuarantorController extends Controller
 
         // 1. Validation stricte
         $validated = $request->validate([
-            'first_name'      => 'required|string|max:255',
-            'last_name'       => 'required|string|max:255',
+            'type'                   => 'nullable|in:human,visale',
+            'visale_contract_number' => 'nullable|string|max:255',
+            'first_name'             => 'nullable|string|max:255',
+            'last_name'       => 'nullable|string|max:255',
             'email'           => 'nullable|email|max:255',
             'phone'           => 'nullable|string|max:255',
             'profession'      => 'nullable|string|max:255',
@@ -161,6 +173,7 @@ class GuarantorController extends Controller
                     'payslip',
                     'tax_notice',
                     'guarantee_deed',
+                    'visale_guarantee',
                     'other'
                 ])
             ],
@@ -171,6 +184,13 @@ class GuarantorController extends Controller
 
             // A. Mise à jour des informations de base du garant
             $guarantorDbData = Arr::except($validated, ['documents', 'relationship']);
+
+            // Pour un garant Visale, le nom est fixé automatiquement
+            if (($guarantorDbData['type'] ?? $guarantor->type) === 'visale') {
+                $guarantorDbData['first_name'] = 'Action Logement';
+                $guarantorDbData['last_name']  = 'Visale';
+            }
+
             $guarantor->update($guarantorDbData);
 
             // B. Mise à jour du lien (pivot) avec le locataire

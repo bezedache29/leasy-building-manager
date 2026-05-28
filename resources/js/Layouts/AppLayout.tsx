@@ -40,7 +40,7 @@ export default function AppLayout({ children }: PropsWithChildren) {
     <div className="min-h-screen bg-app text-app">
       {/* Topbar */}
       <header className="sticky top-0 z-40 border-b border-app bg-surface">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
+        <div className="mx-auto flex h-14 w-full items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-12">
           {/* Left */}
           <div className="flex items-center gap-3">
             <button
@@ -120,7 +120,7 @@ export default function AppLayout({ children }: PropsWithChildren) {
       </header>
 
       {/* Content */}
-      <main className="mx-auto max-w-7xl p-4 md:p-6">{children}</main>
+      <main className="mx-auto w-full p-4 sm:p-6 lg:px-8 xl:px-12">{children}</main>
     </div>
   );
 }

@@ -53,7 +53,7 @@ export default function DocumentFieldItem<T extends FieldValues>({
   return (
     <div className="flex flex-wrap items-start gap-4 rounded-lg border border-[rgb(var(--border))] p-3 bg-surface">
       {/* Sélecteur de Catégorie */}
-      <div className="flex-1 min-w-[120px]">
+      <div className="flex-1 min-w-30">
         <InputLabel value="Catégorie" className="mb-1" />
         <SelectInput {...register(`${docPath}.${index}.category` as Path<T>)}>
           <option value="">Sélectionner...</option>
@@ -67,7 +67,7 @@ export default function DocumentFieldItem<T extends FieldValues>({
       </div>
 
       {/* Nom du document */}
-      <div className="flex-1 min-w-[150px]">
+      <div className="flex-1 min-w-37.5">
         <InputLabel value="Nom du document" className="mb-1" />
         <TextInput
           {...register(`${docPath}.${index}.name` as Path<T>)}
@@ -77,11 +77,11 @@ export default function DocumentFieldItem<T extends FieldValues>({
       </div>
 
       {/* Input Fichier */}
-      <div className="flex-1 min-w-[200px]">
+      <div className="flex-1 min-w-50">
         <InputLabel value="Fichier PDF / Image" className="mb-1" />
         <input
           type="file"
-          className="block w-full text-xs text-muted file:mr-2 file:rounded-md file:border-0 file:bg-surface-2 file:px-2 file:py-1 file:text-xs file:font-medium file:text-app hover:file:bg-surface file:cursor-pointer file:border file:border-[rgb(var(--border))]"
+          className="block w-full text-xs text-muted file:mr-2 file:rounded-md file:border-0 file:bg-surface-2 file:px-2 file:py-1 file:text-xs file:font-medium file:text-app hover:file:bg-surface file:cursor-pointer file:border-[rgb(var(--border))]"
           onChange={(e) => {
             if (e.target.files?.[0]) {
               setValue(

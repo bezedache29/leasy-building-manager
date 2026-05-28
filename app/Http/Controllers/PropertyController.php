@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Property;
+use App\Models\Tenant;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Validation\Rule;
@@ -11,8 +12,15 @@ class PropertyController extends Controller
 {
     public function index()
     {
-        // On charge la relation "leases" avec les biens pour gérer le badge "Loué/Vide"
-        $properties = Property::with('leases')->orderBy('name')->get();
+        // On charge uniquement les baux actifs avec leurs documents pour calculer le statut du bien
+        $properties = Property::with([
+            'leases' => fn($q) => $q->where('status', 'active')->with('documents'),
+        ])->orderBy('name')->get();
+
+        // Calcul des attributs de signature sur chaque bail actif
+        $properties->each(function ($property) {
+            $property->leases->each(fn($lease) => $lease->append(['has_signed_lease', 'has_signed_inventory']));
+        });
 
         return Inertia::render('Properties/Index', [
             'properties' => $properties
@@ -44,23 +52,92 @@ class PropertyController extends Controller
 
     public function show(Property $property)
     {
-        // On charge les pièces, équipements, et l'historique des baux.
-        // On inclut les documents et garants pour éviter les requêtes N+1 lors du calcul du PDF.
-        $property->load([
-            'rooms.equipments',
-            'leases.tenants.documents',
-            'leases.guarantors',
-            'leases.guarantors.documents',
-            'leases.documents',
-        ]);
+        // Chargement des pièces et équipements du bien
+        $property->load('rooms.equipments');
 
-        // On expose explicitement nos attributs calculés uniquement pour cette vue
-        $property->leases->each(function ($lease) {
-            $lease->append(['missing_pdf_data', 'has_signed_lease']);
-        });
+        // Chargement du bail actif avec toutes ses relations
+        $activeLeases = $property->leases()
+            ->where('status', 'active')
+            ->with([
+                'tenants',
+                'guarantors',
+                'documents',
+                'annualSettlements' => fn($q) => $q->latest()->with('campaign'),
+            ])
+            ->get();
+
+        // Chargement des baux terminés pour l'historique d'occupation
+        $terminatedLeases = $property->leases()
+            ->where('status', 'terminated')
+            ->with('tenants')
+            ->orderByDesc('end_date')
+            ->get();
+
+        // Fusion des deux collections pour le frontend (actifs en premier)
+        $property->setRelation('leases', $activeLeases->merge($terminatedLeases));
+
+        $activeLease = $activeLeases->first();
+
+        // Attachement des attributs calculés uniquement sur le bail actif
+        if ($activeLease) {
+            $activeLease->append(['missing_pdf_data', 'has_signed_lease', 'has_signed_inventory']);
+        }
+
+        $currentSettlement = $activeLease?->annualSettlements?->first();
+
+        $waterChargeDetails = null;
+
+        if ($currentSettlement && $currentSettlement->campaign) {
+            $rates = $currentSettlement->campaign->water_rates_history;
+            $consumption = $currentSettlement->water_consumption;
+
+            // --- Calculs HT Ventiles ---
+            $distribInfSum = $rates['distrib_shared_2'] + $rates['distrib_inf_2'] + $rates['distrib_inf_3'];
+            $distribSupSum = $rates['distrib_sup_1'] + $rates['distrib_shared_2'] + $rates['distrib_sup_3'];
+            $distribHT = ((($distribInfSum / 2) / 2) + (($distribSupSum / 2) / 2)) * $consumption
+                + ($rates['distrib_sub_suez'] + $rates['distrib_sub_iroise']) / 5;
+
+            $wasteInfSum = $rates['wastewater_shared_2'] + $rates['wastewater_inf_2'] + $rates['wastewater_inf_3'];
+            $wasteSupSum = $rates['wastewater_sup_1'] + $rates['wastewater_shared_2'] + $rates['wastewater_sup_3'];
+            $wastewaterHT = ((($wasteInfSum / 2) / 2) + (($wasteSupSum / 2) / 2)) * $consumption
+                + ($rates['wastewater_sub_suez'] + $rates['wastewater_sub_iroise']) / 5;
+
+            $modernizationHT = $rates['modernization_fee'] * $consumption;
+            $agencyHT = $rates['water_agency_fee'] * $consumption;
+            $organismesHT = $modernizationHT + $agencyHT; // On fusionne le HT des organismes
+
+            // --- Application de la TVA et sous-totaux TTC ---
+            $distribTTC = $distribHT * 1.055;      // TVA 5.5%
+            $wastewaterTTC = $wastewaterHT * 1.10; // TVA 10%
+            $organismesTTC = $organismesHT * 1.10; // TVA 10% sur tout pour coller au tableur
+
+            $totalTVA = ($distribHT * 0.055) + ($wastewaterHT * 0.10) + ($organismesHT * 0.10);
+            $totalHT = $distribHT + $wastewaterHT + $organismesHT;
+            $totalTTC = $totalHT + $totalTVA;
+
+            $waterChargeDetails = [
+                'settlement_id' => $currentSettlement->id,
+                'year' => $currentSettlement->campaign->year,
+                'consumption' => $consumption,
+                'total_ht' => round($totalHT, 2),
+                'total_tva' => round($totalTVA, 2),
+                'total_ttc' => round($totalTTC, 2),
+                'distrib_ttc' => round($distribTTC, 2),
+                'wastewater_ttc' => round($wastewaterTTC, 2),
+                'organismes_ttc' => round($organismesTTC, 2),
+                'override_ttc' => $currentSettlement->water_override,
+            ];
+        }
+
+        // Locataires disponibles pour les candidatures (uniquement si le bien est vacant)
+        $tenants = $activeLease
+            ? collect()
+            : Tenant::with('guarantors')->orderBy('last_name')->orderBy('first_name')->get();
 
         return inertia('Properties/Show', [
-            'property' => $property
+            'property' => $property,
+            'waterChargeDetails' => $waterChargeDetails,
+            'tenants' => $tenants,
         ]);
     }
 

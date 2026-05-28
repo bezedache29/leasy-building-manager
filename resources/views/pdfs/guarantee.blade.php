@@ -4,154 +4,256 @@
     <meta charset="UTF-8">
     <title>Acte de Cautionnement Solidaire</title>
     <style>
-        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 13px; line-height: 1.5; color: #333; margin: 25px; } 
-        h1 { text-align: center; font-size: 18px; text-transform: uppercase; border-bottom: 2px solid #333; padding-bottom: 5px; margin-bottom: 20px; } 
-        h2 { font-size: 14px; margin-top: 15px; margin-bottom: 10px; text-decoration: underline; }
-        .section { margin-bottom: 15px; padding: 12px; border: 1px solid #ddd; background-color: #fcfcfc; page-break-inside: avoid; } 
-        .handwritten-box { border: 2px dashed #999; padding: 15px; margin-top: 15px; min-height: 150px; background-color: #fff; }
-        .text-bold { font-weight: bold; }
-        .text-center { text-align: center; }
-        .text-small { font-size: 11px; color: #555; }
-        .row { margin-bottom: 5px; }
-        .signature-area { margin-top: 40px; width: 100%; }
-        .signature-box { width: 45%; display: inline-block; vertical-align: top; }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #111;
+            margin: 30px 40px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 11px;
+            color: #555;
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 3px;
+            margin-top: 22px;
+            margin-bottom: 10px;
+        }
+        .section-number {
+            display: inline-block;
+            margin-right: 6px;
+        }
+        p { margin: 0 0 6px 0; }
+        .bold { font-weight: bold; }
+        .italic { font-style: italic; }
+        .text-small { font-size: 10px; color: #444; }
+        .warning { color: #b00; font-weight: bold; }
+        .quote-box {
+            border-left: 3px solid #555;
+            padding: 8px 12px;
+            margin: 8px 0;
+            background: #f8f8f8;
+            font-style: italic;
+            font-size: 11px;
+        }
+        .handwritten-lines {
+            margin-top: 10px;
+        }
+        .handwritten-line {
+            border-bottom: 1px solid #888;
+            height: 22px;
+            margin-bottom: 6px;
+        }
+        .signature-table {
+            width: 100%;
+            margin-top: 30px;
+            border-collapse: collapse;
+        }
+        .signature-table td {
+            width: 50%;
+            vertical-align: top;
+            padding: 0 10px;
+        }
+        .signature-table td:first-child { padding-left: 0; }
+        .signature-table td:last-child { padding-right: 0; text-align: right; }
+        .signature-block {
+            border: 1px solid #ccc;
+            padding: 10px 14px;
+            min-height: 80px;
+        }
         .page-break { page-break-before: always; }
+        .legal-text {
+            font-size: 10.5px;
+            color: #333;
+        }
     </style>
 </head>
 <body>
 
     <h1>Acte de Cautionnement Solidaire</h1>
-
-    <div class="text-small text-center" style="margin-bottom: 20px;">
-        Conformément à la loi n°89-462 du 6 juillet 1989 modifiée et à l'article 2297 du Code civil.
+    <div class="subtitle">
+        Caution solidaire — Article 22-1 de la loi n°89-462 du 6 juillet 1989 et loi ALUR n°2014-366 du 24 mars 2014
     </div>
 
-    <div class="section">
-        <h2>1. LE BAILLEUR (Propriétaire)</h2>
-        <div class="row">Je soussigné(e), <span class="text-bold">{{ config('building.landlord_name') }}</span>,</div>
-        <div class="row">Adresse : {{ config('building.landlord_address') }}</div>
-    </div>
+    {{-- 1. ENGAGEMENT DU GARANT --}}
+    <div class="section-title"><span class="section-number">1.</span> Engagement du Garant</div>
 
-    <div class="section">
-        <h2>2. LA CAUTION (Garant)</h2>
-        <div class="row">Je soussigné(e), <span class="text-bold">{{ $guarantor->first_name }} {{ $guarantor->last_name }}</span>,</div>
-         @if($guarantor->birth_date && $guarantor->birth_place)
-            <div class="row">Né(e) le : {{ \Carbon\Carbon::parse($guarantor->birth_date)->format('d/m/Y') }} à {{ $guarantor->birth_place }}</div>
+    @php
+        $tenantNames = $tenants->map(fn($t) => $t->first_name . ' ' . $t->last_name)->implode(' et ');
+    @endphp
+
+    <p>
+        Je soussigné(e), <span class="bold">{{ $guarantor->first_name }} {{ $guarantor->last_name }}</span>,
+        @if($guarantor->birth_date && $guarantor->birth_place)
+            né(e) le <span class="bold">{{ \Carbon\Carbon::parse($guarantor->birth_date)->format('d/m/Y') }}</span>
+            à <span class="bold">{{ $guarantor->birth_place }}</span>,
         @else
-            <div class="row"><span class="text-small" style="color: #d32f2f;">Informations de naissance non renseignées</span></div>
+            <span style="color:#b00;">(date et lieu de naissance non renseignés)</span>,
         @endif
-        <div class="row">Demeurant au : {{ $guarantor->current_address }}</div>
-        <div class="row">Déclare me porter caution solidaire pour le(s) locataire(s) désigné(s) ci-dessous.</div>
-    </div>
-
-    <div class="section">
-        <h2>3. LE(S) LOCATAIRE(S)</h2>
-        @foreach($tenants as $tenant)
-            <div class="row" style="margin-bottom: 10px;">
-                <span class="text-bold">- {{ $tenant->first_name }} {{ $tenant->last_name }}</span><br>
-                @if($tenant->birth_date && $tenant->birth_place)
-                    <span class="text-small" style="margin-left: 10px; display: inline-block;">
-                        Né(e) le {{ \Carbon\Carbon::parse($tenant->birth_date)->format('d/m/Y') }} à {{ $tenant->birth_place }}
-                    </span><br>
-                @endif
-                @if($tenant->email || $tenant->phone)
-                    <span class="text-small" style="margin-left: 10px; display: inline-block; color: #555;">
-                        @php
-                            $formattedPhone = $tenant->phone ? preg_replace('/(\d{2})(?=\d)/', '$1 ', $tenant->phone) : 'Non renseigné';
-                        @endphp
-                        Contact : {{ $formattedPhone }} | {{ $tenant->email ?? 'Non renseigné' }}
-                    </span>
-                @endif
-            </div>
-        @endforeach
-    </div>
-
-    <div class="section">
-        <h2>4. LE BIEN LOUÉ ET CONDITIONS FINANCIÈRES</h2>
-        <div class="row">
-            Adresse du bien : {{ $property->name }}
-            @if($property->type === 'apartment' && $property->floor !== null)
-                - 
-                @if($property->floor == 0)
-                    Rez-de-chaussée
-                @elseif($property->floor == 1)
-                    1er étage
-                @else
-                    {{ $property->floor }}ème étage
-                @endif
+        résidant à l'adresse suivante : <span class="bold">{{ $guarantor->current_address }}</span>,
+    </p>
+    <p>
+        déclare me porter caution solidaire de <span class="bold">{{ $tenantNames }}</span>
+        pour les obligations résultant du bail qui lui a été consenti par le bailleur
+        <span class="bold">{{ config('building.landlord_name') }}</span>,
+        demeurant <span class="bold">{{ config('building.landlord_address') }}</span>,
+        pour la location du logement situé :
+        <span class="bold">{{ $property->name }}
+        @if($property->type === 'apartment' && $property->floor !== null)
+            —
+            @if($property->floor == 0) Rez-de-chaussée
+            @elseif($property->floor == 1) 1<sup>er</sup> étage
+            @else {{ $property->floor }}<sup>ème</sup> étage
             @endif
-             - {{ config('building.address') }}, {{ config('building.zip') }} {{ config('building.city') }}
-        </div>
-        <div class="row">Date d'effet du bail : {{ \Carbon\Carbon::parse($lease->start_date)->format('d/m/Y') }}</div>
-        <div class="row" style="margin-top: 10px;">
-            Montant du loyer principal : <span class="text-bold">{{ number_format($lease->rent_amount, 2, ',', ' ') }} €</span> ({{ $rentInWords }} euros).<br>
-            Montant des charges : <span class="text-bold">{{ number_format($lease->charges_amount, 2, ',', ' ') }} €</span> ({{ $chargesInWords }} euros).<br>
-            Total mensuel : <span class="text-bold">{{ number_format($monthlyTotal, 2, ',', ' ') }} €</span>.
-        </div>
-        <div class="text-small" style="margin-top: 5px;">Le loyer est révisable annuellement selon l'Indice de Référence des Loyers (IRL).</div>
+        @endif
+        — {{ config('building.address') }}, {{ config('building.zip') }} {{ config('building.city') }}</span>.
+    </p>
+
+    @if($startDate)
+        <p>Date d'entrée en vigueur du bail : <span class="bold">{{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }}</span>.</p>
+    @else
+        <p>Date d'entrée en vigueur du bail : .............................................</p>
+    @endif
+
+    {{-- 2. MONTANT DU LOYER --}}
+    <div class="section-title"><span class="section-number">2.</span> Montant du Loyer</div>
+
+    <p>
+        J'ai pris connaissance du montant du loyer de
+        <span class="bold">{{ ucfirst($rentInWords) }} euros, soit {{ number_format($rentAmount, 2, ',', ' ') }} €</span>
+        par mois (hors charges).
+    </p>
+    @if($chargesAmount > 0)
+        <p>
+            Les charges sont fixées à
+            <span class="bold">{{ ucfirst($chargesInWords) }} euros, soit {{ number_format($chargesAmount, 2, ',', ' ') }} €</span>
+            par mois, soit un total mensuel de
+            <span class="bold">{{ number_format($monthlyTotal, 2, ',', ' ') }} €</span> charges comprises.
+        </p>
+    @endif
+    <p>
+        Le loyer sera révisé annuellement
+        @if($revisionLabel)
+            tous les <span class="bold">{{ $revisionLabel }}</span>
+        @else
+            à la date anniversaire du bail
+        @endif
+        selon la variation de l'indice de référence des loyers (IRL) publié par l'INSEE
+        au <span class="bold">{{ config('building.irl_quarter') }}</span>
+        (valeur : <span class="bold">{{ config('building.irl_value') }}</span>).
+    </p>
+
+    {{-- 3. ÉTENDUE DE LA CAUTION --}}
+    <div class="section-title"><span class="section-number">3.</span> Étendue de la Caution</div>
+
+    <p>
+        Cet engagement vaut pour le paiement, en cas de défaillance du ou des locataires, des loyers,
+        des indemnités d'occupation, des charges, des réparations et des dégradations locatives,
+        des impôts et taxes, des frais et dépens de procédure, des coûts des actes dus,
+        dans la limite de <span class="bold">{{ ucfirst($maxGuaranteeInWords) }} euros
+        ({{ number_format($maxGuaranteeAmount, 2, ',', ' ') }} €)</span>, en principal et accessoires.
+    </p>
+    <p>
+        Cet engagement est valable pour une durée <span class="bold">indéterminée</span>,
+        conformément à l'article 22-1 de la loi du 6 juillet 1989.
+    </p>
+
+    {{-- 4. RÉFÉRENCES LÉGALES --}}
+    <div class="section-title"><span class="section-number">4.</span> Références Légales</div>
+
+    <p class="legal-text">
+        Je reconnais avoir pris connaissance de l'avant-dernier alinéa de l'article 22-1 de la loi du 6 juillet 1989, selon lequel :
+    </p>
+    <div class="quote-box legal-text">
+        « Lorsque le cautionnement d'obligations résultant d'un contrat de location conclu en application du présent titre
+        ne comporte aucune indication de durée ou lorsque la durée du cautionnement est stipulée indéterminée,
+        la caution peut le résilier unilatéralement. La résiliation prend effet au terme du contrat de location,
+        qu'il s'agisse du contrat initial ou d'un contrat reconduit ou renouvelé au cours duquel le bailleur
+        reçoit notification de la résiliation. »
     </div>
 
-    <div class="section">
-        <h2>5. ENGAGEMENT DE LA CAUTION</h2>
-        <p>
-            En signant le présent acte, je m'engage à payer au bailleur les loyers, charges, indemnités d'occupation et réparations locatives 
-            en cas de défaillance du ou des locataires, et ce, dans la limite d'un montant maximum garanti de 
-            <span class="text-bold">{{ number_format($maxGuaranteeAmount, 2, ',', ' ') }} €</span> ({{ $maxGuaranteeInWords }} euros).
-        </p>
-        <p>
-            Cet engagement est consenti <span class="text-bold">pour toute la durée du bail initial, ainsi que pour ses renouvellements et reconductions tacites</span>.
-        </p>
-        <p>
-            Je reconnais avoir reçu un exemplaire du contrat de location et en avoir pris pleine et entière connaissance.
-        </p>
-        <p>
-            Je reconnais renoncer au bénéfice de discussion (le bailleur peut me réclamer la dette sans avoir à poursuivre le locataire au préalable) 
-            et au bénéfice de division (le bailleur peut me réclamer la totalité de la dette même s'il y a d'autres garants).
-        </p>
+    <p class="legal-text" style="margin-top: 10px;">
+        Je reconnais également avoir pris connaissance de l'article 2297 du Code civil, selon lequel :
+    </p>
+    <div class="quote-box legal-text">
+        « Si la caution est privée des bénéfices de discussion ou de division, elle reconnaît ne pouvoir exiger
+        du créancier qu'il poursuive d'abord le débiteur ou qu'il divise ses poursuites entre les cautions.
+        À défaut, elle conserve le droit de se prévaloir de ces bénéfices. »
     </div>
 
-    <div class="section">
-        <h2>6. RAPPEL DES DISPOSITIONS LÉGALES</h2>
-        <p class="text-small" style="font-style: italic; color: #444;">
-            <strong>Article 22-1 de la loi du 6 juillet 1989 :</strong><br>
-            « Lorsque le cautionnement d'obligations résultant d'un contrat de location conclu en application du présent titre ne comporte aucune indication de durée ou lorsque la durée du cautionnement est stipulée indéterminée, la caution peut le résilier unilatéralement. La résiliation prend effet au terme du contrat de location, qu'il s'agisse du contrat initial ou d'un contrat reconduit ou renouvelé, au cours duquel le bailleur reçoit notification de la résiliation. »
-        </p>
-    </div>
-
+    {{-- 5. MENTION MANUSCRITE --}}
     <div class="page-break"></div>
 
-    <div class="section">
-        <h2>7. MENTION MANUSCRITE OBLIGATOIRE ET SIGNATURES</h2>
+    <div class="section-title"><span class="section-number">5.</span> Mention Manuscrite Obligatoire</div>
 
-        <div class="text-small text-bold" style="color: #d32f2f; margin-bottom: 10px;">
-            IMPORTANT : La caution doit impérativement RECOPIER À LA MAIN le texte ci-dessous dans l'encadré, 
-            sans rature ni modification, pour que l'engagement soit valable :
-        </div>
+    <p class="warning"> À RECOPIER OBLIGATOIREMENT À LA MAIN PAR LE GARANT :</p>
 
-        <div style="background-color: #f0f0f0; padding: 10px; margin-top: 5px; font-style: italic; border-left: 3px solid #666;">
-            "Je me porte caution solidaire du paiement des loyers, charges et indemnités de ce bail, dans la limite de la somme de {{ $maxGuaranteeInWords }} euros ({{ number_format($maxGuaranteeAmount, 2, ',', ' ') }} €), 
-            en renonçant au bénéfice de discussion et de division."
-        </div>
-
-        <div class="handwritten-box">
-            <span class="text-small" style="color: #ccc;">(Espace réservé à la recopie manuscrite par le garant)</span>
-        </div>
-
-        <div class="signature-area">
-            <div class="signature-box">
-                Fait à : ..........................................<br>
-                Le : ........ / ........ / .....................<br><br>
-                <span class="text-bold">LA CAUTION</span><br>
-                <span class="text-small">(Signature précédée de la mention "Lu et approuvé")</span>
-            </div>
-            <div class="signature-box" style="text-align: right;">
-                Fait à : ..........................................<br>
-                Le : ........ / ........ / .....................<br><br>
-                <span class="text-bold">LE BAILLEUR</span><br>
-                <span class="text-small">(Signature précédée de la mention "Lu et approuvé")</span>
-            </div>
-        </div>
+    <div class="quote-box" style="margin-bottom: 14px;">
+        « En me portant caution solidaire de <span class="bold">{{ $tenantNames }}</span>
+        dans la limite de <span class="bold">{{ $maxGuaranteeInWords }} euros
+        ({{ number_format($maxGuaranteeAmount, 2, ',', ' ') }} €)</span>,
+        je reconnais avoir pris connaissance de la nature et de l'étendue de mon engagement. »
     </div>
+
+    <p class="text-small">Recopiez ci-dessous la mention ci-dessus de votre main :</p>
+
+    <div class="handwritten-lines">
+        <div class="handwritten-line"></div>
+        <div class="handwritten-line"></div>
+        <div class="handwritten-line"></div>
+        <div class="handwritten-line"></div>
+        <div class="handwritten-line"></div>
+        <div class="handwritten-line"></div>
+    </div>
+
+    {{-- 6. DATE ET SIGNATURE --}}
+    <div class="section-title" style="margin-top: 28px;"><span class="section-number">6.</span> Date et Signature</div>
+
+    <table class="signature-table">
+        <tr>
+            <td>
+                <div class="signature-block">
+                    <p class="bold">{{ $guarantor->first_name }} {{ $guarantor->last_name }}</p>
+                    <p class="text-small">(Garant)</p>
+                    <br>
+                    <p class="text-small">Fait à ........................................,</p>
+                    <p class="text-small">le ........ / ........ / ................</p>
+                    <br>
+                    <p class="text-small">Signature précédée de la mention manuscrite « Lu et approuvé » :</p>
+                </div>
+            </td>
+            <td>
+                <div class="signature-block">
+                    <p class="bold">{{ config('building.landlord_name') }}</p>
+                    <p class="text-small">(Bailleur)</p>
+                    <br>
+                    <p class="text-small">Fait à ........................................,</p>
+                    <p class="text-small">le ........ / ........ / ................</p>
+                    <br>
+                    <p class="text-small">Signature précédée de la mention manuscrite « Lu et approuvé » :</p>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <p class="text-small" style="margin-top: 20px; text-align: center; color: #777;">
+        Document établi conformément à la loi n°89-462 du 6 juillet 1989 et à la loi ALUR n°2014-366 du 24 mars 2014
+    </p>
 
 </body>
 </html>

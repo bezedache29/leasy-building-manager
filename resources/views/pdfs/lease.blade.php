@@ -55,9 +55,9 @@
         <h2>I. DÉSIGNATION DES PARTIES</h2>
         <div class="row">
             <span class="strong">LE BAILLEUR :</span><br>
-            Madame Eliane SALOU<br>
-            5 hent kerliver, 29890 Kerlouan<br>
-            Téléphone : 06 61 71 80 19<br>
+            {{ config('building.landlord_name') }}<br>
+            {{ config('building.landlord_address') }}<br>
+            Téléphone : {{ config('building.landlord_phone_number') }}<br>
             Dénommée ci-après « LE BAILLEUR »,
         </div>
 
@@ -183,46 +183,63 @@
     </div>
 
     @php
-        // On récupère uniquement les garants cochés spécifiquement pour CE bail
+        // On récupère uniquement les garants associés à CE bail
         $guarantors = $lease->guarantors;
+        $isVisale = $guarantors->isNotEmpty() && $guarantors->first()->type === 'visale';
+        $visaleGuarantor = $isVisale ? $guarantors->first() : null;
     @endphp
 
     @if($guarantors->count() > 0)
     <div class="section avoid-break">
-        <h2>VII. GARANT(S) SOLIDAIRE(S)</h2>
-        <p>La présente location est garantie par la ou les personnes désignées ci-dessous en qualité de caution solidaire. Un acte de cautionnement séparé et conforme à la législation en vigueur est annexé au présent contrat.</p>
-        
-        @foreach($guarantors as $guarantor)
+        @if($isVisale)
+            <h2>VII. GARANTIE VISALE</h2>
+            <p>La présente location est couverte par la garantie Visale d'Action Logement, en lieu et place d'une caution solidaire personnelle. En cas d'impayé de loyer, le bailleur devra déclarer l'incident selon la procédure propre à Visale.</p>
             <div class="highlight-box">
-                <div class="row">
-                    <span class="strong">Nom et Prénom :</span> {{ strtoupper($guarantor->last_name) }} {{ $guarantor->first_name }}
-                </div>
-                
-                <table class="dotted-table">
+                <table class="dotted-table" style="margin-bottom: 0;">
                     <tr>
-                        <td class="dotted-label"><span class="strong">Adresse :</span></td>
-                        <td class="{{ $guarantor->current_address ? '' : 'dotted-line' }}" style="width: 99%; padding-left: 5px;">
-                            {{ $guarantor->current_address }}
+                        <td class="dotted-label"><span class="strong">Numéro de contrat Visale :</span></td>
+                        <td class="{{ $visaleGuarantor->visale_contract_number ? '' : 'dotted-line' }}" style="width: 99%; padding-left: 5px;">
+                            {{ $visaleGuarantor->visale_contract_number }}
                         </td>
                     </tr>
                 </table>
-
-                <table class="dotted-table">
-                    <tr>
-                        <td class="dotted-label"><span class="strong">Profession :</span></td>
-                        <td class="{{ $guarantor->profession ? '' : 'dotted-line' }}" style="width: 99%; padding-left: 5px;">
-                            {{ $guarantor->profession }}
-                        </td>
-                    </tr>
-                </table>
-
-                <div class="row" style="margin-top: 8px;">
-                    <span class="strong">Contact :</span> 
-                    Tél : {{ $guarantor->phone ? wordwrap(preg_replace('/[^0-9]/', '', $guarantor->phone), 2, ' ', true) : '........................' }} - 
-                    Email : {{ $guarantor->email ?: '........................................' }}
-                </div>
             </div>
-        @endforeach
+        @else
+            <h2>VII. GARANT(S) SOLIDAIRE(S)</h2>
+            <p>La présente location est garantie par la ou les personnes désignées ci-dessous en qualité de caution solidaire. Un acte de cautionnement séparé et conforme à la législation en vigueur est annexé au présent contrat.</p>
+
+            @foreach($guarantors as $guarantor)
+                <div class="highlight-box">
+                    <div class="row">
+                        <span class="strong">Nom et Prénom :</span> {{ strtoupper($guarantor->last_name) }} {{ $guarantor->first_name }}
+                    </div>
+
+                    <table class="dotted-table">
+                        <tr>
+                            <td class="dotted-label"><span class="strong">Adresse :</span></td>
+                            <td class="{{ $guarantor->current_address ? '' : 'dotted-line' }}" style="width: 99%; padding-left: 5px;">
+                                {{ $guarantor->current_address }}
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table class="dotted-table">
+                        <tr>
+                            <td class="dotted-label"><span class="strong">Profession :</span></td>
+                            <td class="{{ $guarantor->profession ? '' : 'dotted-line' }}" style="width: 99%; padding-left: 5px;">
+                                {{ $guarantor->profession }}
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div class="row" style="margin-top: 8px;">
+                        <span class="strong">Contact :</span>
+                        Tél : {{ $guarantor->phone ? wordwrap(preg_replace('/[^0-9]/', '', $guarantor->phone), 2, ' ', true) : '........................' }} -
+                        Email : {{ $guarantor->email ?: '........................................' }}
+                    </div>
+                </div>
+            @endforeach
+        @endif
     </div>
     @endif
 
@@ -281,10 +298,12 @@
         </div>
     </div>
 
+    @if($lease->tenants->count() > 1)
     <div class="section avoid-break">
         <h2>XI. CLAUSE DE SOLIDARITÉ ET INDIVISIBILITÉ</h2>
         <p>En cas de pluralité de locataires, il est expressément stipulé que ceux-ci sont tenus solidairement et indivisiblement de l'exécution de toutes les obligations découlant du présent contrat (paiement des loyers, charges, indemnités d'occupation et réparations locatives). Le bailleur pourra s'adresser à n'importe lequel des locataires pour exiger la totalité du paiement.</p>
     </div>
+    @endif
 
     <div class="section avoid-break">
         <h2>XII. ANNEXES AU CONTRAT</h2>
@@ -294,7 +313,11 @@
             <li>Le Dossier de Diagnostic Technique (DPE, ERP).</li>
             <li>La notice d'information relative aux droits et obligations des locataires et des bailleurs.</li>
             @if($guarantors->count() > 0)
-                <li>L'acte de cautionnement solidaire.</li>
+                @if($isVisale)
+                    <li>La garantie Visale d'Action Logement (numéro de contrat : {{ $visaleGuarantor->visale_contract_number ?? '...' }}).</li>
+                @else
+                    <li>L'acte de cautionnement solidaire.</li>
+                @endif
             @endif
         </ul>
     </div>
@@ -330,7 +353,7 @@
 
     <div class="section avoid-break">
         <h2>XIV. SIGNATURES</h2>
-        <p class="small-text">Fait à ........................................, le {{ date('d/m/Y') }}, en deux exemplaires originaux.</p>
+        <p class="small-text">Fait à {{ config('building.city') }}, le {{ \Carbon\Carbon::parse($lease->start_date)->format('d/m/Y') }}, en deux exemplaires originaux.</p>
         
         <table class="signature-table">
             <tr>
@@ -344,7 +367,7 @@
                 </td>
             </tr>
         </table>
-        @if($guarantors->count() > 0)
+        @if($guarantors->count() > 0 && !$isVisale)
         <table class="signature-table">
             <tr>
                 <td colspan="2">

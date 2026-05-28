@@ -2,9 +2,13 @@ import documentSchema from '@/Schemas/DocumentSchema';
 import { z } from 'zod';
 
 // 1. Le schéma de base (utilisé par la page Create)
+// Les noms sont optionnels ici : le serveur les auto-remplit pour Visale,
+// et guarantorModalSchema gère sa propre validation via superRefine.
 const createGuarantorSchema = z.object({
-  first_name: z.string().min(1, 'Le prénom est requis'),
-  last_name: z.string().min(1, 'Le nom est requis'),
+  type: z.enum(['human', 'visale']).optional(),
+  visale_contract_number: z.string().optional().or(z.literal('')),
+  first_name: z.string().optional().or(z.literal('')),
+  last_name: z.string().optional().or(z.literal('')),
   relationship: z.string().optional().or(z.literal('')),
   marital_status: z.string().optional().or(z.literal('')),
   email: z
@@ -25,15 +29,18 @@ const createGuarantorSchema = z.object({
 // 2. Le schéma étendu spécifiquement pour la Modale (Sélection existant / Édition)
 export const guarantorModalSchema = createGuarantorSchema
   .extend({
+    type: z.enum(['human', 'visale']),
     guarantor_id: z.string().optional().or(z.number().optional()).or(z.literal('')),
     // On rend le prénom et le nom optionnels au cas où l'utilisateur sélectionne un garant existant
     first_name: z.string().optional().or(z.literal('')),
     last_name: z.string().optional().or(z.literal('')),
   })
   .superRefine((data, ctx) => {
+    // Visale : pas de validation sur les noms (remplis automatiquement côté serveur)
+    if (data.type === 'visale') return;
+
     // Si AUCUN garant existant n'est sélectionné (donc on crée un nouveau garant)
     if (!data.guarantor_id) {
-      // Le prénom devient obligatoire
       if (!data.first_name || data.first_name.trim() === '') {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -41,8 +48,6 @@ export const guarantorModalSchema = createGuarantorSchema
           path: ['first_name'],
         });
       }
-
-      // Le nom devient obligatoire
       if (!data.last_name || data.last_name.trim() === '') {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,

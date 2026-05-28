@@ -12,7 +12,7 @@ import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
 import SelectInput from '@/Components/SelectInput';
 import Button from '@/Components/Button';
-import { GUARANTOR_DOCUMENT_KEYS } from '@/Constants/documentCategories';
+import { GUARANTOR_DOCUMENT_KEYS, VISALE_DOCUMENT_KEYS } from '@/Constants/documentCategories';
 import { AppDocument } from '@/Types';
 import { router } from '@inertiajs/react';
 import DocumentFieldItem from '@/Pages/Tenants/Partials/DocumentFieldItem';
@@ -27,6 +27,7 @@ interface Props<T extends FieldValues> {
   onRemove?: () => void;
   showDocuments?: boolean;
   existingDocuments?: AppDocument[];
+  isVisale?: boolean;
 }
 
 export default function GuarantorCard<T extends FieldValues>({
@@ -38,6 +39,7 @@ export default function GuarantorCard<T extends FieldValues>({
   onRemove,
   showDocuments = true,
   existingDocuments = [],
+  isVisale = false,
 }: Props<T>) {
   const errorClass = 'mt-1 text-xs text-red-400 font-medium';
 
@@ -90,81 +92,97 @@ export default function GuarantorCard<T extends FieldValues>({
         </button>
       )}
 
-      {/* Champs d'identité */}
-      <div className="grid gap-4 md:grid-cols-2 mt-2">
-        <div>
-          <InputLabel value="Prénom *" className="mb-1" />
-          <TextInput {...register(`${prefix}first_name` as Path<T>)} />
-          {getError(`${prefix}first_name`) && (
-            <p className={errorClass}>{getError(`${prefix}first_name`)}</p>
+      {/* Numéro de contrat — uniquement pour Visale */}
+      {isVisale && (
+        <div className="mt-2">
+          <InputLabel value="Numéro de contrat Visale" className="mb-1" />
+          <TextInput
+            {...register(`${prefix}visale_contract_number` as Path<T>)}
+            placeholder="Ex : V12345678"
+          />
+          {getError(`${prefix}visale_contract_number`) && (
+            <p className={errorClass}>{getError(`${prefix}visale_contract_number`)}</p>
           )}
         </div>
-        <div>
-          <InputLabel value="Nom *" className="mb-1" />
-          <TextInput {...register(`${prefix}last_name` as Path<T>)} />
-          {getError(`${prefix}last_name`) && (
-            <p className={errorClass}>{getError(`${prefix}last_name`)}</p>
-          )}
-        </div>
+      )}
 
-        <div>
-          <InputLabel value="Lien avec le locataire" className="mb-1" />
-          <SelectInput {...register(`${prefix}relationship` as Path<T>)} className="w-full">
-            <option value="">Sélectionner...</option>
-            <option value="parent">Parent</option>
-            <option value="grandparent">Grand-parent</option>
-            <option value="sibling">Frère / Sœur</option>
-            <option value="friend">Ami(e)</option>
-            <option value="colleague">Collègue</option>
-            <option value="other">Autre</option>
-          </SelectInput>
-        </div>
+      {/* Champs d'identité — masqués pour Visale */}
+      {!isVisale && (
+        <div className="grid gap-4 md:grid-cols-2 mt-2">
+          <div>
+            <InputLabel value="Prénom *" className="mb-1" />
+            <TextInput {...register(`${prefix}first_name` as Path<T>)} />
+            {getError(`${prefix}first_name`) && (
+              <p className={errorClass}>{getError(`${prefix}first_name`)}</p>
+            )}
+          </div>
+          <div>
+            <InputLabel value="Nom *" className="mb-1" />
+            <TextInput {...register(`${prefix}last_name` as Path<T>)} />
+            {getError(`${prefix}last_name`) && (
+              <p className={errorClass}>{getError(`${prefix}last_name`)}</p>
+            )}
+          </div>
 
-        <div>
-          <InputLabel value="Statut marital" className="mb-1" />
-          <SelectInput {...register(`${prefix}marital_status` as Path<T>)} className="w-full">
-            <option value="">Sélectionner...</option>
-            <option value="single">Célibataire</option>
-            <option value="married">Marié(e)</option>
-            <option value="pacs">Pacsé(e)</option>
-            <option value="divorced">Divorcé(e)</option>
-            <option value="widowed">Veuf/Veuve</option>
-          </SelectInput>
-        </div>
+          <div>
+            <InputLabel value="Lien avec le locataire" className="mb-1" />
+            <SelectInput {...register(`${prefix}relationship` as Path<T>)} className="w-full">
+              <option value="">Sélectionner...</option>
+              <option value="parent">Parent</option>
+              <option value="grandparent">Grand-parent</option>
+              <option value="sibling">Frère / Sœur</option>
+              <option value="friend">Ami(e)</option>
+              <option value="colleague">Collègue</option>
+              <option value="other">Autre</option>
+            </SelectInput>
+          </div>
 
-        <div>
-          <InputLabel value="Email" className="mb-1" />
-          <TextInput type="email" {...register(`${prefix}email` as Path<T>)} />
-        </div>
-        <div>
-          <InputLabel value="Téléphone" className="mb-1" />
-          <TextInput type="tel" {...register(`${prefix}phone` as Path<T>)} />
-        </div>
+          <div>
+            <InputLabel value="Statut marital" className="mb-1" />
+            <SelectInput {...register(`${prefix}marital_status` as Path<T>)} className="w-full">
+              <option value="">Sélectionner...</option>
+              <option value="single">Célibataire</option>
+              <option value="married">Marié(e)</option>
+              <option value="pacs">Pacsé(e)</option>
+              <option value="divorced">Divorcé(e)</option>
+              <option value="widowed">Veuf/Veuve</option>
+            </SelectInput>
+          </div>
 
-        <div className="md:col-span-2">
-          <InputLabel value="Adresse actuelle" className="mb-1" />
-          <TextInput {...register(`${prefix}current_address` as Path<T>)} />
-        </div>
+          <div>
+            <InputLabel value="Email" className="mb-1" />
+            <TextInput type="email" {...register(`${prefix}email` as Path<T>)} />
+          </div>
+          <div>
+            <InputLabel value="Téléphone" className="mb-1" />
+            <TextInput type="tel" {...register(`${prefix}phone` as Path<T>)} />
+          </div>
 
-        <div>
-          <InputLabel value="Date de naissance" className="mb-1" />
-          <TextInput type="date" {...register(`${prefix}birth_date` as Path<T>)} />
-        </div>
-        <div>
-          <InputLabel value="Lieu de naissance" className="mb-1" />
-          <TextInput {...register(`${prefix}birth_place` as Path<T>)} />
-        </div>
+          <div className="md:col-span-2">
+            <InputLabel value="Adresse actuelle" className="mb-1" />
+            <TextInput {...register(`${prefix}current_address` as Path<T>)} />
+          </div>
 
-        <div>
-          <InputLabel value="Nationalité" className="mb-1" />
-          <TextInput {...register(`${prefix}nationality` as Path<T>)} />
-        </div>
+          <div>
+            <InputLabel value="Date de naissance" className="mb-1" />
+            <TextInput type="date" {...register(`${prefix}birth_date` as Path<T>)} />
+          </div>
+          <div>
+            <InputLabel value="Lieu de naissance" className="mb-1" />
+            <TextInput {...register(`${prefix}birth_place` as Path<T>)} />
+          </div>
 
-        <div>
-          <InputLabel value="Profession" className="mb-1" />
-          <TextInput {...register(`${prefix}profession` as Path<T>)} />
+          <div>
+            <InputLabel value="Nationalité" className="mb-1" />
+            <TextInput {...register(`${prefix}nationality` as Path<T>)} />
+          </div>
+
+          <div>
+            <InputLabel value="Profession" className="mb-1" />
+            <TextInput {...register(`${prefix}profession` as Path<T>)} />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* SECTION DOCUMENTS */}
       {showDocuments && (
@@ -216,7 +234,7 @@ export default function GuarantorCard<T extends FieldValues>({
                   errors={errors}
                   docPath={docPath}
                   remove={removeDoc}
-                  categoryKeys={GUARANTOR_DOCUMENT_KEYS}
+                  categoryKeys={isVisale ? VISALE_DOCUMENT_KEYS : GUARANTOR_DOCUMENT_KEYS}
                 />
               ))}
             </div>

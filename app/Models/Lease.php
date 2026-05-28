@@ -98,9 +98,11 @@ class Lease extends Model
         // On vérifie uniquement les garants qui ont été cochés/liés à CE bail spécifiquement
         if ($this->relationLoaded('guarantors') && $this->guarantors->isNotEmpty()) {
             foreach ($this->guarantors as $guarantor) {
+                // Les garants Visale n'ont pas besoin de ces infos pour le PDF
+                if ($guarantor->type === 'visale') continue;
+
                 $gName = trim($guarantor->first_name . ' ' . $guarantor->last_name);
 
-                // On s'assure juste d'avoir les infos de base pour pouvoir générer le PDF
                 if (!$guarantor->current_address) $missing[] = "Adresse manquante pour le garant ($gName)";
                 if (!$guarantor->phone) $missing[] = "Téléphone manquant pour le garant ($gName)";
             }
@@ -110,30 +112,34 @@ class Lease extends Model
     }
 
     /**
-     * Verifie si le bail signé signes a ete uploade.
+     * Verifie si le bail signé a ete uploade (document stocke sur le bail avec categorie 'signed_lease').
      */
     public function getHasSignedLeaseAttribute(): bool
     {
-        // Securite : evite le N+1 si la relation n'est pas prechargee
-        if (!$this->relationLoaded('tenants')) {
+        if (!$this->relationLoaded('documents')) {
             return false;
         }
 
-        foreach ($this->tenants as $tenant) {
-            if (!$tenant->relationLoaded('documents')) {
-                continue;
-            }
+        return $this->documents->contains(fn($doc) => $doc->category === 'signed_lease');
+    }
 
-            // On s'assure que le document "bail" correspond bien a CE bail precis via le lease_id
-            $hasLease = $tenant->documents->contains(function ($document) {
-                return $document->category === 'lease' && $document->lease_id === $this->id;
-            });
-
-            if ($hasLease) {
-                return true;
-            }
+    /**
+     * Verifie si l'etat des lieux d'entree signé a ete uploade.
+     */
+    public function getHasSignedInventoryAttribute(): bool
+    {
+        if (!$this->relationLoaded('documents')) {
+            return false;
         }
 
-        return false;
+        return $this->documents->contains(fn($doc) => $doc->category === 'signed_inventory');
+    }
+
+    /**
+     * Les décomptes de charges annuelles liés à ce bail.
+     */
+    public function annualSettlements()
+    {
+        return $this->hasMany(TenantAnnualSettlement::class);
     }
 }
