@@ -280,9 +280,15 @@ export default function Show({
                         <h3 className="text-md font-semibold text-[rgb(var(--primary-400))]">
                           {guarantor.first_name} {guarantor.last_name}
                         </h3>
-                        <span className="rounded-full bg-[rgb(var(--surface))] px-3 py-1 text-xs font-medium text-muted border border-[rgb(var(--border))]">
-                          Lien : {getRelationshipLabel(guarantor.pivot?.relationship || null)}
-                        </span>
+                        {guarantor.type === 'visale' ? (
+                          <span className="rounded-full px-3 py-1 text-xs font-semibold border border-[rgb(var(--primary-500))]/30 bg-[rgb(var(--primary-500))]/10 text-[rgb(var(--primary-500))]">
+                            🛡️ Visale
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-[rgb(var(--surface))] px-3 py-1 text-xs font-medium text-muted border border-[rgb(var(--border))]">
+                            Lien : {getRelationshipLabel(guarantor.pivot?.relationship || null)}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
@@ -302,42 +308,70 @@ export default function Show({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <p className={labelClass}>Contact</p>
-                        <p className="text-sm text-app mt-1">{guarantor.email || "Pas d'email"}</p>
-                        <p className="text-sm text-app">{guarantor.phone || 'Pas de téléphone'}</p>
+                    {guarantor.type === 'visale' ? (
+                      <div className="rounded-lg border border-[rgb(var(--primary-500))]/20 bg-[rgb(var(--primary-500))]/5 px-4 py-3 text-sm text-muted space-y-1">
+                        <div>
+                          Garantie gérée par{' '}
+                          <span className="font-semibold text-app">Action Logement</span>.
+                          {!guarantor.documents?.some((d) => d.category === 'visale_guarantee') && (
+                            <span className="ml-1">
+                              Uploader le document Visale dans les documents ci-dessous.
+                            </span>
+                          )}
+                        </div>
+                        {guarantor.visale_contract_number && (
+                          <div className="text-xs">
+                            N° contrat :{' '}
+                            <span className="font-mono font-semibold text-app">
+                              {guarantor.visale_contract_number}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                      <div>
-                        <p className={labelClass}>Situation & Profession</p>
-                        <p className="text-sm text-app mt-1">{guarantor.profession || '—'}</p>
-                        <p className="text-sm text-app">
-                          {getMaritalStatusLabel(guarantor.marital_status)}
-                        </p>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <p className={labelClass}>Contact</p>
+                          <p className="text-sm text-app mt-1">
+                            {guarantor.email || "Pas d'email"}
+                          </p>
+                          <p className="text-sm text-app">
+                            {guarantor.phone || 'Pas de téléphone'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className={labelClass}>Situation & Profession</p>
+                          <p className="text-sm text-app mt-1">{guarantor.profession || '—'}</p>
+                          <p className="text-sm text-app">
+                            {getMaritalStatusLabel(guarantor.marital_status)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className={labelClass}>Né(e) le</p>
+                          <p className={valueClass}>
+                            {guarantor.birth_date
+                              ? new Date(guarantor.birth_date).toLocaleDateString()
+                              : '—'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className={labelClass}>À</p>
+                          <p className={valueClass}>{guarantor.birth_place || '—'}</p>
+                        </div>
+                        <div className="sm:col-span-2">
+                          <p className={labelClass}>Adresse</p>
+                          <p className="text-sm text-app mt-1">
+                            {guarantor.current_address || '—'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className={labelClass}>Nationalité</p>
+                          <p className={valueClass}>
+                            {guarantor.nationality ? guarantor.nationality : '—'}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className={labelClass}>Né(e) le</p>
-                        <p className={valueClass}>
-                          {guarantor.birth_date
-                            ? new Date(guarantor.birth_date).toLocaleDateString()
-                            : '—'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className={labelClass}>À</p>
-                        <p className={valueClass}>{guarantor.birth_place || '—'}</p>
-                      </div>
-                      <div className="sm:col-span-2">
-                        <p className={labelClass}>Adresse</p>
-                        <p className="text-sm text-app mt-1">{guarantor.current_address || '—'}</p>
-                      </div>
-                      <div>
-                        <p className={labelClass}>Nationalité</p>
-                        <p className={valueClass}>
-                          {guarantor.nationality ? guarantor.nationality : '—'}
-                        </p>
-                      </div>
-                    </div>
+                    )}
 
                     {guarantor.documents && guarantor.documents.length > 0 && (
                       <div className="mt-6 pt-4 border-t border-[rgb(var(--border))]">

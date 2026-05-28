@@ -92,13 +92,28 @@ it('considers a tenant profile complete without bank details or lease documents'
         ]);
     }
 
-    // 3. On recharge la relation
-    $tenant->load('documents');
+    // 3. Ajout d'un garant Visale avec son document (requis pour qu'un dossier soit complet)
+    $guarantor = \App\Models\Guarantor::create([
+        'type'       => 'visale',
+        'first_name' => 'Action Logement',
+        'last_name'  => 'Visale',
+    ]);
+    $guarantor->documents()->create([
+        'name'      => 'garantie_visale.pdf',
+        'file_path' => 'path/to/visale.pdf',
+        'category'  => 'visale_guarantee',
+        'mime_type' => 'application/pdf',
+        'size'      => 1024,
+    ]);
+    $tenant->guarantors()->attach($guarantor->id);
 
-    // 4. Vérification : Le profil est complet
+    // 4. On recharge toutes les relations nécessaires
+    $tenant->load(['documents', 'guarantors.documents']);
+
+    // 5. Vérification : Le profil est complet
     expect($tenant->is_complete)->toBeTrue();
 
-    // 5. Vérification de la structure vide dictée par Coderabbit
+    // 6. Vérification de la structure vide dictée par Coderabbit
     expect($tenant->missing_items)->toBeArray();
     expect($tenant->missing_items['tenant']['fields'])->toBeEmpty();
     expect($tenant->missing_items['tenant']['documents'])->toBeEmpty();

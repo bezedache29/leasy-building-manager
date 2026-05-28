@@ -20,6 +20,7 @@ class Document extends Model
         'size',
         'room_id',
         'equipment_id',
+        'lease_id',
     ];
 
     // Permet de retrouver à qui appartient le document (Locataire, Garant, Bail...)

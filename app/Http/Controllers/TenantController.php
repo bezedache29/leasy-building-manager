@@ -74,8 +74,9 @@ class TenantController extends Controller
 
             // Garants
             'guarantors' => 'nullable|array',
-            'guarantors.*.first_name' => 'required|string|max:255',
-            'guarantors.*.last_name' => 'required|string|max:255',
+            'guarantors.*.type' => 'nullable|in:human,visale',
+            'guarantors.*.first_name' => 'nullable|string|max:255',
+            'guarantors.*.last_name' => 'nullable|string|max:255',
             'guarantors.*.marital_status' => 'nullable|string|max:255',
             'guarantors.*.relationship' => 'nullable|string|max:255',
             'guarantors.*.email' => 'nullable|email',
@@ -92,7 +93,7 @@ class TenantController extends Controller
             'guarantors.*.documents.*.category' => [
                 'required',
                 'string',
-                Rule::in(['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice', 'guarantee_deed', 'other'])
+                Rule::in(['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice', 'guarantee_deed', 'visale_guarantee', 'other'])
             ],
             'guarantors.*.documents.*.name' => 'required|string',
 
@@ -130,6 +131,12 @@ class TenantController extends Controller
 
                     // On isole les infos du garant pur (sans documents ni relationship de la table pivot)
                     $guarantorDbData = Arr::except($guarantorData, ['documents', 'relationship']);
+
+                    // Pour un garant Visale, le nom est fixé automatiquement
+                    if (($guarantorDbData['type'] ?? 'human') === 'visale') {
+                        $guarantorDbData['first_name'] = 'Action Logement';
+                        $guarantorDbData['last_name']  = 'Visale';
+                    }
 
                     // 1. On crée le garant de manière isolée
                     $guarantor = Guarantor::create($guarantorDbData);

@@ -86,7 +86,12 @@ class Tenant extends Model
             return false;
         }
 
-        // --- 3. VÉRIFICATION DES GARANTS ---
+        // --- 3. AU MOINS UN GARANT REQUIS ---
+        if ($this->guarantors->isEmpty()) {
+            return false;
+        }
+
+        // --- 4. VÉRIFICATION DES GARANTS ---
         $guarantorRequiredFields = [
             'first_name',
             'last_name',
@@ -109,14 +114,23 @@ class Tenant extends Model
         ];
 
         foreach ($this->guarantors as $guarantor) {
-            // Vérification des champs de texte du garant
+            // Un garant Visale n'a besoin que du document visale_guarantee
+            if ($guarantor->type === 'visale') {
+                $gCategories = $guarantor->documents->pluck('category')->toArray();
+                if (!in_array('visale_guarantee', $gCategories)) {
+                    return false;
+                }
+                continue;
+            }
+
+            // Vérification des champs de texte du garant ordinaire
             foreach ($guarantorRequiredFields as $field) {
                 if (empty($guarantor->{$field})) {
                     return false;
                 }
             }
 
-            // Vérification des documents du garant
+            // Vérification des documents du garant ordinaire
             $guarantorCategories = $guarantor->documents->pluck('category')->toArray();
             if (!empty(array_diff($guarantorRequiredDocs, $guarantorCategories))) {
                 return false;
@@ -190,7 +204,16 @@ class Tenant extends Model
             $missing['tenant']['documents'][] = $docLabels[$docKey] ?? $docKey;
         }
 
-        // 2. Garants
+        // 2. Garants — au moins un requis
+        if ($this->guarantors->isEmpty()) {
+            $missing['guarantors'][] = [
+                'id' => null,
+                'name' => 'Aucun garant',
+                'fields' => ['Au moins un garant est requis'],
+                'documents' => [],
+            ];
+        }
+
         foreach ($this->guarantors as $guarantor) {
             $gMissing = [
                 'id' => $guarantor->id,
@@ -199,15 +222,27 @@ class Tenant extends Model
                 'documents' => []
             ];
 
-            // Champs du garant
+            $gCategories = $guarantor->documents->pluck('category')->toArray();
+
+            // Un garant Visale n'a besoin que du document visale_guarantee
+            if ($guarantor->type === 'visale') {
+                if (!in_array('visale_guarantee', $gCategories)) {
+                    $gMissing['documents'][] = 'Garantie Visale (Action Logement)';
+                }
+                if (!empty($gMissing['documents'])) {
+                    $missing['guarantors'][] = $gMissing;
+                }
+                continue;
+            }
+
+            // Garant ordinaire : vérification des champs
             foreach ($fieldLabels as $field => $label) {
                 if (empty($guarantor->{$field})) {
                     $gMissing['fields'][] = $label;
                 }
             }
 
-            // Documents du garant
-            $gCategories = $guarantor->documents->pluck('category')->toArray();
+            // Garant ordinaire : vérification des documents
             $missingGuarantorDocs = array_diff($guarantorRequiredDocs, $gCategories);
             foreach ($missingGuarantorDocs as $docKey) {
                 $gMissing['documents'][] = $docLabels[$docKey] ?? $docKey;

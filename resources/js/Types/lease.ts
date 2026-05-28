@@ -24,8 +24,10 @@ export interface Lease {
   keys_apartment_count: number;
   pdf_downloaded_at?: string | null;
 
-  // Attribut calcule renvoye par le backend pour bloquer/autoriser le PDF
+  // Attributs calculés renvoyés par le backend
   missing_pdf_data?: string[];
+  has_signed_lease?: boolean;
+  has_signed_inventory?: boolean;
 
   property?: Property;
   tenants?: Tenant[];

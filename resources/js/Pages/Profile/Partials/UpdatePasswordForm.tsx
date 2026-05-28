@@ -17,7 +17,6 @@ export default function UpdatePasswordForm({ className = '' }: { className?: str
 
   const updatePassword: FormEventHandler = (e) => {
     e.preventDefault();
-
     put(route('password.update'), {
       preserveScroll: true,
       onSuccess: () => reset(),
@@ -26,7 +25,6 @@ export default function UpdatePasswordForm({ className = '' }: { className?: str
           reset('password', 'password_confirmation');
           passwordInput.current?.focus();
         }
-
         if (errors.current_password) {
           reset('current_password');
           currentPasswordInput.current?.focus();
@@ -38,17 +36,15 @@ export default function UpdatePasswordForm({ className = '' }: { className?: str
   return (
     <section className={className}>
       <header>
-        <h2 className="text-lg font-medium text-gray-900">Update Password</h2>
-
-        <p className="mt-1 text-sm text-gray-600">
-          Ensure your account is using a long, random password to stay secure.
+        <h2 className="text-lg font-medium text-app">Mot de passe</h2>
+        <p className="mt-1 text-sm text-muted">
+          Utilisez un mot de passe long et aléatoire pour sécuriser votre compte.
         </p>
       </header>
 
       <form onSubmit={updatePassword} className="mt-6 space-y-6">
         <div>
-          <InputLabel htmlFor="current_password" value="Current Password" />
-
+          <InputLabel htmlFor="current_password" value="Mot de passe actuel" />
           <TextInput
             id="current_password"
             ref={currentPasswordInput}
@@ -62,8 +58,7 @@ export default function UpdatePasswordForm({ className = '' }: { className?: str
         </div>
 
         <div>
-          <InputLabel htmlFor="password" value="New Password" />
-
+          <InputLabel htmlFor="password" value="Nouveau mot de passe" />
           <TextInput
             id="password"
             ref={passwordInput}
@@ -77,8 +72,7 @@ export default function UpdatePasswordForm({ className = '' }: { className?: str
         </div>
 
         <div>
-          <InputLabel htmlFor="password_confirmation" value="Confirm Password" />
-
+          <InputLabel htmlFor="password_confirmation" value="Confirmer le mot de passe" />
           <TextInput
             id="password_confirmation"
             value={data.password_confirmation}
@@ -91,8 +85,7 @@ export default function UpdatePasswordForm({ className = '' }: { className?: str
         </div>
 
         <div className="flex items-center gap-4">
-          <Button disabled={processing}>Save</Button>
-
+          <Button disabled={processing}>Enregistrer</Button>
           <Transition
             show={recentlySuccessful}
             enter="transition ease-in-out"
@@ -100,7 +93,7 @@ export default function UpdatePasswordForm({ className = '' }: { className?: str
             leave="transition ease-in-out"
             leaveTo="opacity-0"
           >
-            <p className="text-sm text-gray-600">Saved.</p>
+            <p className="text-sm text-muted">Enregistré.</p>
           </Transition>
         </div>
       </form>

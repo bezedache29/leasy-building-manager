@@ -7,6 +7,7 @@ export const DOCUMENT_CATEGORIES: Record<string, string> = {
   tax_notice: "Dernier avis d'imposition",
   bank_details: 'RIB',
   guarantee_deed: 'Acte de caution solidaire',
+  visale_guarantee: 'Garantie Visale (Action Logement)',
   insurance: "Attestation d'assurance",
   deposit_check: 'Chèque de caution',
   other: 'Autre document',
@@ -34,3 +35,6 @@ export const GUARANTOR_DOCUMENT_KEYS = [
   'tax_notice',
   'other',
 ];
+
+// Catégorie unique pour un garant Visale
+export const VISALE_DOCUMENT_KEYS = ['visale_guarantee'];

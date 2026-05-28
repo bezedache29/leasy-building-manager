@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AnnualChargeController;
+use App\Http\Controllers\CandidatureController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EquipmentController;
@@ -65,6 +67,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/leases/{lease}/documents', [DocumentController::class, 'storeForLease'])->name('leases.documents.store');
     Route::post('/leases/{lease}/photos', [DocumentController::class, 'storePhotoForLease'])->name('leases.photos.store');
     Route::get('/leases/{lease}/inventory/{type}/pdf', [LeaseController::class, 'generateInventoryPdf'])->name('leases.inventory.pdf');
+
+    // Génération d'un acte de cautionnement sans bail (phase de candidature)
+    Route::get('/properties/{property}/candidature/acte', [CandidatureController::class, 'generateActe'])
+        ->name('properties.candidature.acte');
+
+    Route::get('/properties/{property}/annual-charges/create', [AnnualChargeController::class, 'create'])->name('properties.annual-charges.create');
+    Route::post('/properties/{property}/annual-charges', [AnnualChargeController::class, 'store'])->name('properties.annual-charges.store');
+    Route::get('/properties/{property}/annual-charges/{settlement}/review', [AnnualChargeController::class, 'review'])->name('properties.annual-charges.review');
 
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useForm, type Path } from 'react-hook-form';
+import { useForm, useWatch, type Path } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { router } from '@inertiajs/react';
@@ -34,6 +34,8 @@ export default function GuarantorModal({ show, onClose, tenantId, guarantor }: P
   } = useForm<FormValues>({
     resolver: zodResolver(guarantorModalSchema),
     defaultValues: {
+      type: 'human',
+      visale_contract_number: '',
       first_name: '',
       last_name: '',
       relationship: '',
@@ -49,12 +51,17 @@ export default function GuarantorModal({ show, onClose, tenantId, guarantor }: P
     },
   });
 
+  const selectedType = useWatch({ control, name: 'type' });
+  const isVisale = selectedType === 'visale' || false;
+
   useEffect(() => {
     if (show) {
       if (guarantor) {
         reset({
-          first_name: guarantor.first_name,
-          last_name: guarantor.last_name,
+          type: guarantor.type ?? 'human',
+          visale_contract_number: guarantor.visale_contract_number || '',
+          first_name: guarantor.first_name ?? undefined,
+          last_name: guarantor.last_name ?? undefined,
           relationship: guarantor.pivot?.relationship || '',
           marital_status: guarantor.marital_status || '',
           email: guarantor.email || '',
@@ -68,6 +75,8 @@ export default function GuarantorModal({ show, onClose, tenantId, guarantor }: P
         });
       } else {
         reset({
+          type: 'human',
+          visale_contract_number: '',
           first_name: '',
           last_name: '',
           relationship: '',
@@ -132,13 +141,55 @@ export default function GuarantorModal({ show, onClose, tenantId, guarantor }: P
           {guarantor ? 'Modifier le garant' : 'Ajouter un garant'}
         </h2>
 
-        {/* 3. Affichage de l'encart si des pièces sont manquantes */}
-        <MissingDocumentsAlert
-          missingCategories={missingCategories}
-          title="Pièces manquantes recommandées pour le dossier du garant :"
-        />
+        {/* Pièces manquantes — uniquement pour les garants ordinaires */}
+        {!isVisale && (
+          <MissingDocumentsAlert
+            missingCategories={missingCategories}
+            title="Pièces manquantes recommandées pour le dossier du garant :"
+          />
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Sélection du type de garant */}
+          <div className="flex gap-3">
+            <label
+              className={`flex-1 flex items-center gap-3 rounded-lg border px-4 py-3 cursor-pointer transition-colors ${!isVisale ? 'border-[rgb(var(--primary-500))] bg-[rgb(var(--primary-500))]/5' : 'border-[rgb(var(--border))] hover:bg-surface-2'}`}
+            >
+              <input
+                type="radio"
+                value="human"
+                {...register('type')}
+                className="h-4 w-4 text-[rgb(var(--primary-500))]"
+              />
+              <div>
+                <p className="text-sm font-medium text-app">Garant ordinaire</p>
+                <p className="text-xs text-muted">Personne physique</p>
+              </div>
+            </label>
+            <label
+              className={`flex-1 flex items-center gap-3 rounded-lg border px-4 py-3 cursor-pointer transition-colors ${isVisale ? 'border-[rgb(var(--primary-500))] bg-[rgb(var(--primary-500))]/5' : 'border-[rgb(var(--border))] hover:bg-surface-2'}`}
+            >
+              <input
+                type="radio"
+                value="visale"
+                {...register('type')}
+                className="h-4 w-4 text-[rgb(var(--primary-500))]"
+              />
+              <div>
+                <p className="text-sm font-medium text-app">Garantie Visale</p>
+                <p className="text-xs text-muted">Action Logement</p>
+              </div>
+            </label>
+          </div>
+
+          {isVisale && (
+            <div className="rounded-lg border border-[rgb(var(--primary-500))]/30 bg-[rgb(var(--primary-500))]/5 px-4 py-3 text-sm text-muted">
+              Le garant sera enregistré sous le nom{' '}
+              <span className="font-semibold text-app">Action Logement / Visale</span>. Renseigner
+              le numéro de contrat Visale et uploader le document Visale ci-dessous.
+            </div>
+          )}
+
           <GuarantorCard
             prefix=""
             register={register}
@@ -146,6 +197,7 @@ export default function GuarantorModal({ show, onClose, tenantId, guarantor }: P
             setValue={setValue}
             errors={errors}
             existingDocuments={guarantor?.documents || []}
+            isVisale={isVisale}
           />
 
           <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-[rgb(var(--border))]">

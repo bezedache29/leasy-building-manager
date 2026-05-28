@@ -64,9 +64,13 @@ export default function Index({ properties }: Props) {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {properties.map((property) => {
-              // On récupère le bail actif complet pour pouvoir afficher son loyer
-              const activeLease = property.leases?.find((lease) => lease.status === 'active');
-              const isRented = !!activeLease;
+              const activeLease = property.leases?.[0];
+              const propertyStatus =
+                activeLease?.has_signed_lease && activeLease?.has_signed_inventory
+                  ? 'loue'
+                  : activeLease
+                    ? 'attente'
+                    : 'vide';
 
               return (
                 <div
@@ -95,11 +99,17 @@ export default function Index({ properties }: Props) {
 
                       {/* BADGE STATUT DU BIEN */}
                       <div>
-                        {isRented ? (
+                        {propertyStatus === 'loue' && (
                           <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-600 border border-emerald-500/20">
                             Loué
                           </span>
-                        ) : (
+                        )}
+                        {propertyStatus === 'attente' && (
+                          <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-600 border border-amber-500/20">
+                            En attente
+                          </span>
+                        )}
+                        {propertyStatus === 'vide' && (
                           <span className="inline-flex items-center rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-medium text-rose-600 border border-rose-500/20">
                             Vide
                           </span>
