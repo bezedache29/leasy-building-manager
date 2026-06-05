@@ -40,6 +40,62 @@ interface Props {
   tenants: Tenant[];
 }
 
+function SignedDocAccordion({
+  icon,
+  label,
+  files,
+  isOpen,
+  onToggle,
+}: {
+  icon: string;
+  label: string;
+  files: import('@/Types/document').AppDocument[];
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="rounded-md border border-emerald-500/30 overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-3 py-2 bg-emerald-500/5 hover:bg-emerald-500/10 transition-colors text-left"
+      >
+        <span className="flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-400">
+          <span>{icon}</span>
+          <span>{label}</span>
+          <span className="text-xs font-normal text-muted">
+            {files.length} fichier{files.length > 1 ? 's' : ''}
+          </span>
+        </span>
+        <svg
+          className={`h-4 w-4 text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {isOpen && (
+        <div className="divide-y divide-[rgb(var(--border))]">
+          {files.map((doc, idx) => (
+            <a
+              key={doc.id}
+              href={route('documents.show', doc.id)}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2 px-3 py-2 bg-surface hover:bg-surface-2 transition-colors text-xs text-app"
+            >
+              <span className="text-muted shrink-0">{files.length > 1 ? `${idx + 1}.` : '→'}</span>
+              <span className="truncate hover:underline">{doc.name}</span>
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Show({ property, waterChargeDetails, tenants }: Props) {
   const { delete: destroy } = useForm();
 
@@ -56,9 +112,6 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
   const [photoToDelete, setPhotoToDelete] = useState<number | null>(null);
   // États pour l'upload d'une photo avec légende
   const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
-  const [pendingPhotoType, setPendingPhotoType] = useState<
-    'inventory_photo_in' | 'inventory_photo_out' | null
-  >(null);
   const [pendingCaption, setPendingCaption] = useState('');
   const [pendingRoomId, setPendingRoomId] = useState('');
   const [pendingEquipmentId, setPendingEquipmentId] = useState('');
@@ -66,6 +119,15 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
   const [showInventoryConfirmModal, setShowInventoryConfirmModal] = useState(false);
   const [showCandidatureModal, setShowCandidatureModal] = useState(false);
   const [showUploadSignedModal, setShowUploadSignedModal] = useState(false);
+  const [expandedDocGroups, setExpandedDocGroups] = useState<Set<string>>(new Set());
+
+  const toggleDocGroup = (key: string) => {
+    setExpandedDocGroups((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  };
 
   useEffect(() => {
     // S'il n'y a pas de photo, on vide l'URL
@@ -152,31 +214,25 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
     });
   };
 
-  const handleFileSelect = (
-    e: ChangeEvent<HTMLInputElement>,
-    type: 'inventory_photo_in' | 'inventory_photo_out'
-  ) => {
+  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setPendingPhoto(e.target.files[0]);
-      setPendingPhotoType(type);
       setPendingCaption('');
-      setPendingRoomId(''); // On reinitialise la piece
-      setPendingEquipmentId(''); // On reinitialise l'equipement
-
+      setPendingRoomId('');
+      setPendingEquipmentId('');
       e.target.value = '';
     }
   };
 
   const confirmUploadPhoto = () => {
-    if (!pendingPhoto || !pendingPhotoType || !activeLease) return;
+    if (!pendingPhoto) return;
 
     router.post(
-      route('leases.photos.store', activeLease.id),
+      route('properties.photos.store', property.id),
       {
         photo: pendingPhoto,
-        type: pendingPhotoType,
         name: pendingCaption,
-        room_id: pendingRoomId || null, // On envoie l'ID ou null
+        room_id: pendingRoomId || null,
         equipment_id: pendingEquipmentId || null,
       },
       {
@@ -184,7 +240,6 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
         forceFormData: true,
         onSuccess: () => {
           setPendingPhoto(null);
-          setPendingPhotoType(null);
           setPendingCaption('');
           setPendingRoomId('');
           setPendingEquipmentId('');
@@ -365,11 +420,11 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
                         </div>
                       </div>
 
-                      {/* NOUVEAU : Collapse des photos globales de la pièce */}
-                      {activeLease?.documents &&
-                        activeLease.documents.some(
+                      {/* Photos globales de la pièce */}
+                      {property.documents &&
+                        property.documents.some(
                           (doc) =>
-                            doc.category === 'inventory_photo_in' &&
+                            doc.category === 'inventory_photo' &&
                             doc.room_id === room.id &&
                             !doc.equipment_id
                         ) && (
@@ -378,9 +433,9 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
                             className="mb-4 rounded-lg bg-surface-2 border border-[rgb(var(--border))] p-3"
                           >
                             {({ open }) => {
-                              const roomPhotos = activeLease.documents!.filter(
+                              const roomPhotos = property.documents!.filter(
                                 (doc) =>
-                                  doc.category === 'inventory_photo_in' &&
+                                  doc.category === 'inventory_photo' &&
                                   doc.room_id === room.id &&
                                   !doc.equipment_id
                               );
@@ -426,12 +481,11 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
                       ) : (
                         <ul className="mt-3 space-y-2">
                           {room.equipments.map((eq) => {
-                            // On filtre les photos specifiques a cet equipement
+                            // On filtre les photos spécifiques à cet équipement
                             const equipmentPhotos =
-                              activeLease?.documents?.filter(
+                              property.documents?.filter(
                                 (doc) =>
-                                  doc.category === 'inventory_photo_in' &&
-                                  doc.equipment_id === eq.id
+                                  doc.category === 'inventory_photo' && doc.equipment_id === eq.id
                               ) || [];
 
                             return (
@@ -643,13 +697,13 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
                     </div>
                   </div>
 
-                  {/* === DOCUMENTS À GÉNÉRER === */}
+                  {/* === DOCUMENTS === */}
                   <div className="border-t border-[rgb(var(--border))] px-4 py-3">
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted mb-3">
                       Documents
                     </p>
                     <div className="space-y-2">
-                      {/* Actes de caution */}
+                      {/* Actes de caution — toujours accessibles */}
                       {activeLease.guarantors?.map((guarantor) =>
                         guarantor.type === 'visale' ? (
                           <div
@@ -684,38 +738,66 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
                         )
                       )}
 
-                      {/* Bail */}
-                      <div className="flex items-center justify-between rounded-md bg-surface px-3 py-2 border border-[rgb(var(--border))]">
-                        <span className="text-sm text-app">📄 Bail locatif</span>
-                        {activeLease.missing_pdf_data && activeLease.missing_pdf_data.length > 0 ? (
+                      {/* Bail — générer si pas signé, afficher signé sinon */}
+                      {activeLease.has_signed_lease ? (
+                        <SignedDocAccordion
+                          icon="📄"
+                          label="Bail signé"
+                          files={
+                            activeLease.documents?.filter((d) => d.category === 'signed_lease') ??
+                            []
+                          }
+                          isOpen={expandedDocGroups.has('signed_lease')}
+                          onToggle={() => toggleDocGroup('signed_lease')}
+                        />
+                      ) : (
+                        <div className="flex items-center justify-between rounded-md bg-surface px-3 py-2 border border-[rgb(var(--border))]">
+                          <span className="text-sm text-app">📄 Bail locatif</span>
+                          {activeLease.missing_pdf_data &&
+                          activeLease.missing_pdf_data.length > 0 ? (
+                            <button
+                              onClick={() => setShowPdfMissingModal(true)}
+                              className="text-xs font-medium text-amber-500 hover:text-amber-400"
+                            >
+                              Infos manquantes →
+                            </button>
+                          ) : (
+                            <a
+                              href={route('leases.pdf', activeLease.id)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs font-medium text-[rgb(var(--primary-400))] hover:text-[rgb(var(--primary-300))]"
+                            >
+                              Télécharger →
+                            </a>
+                          )}
+                        </div>
+                      )}
+
+                      {/* État des lieux — générer si pas signé, afficher signé sinon */}
+                      {activeLease.has_signed_inventory ? (
+                        <SignedDocAccordion
+                          icon="📋"
+                          label="État des lieux signé"
+                          files={
+                            activeLease.documents?.filter(
+                              (d) => d.category === 'signed_inventory'
+                            ) ?? []
+                          }
+                          isOpen={expandedDocGroups.has('signed_inventory')}
+                          onToggle={() => toggleDocGroup('signed_inventory')}
+                        />
+                      ) : (
+                        <div className="flex items-center justify-between rounded-md bg-surface px-3 py-2 border border-[rgb(var(--border))]">
+                          <span className="text-sm text-app">📋 État des lieux (entrée)</span>
                           <button
-                            onClick={() => setShowPdfMissingModal(true)}
-                            className="text-xs font-medium text-amber-500 hover:text-amber-400"
-                          >
-                            Infos manquantes →
-                          </button>
-                        ) : (
-                          <a
-                            href={route('leases.pdf', activeLease.id)}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            onClick={() => setShowInventoryConfirmModal(true)}
                             className="text-xs font-medium text-[rgb(var(--primary-400))] hover:text-[rgb(var(--primary-300))]"
                           >
                             Télécharger →
-                          </a>
-                        )}
-                      </div>
-
-                      {/* État des lieux */}
-                      <div className="flex items-center justify-between rounded-md bg-surface px-3 py-2 border border-[rgb(var(--border))]">
-                        <span className="text-sm text-app">📋 État des lieux (entrée)</span>
-                        <button
-                          onClick={() => setShowInventoryConfirmModal(true)}
-                          className="text-xs font-medium text-[rgb(var(--primary-400))] hover:text-[rgb(var(--primary-300))]"
-                        >
-                          Télécharger →
-                        </button>
-                      </div>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -760,22 +842,21 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
                           d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
                         />
                       </svg>
-                      Ajouter une photo (entrée)
+                      Ajouter une photo
                       <input
                         type="file"
                         accept="image/*"
                         capture="environment"
                         className="hidden"
-                        onChange={(e) => handleFileSelect(e, 'inventory_photo_in')}
+                        onChange={handleFileSelect}
                       />
                     </label>
                     <PhotoGallery
                       photos={
-                        activeLease.documents?.filter(
-                          (doc) => doc.category === 'inventory_photo_in'
-                        ) || []
+                        property.documents?.filter((doc) => doc.category === 'inventory_photo') ||
+                        []
                       }
-                      title="Photos de l'état des lieux entrant"
+                      title="Photos état des lieux"
                       rooms={property.rooms}
                     />
                   </div>

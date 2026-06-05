@@ -52,8 +52,8 @@ class PropertyController extends Controller
 
     public function show(Property $property)
     {
-        // Chargement des pièces et équipements du bien
-        $property->load('rooms.equipments');
+        // Chargement des pièces, équipements et photos EDL du bien
+        $property->load(['rooms.equipments', 'documents' => fn($q) => $q->where('category', 'inventory_photo')]);
 
         // Chargement du bail actif avec toutes ses relations
         $activeLeases = $property->leases()
@@ -114,8 +114,6 @@ class PropertyController extends Controller
                 // Skip water charge calculation if rates are incomplete
                 $waterChargeDetails = null;
             } else {
-
-
                 $consumption = $currentSettlement->water_consumption;
 
                 // --- Calculs HT Ventiles ---
@@ -155,18 +153,18 @@ class PropertyController extends Controller
                     'override_ttc' => $currentSettlement->water_override,
                 ];
             }
-
-            // Locataires disponibles pour les candidatures (uniquement si le bien est vacant)
-            $tenants = $activeLease
-                ? collect()
-                : Tenant::with('guarantors')->orderBy('last_name')->orderBy('first_name')->get();
-
-            return inertia('Properties/Show', [
-                'property' => $property,
-                'waterChargeDetails' => $waterChargeDetails,
-                'tenants' => $tenants,
-            ]);
         }
+
+        // Locataires disponibles pour les candidatures (uniquement si le bien est vacant)
+        $tenants = $activeLease
+            ? collect()
+            : Tenant::with('guarantors')->orderBy('last_name')->orderBy('first_name')->get();
+
+        return inertia('Properties/Show', [
+            'property' => $property,
+            'waterChargeDetails' => $waterChargeDetails,
+            'tenants' => $tenants,
+        ]);
     }
 
     public function edit(Property $property)

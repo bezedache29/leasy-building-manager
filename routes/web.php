@@ -66,6 +66,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/leases/{lease}/pdf', [LeaseController::class, 'pdf'])->name('leases.pdf');
     Route::post('/leases/{lease}/documents', [DocumentController::class, 'storeForLease'])->name('leases.documents.store');
     Route::post('/leases/{lease}/photos', [DocumentController::class, 'storePhotoForLease'])->name('leases.photos.store');
+    Route::post('/properties/{property}/photos', [DocumentController::class, 'storePhotoForProperty'])->name('properties.photos.store');
     Route::get('/leases/{lease}/inventory/{type}/pdf', [LeaseController::class, 'generateInventoryPdf'])->name('leases.inventory.pdf');
 
     // Génération d'un acte de cautionnement sans bail (phase de candidature)

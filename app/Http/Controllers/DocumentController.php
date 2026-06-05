@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Document;
 use App\Models\Lease;
+use App\Models\Property;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -197,6 +198,63 @@ class DocumentController extends Controller
             DB::rollBack();
 
             // Nettoyage du fichier orphelin si l'insertion en base echoue
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+
+            throw $e;
+        }
+
+        return back();
+    }
+
+    public function storePhotoForProperty(Request $request, Property $property)
+    {
+
+        Gate::authorize('update', $property);
+
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'name' => 'nullable|string|max:255',
+            'room_id' => 'nullable|exists:rooms,id',
+            'equipment_id' => 'nullable|exists:equipments,id',
+        ]);
+
+        $file = $request->file('photo');
+        $filename = time() . '_' . Str::random(10) . '.webp';
+        $folderPath = "documents/properties/{$property->id}/inventory";
+
+        if (!Storage::disk('public')->exists($folderPath)) {
+            Storage::disk('public')->makeDirectory($folderPath);
+        }
+
+        $manager = new ImageManager(new Driver());
+        $image = $manager->read($file->getRealPath());
+        $image->scaleDown(width: 1920);
+        $encoded = $image->toWebp(80);
+
+        $path = $folderPath . '/' . $filename;
+        $documentName = $request->name ?: 'Photo EDL';
+
+        try {
+            DB::beginTransaction();
+
+            Storage::disk('public')->put($path, $encoded->toString());
+
+            $property->documents()->create([
+                'name' => $documentName,
+                'file_path' => $path,
+                'category' => 'inventory_photo',
+                'mime_type' => 'image/webp',
+                'size' => Storage::disk('public')->size($path),
+                'room_id' => $request->room_id,
+                'equipment_id' => $request->equipment_id,
+            ]);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+
             if (Storage::disk('public')->exists($path)) {
                 Storage::disk('public')->delete($path);
             }

@@ -30,6 +30,15 @@ export default function Show({
   const [showArchiveTenantModal, setShowArchiveTenantModal] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedLease, setSelectedLease] = useState<Lease | null>(null);
+  const [expandedDocGroups, setExpandedDocGroups] = useState<Set<string>>(new Set());
+
+  const toggleDocGroup = (key: string) => {
+    setExpandedDocGroups((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  };
 
   const openModalForAdd = () => {
     setEditingGuarantor(null);
@@ -436,7 +445,8 @@ export default function Show({
                     const hasSignedGuarantee = leaseDocs.some(
                       (d) => d.category === 'signed_guarantee'
                     );
-                    const hasGuarantors = (lease.guarantors?.length ?? 0) > 0;
+                    const hasGuarantors =
+                      lease.guarantors?.some((g) => g.type !== 'visale') ?? false;
                     const isFullyUploaded =
                       hasSignedLease &&
                       hasSignedInventory &&
@@ -536,81 +546,104 @@ export default function Show({
                           )}
                         </div>
 
-                        <div className="border-t border-[rgb(var(--border))] mt-4 pt-4">
-                          <h4 className="text-sm font-semibold text-muted mb-3 flex items-center">
-                            <svg
-                              className="mr-2 h-4 w-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.414a4 4 0 00-5.656-5.656l-6.415 6.414a6 6 0 108.486 8.486L20.5 13"
-                              />
-                            </svg>
-                            Documents joints
-                          </h4>
+                        {(() => {
+                          const signedGroups = [
+                            { key: 'signed_lease', label: 'Bail signé', icon: '📄' },
+                            { key: 'signed_inventory', label: 'État des lieux signé', icon: '📋' },
+                            { key: 'signed_guarantee', label: 'Acte de caution signé', icon: '🛡️' },
+                          ];
+                          const signedDocs = leaseDocs.filter((d) =>
+                            signedGroups.some((g) => g.key === d.category)
+                          );
+                          if (signedDocs.length === 0) return null;
 
-                          {leaseDocs.length === 0 ? (
-                            <p className="text-xs text-muted italic px-1">
-                              Aucun document n'a encore été uploadé pour ce bail.
-                            </p>
-                          ) : (
-                            <div className="space-y-2">
-                              {leaseDocs.map((doc) => (
-                                <div
-                                  key={doc.id}
-                                  className="flex items-center justify-between p-2 rounded bg-surface-3 border border-[rgb(var(--border))] hover:border-[rgb(var(--primary-400))] transition-colors group"
-                                >
-                                  <a
-                                    href={route('documents.show', doc.id)}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="flex items-center text-xs text-app overflow-hidden flex-1"
+                          return (
+                            <div className="border-t border-[rgb(var(--border))] mt-4 pt-4 space-y-1">
+                              <p className="text-xs font-semibold text-muted mb-2">
+                                Documents signés
+                              </p>
+                              {signedGroups.map(({ key, label, icon }) => {
+                                const files = leaseDocs.filter((d) => d.category === key);
+                                if (files.length === 0) return null;
+                                const isOpen = expandedDocGroups.has(`${lease.id}-${key}`);
+                                return (
+                                  <div
+                                    key={key}
+                                    className="rounded-lg border border-[rgb(var(--border))] overflow-hidden"
                                   >
-                                    <svg
-                                      className="mr-2 h-4 w-4 text-emerald-500 shrink-0"
-                                      fill="none"
-                                      viewBox="0 0 24 24"
-                                      stroke="currentColor"
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleDocGroup(`${lease.id}-${key}`)}
+                                      className="w-full flex items-center justify-between px-3 py-2 bg-surface hover:bg-surface-2 transition-colors text-left"
                                     >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                      />
-                                    </svg>
-                                    <span className="truncate group-hover:underline">
-                                      {doc.name}
-                                    </span>
-                                  </a>
-                                  <button
-                                    onClick={() => setDocToDelete(doc)}
-                                    className="text-muted hover:text-red-500 ml-2"
-                                  >
-                                    <svg
-                                      className="h-4 w-4"
-                                      fill="none"
-                                      viewBox="0 0 24 24"
-                                      stroke="currentColor"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                      />
-                                    </svg>
-                                  </button>
-                                </div>
-                              ))}
+                                      <span className="flex items-center gap-2 text-sm font-medium text-app">
+                                        <span>{icon}</span>
+                                        <span>{label}</span>
+                                        <span className="text-xs font-normal text-muted">
+                                          {files.length} fichier{files.length > 1 ? 's' : ''}
+                                        </span>
+                                      </span>
+                                      <svg
+                                        className={`h-4 w-4 text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M19 9l-7 7-7-7"
+                                        />
+                                      </svg>
+                                    </button>
+
+                                    {isOpen && (
+                                      <div className="divide-y divide-[rgb(var(--border))]">
+                                        {files.map((doc, idx) => (
+                                          <div
+                                            key={doc.id}
+                                            className="flex items-center justify-between px-3 py-2 bg-surface-2 group"
+                                          >
+                                            <a
+                                              href={route('documents.show', doc.id)}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="flex items-center gap-2 text-xs text-app flex-1 overflow-hidden hover:underline"
+                                            >
+                                              <span className="text-muted shrink-0">
+                                                {files.length > 1 ? `${idx + 1}.` : '→'}
+                                              </span>
+                                              <span className="truncate">{doc.name}</span>
+                                            </a>
+                                            <button
+                                              onClick={() => setDocToDelete(doc)}
+                                              className="text-muted hover:text-red-500 ml-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                              <svg
+                                                className="h-3.5 w-3.5"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                              >
+                                                <path
+                                                  strokeLinecap="round"
+                                                  strokeLinejoin="round"
+                                                  strokeWidth={2}
+                                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                />
+                                              </svg>
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
-                          )}
-                        </div>
+                          );
+                        })()}
                       </div>
                     );
                   })}

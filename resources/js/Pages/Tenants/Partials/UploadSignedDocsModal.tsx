@@ -47,8 +47,8 @@ export default function UploadSignedDocsModal({ show, onClose, lease }: Props) {
   const hasSignedInventory = existingDocs.some((d) => d.category === 'signed_inventory');
   const hasSignedGuarantee = existingDocs.some((d) => d.category === 'signed_guarantee');
 
-  // On vérifie si ce bail possède des garants rattachés
-  const hasGuarantors = lease?.guarantors && lease.guarantors.length > 0;
+  // L'acte de caution ne concerne que les garants ordinaires (pas Visale)
+  const hasGuarantors = lease?.guarantors?.some((g) => g.type !== 'visale') ?? false;
 
   const handleClose = () => {
     reset();
