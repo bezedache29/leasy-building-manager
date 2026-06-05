@@ -1,4 +1,4 @@
-import { ChangeEvent, useRef, useState } from 'react';
+import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { router } from '@inertiajs/react';
 import Button from '@/Components/Button';
 
@@ -8,15 +8,28 @@ interface Props {
 
 export default function SignatureForm({ hasSignature }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const blobUrlRef = useRef<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
+    };
+  }, []);
+
+  const setPreviewUrl = (url: string | null) => {
+    if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
+    blobUrlRef.current = url;
+    setPreview(url);
+  };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setSelectedFile(file);
-    setPreview(URL.createObjectURL(file));
+    setPreviewUrl(URL.createObjectURL(file));
     e.target.value = '';
   };
 
@@ -30,7 +43,7 @@ export default function SignatureForm({ hasSignature }: Props) {
         preserveScroll: true,
         onSuccess: () => {
           setSelectedFile(null);
-          setPreview(null);
+          setPreviewUrl(null);
         },
       }
     );
@@ -45,7 +58,7 @@ export default function SignatureForm({ hasSignature }: Props) {
 
   const handleCancel = () => {
     setSelectedFile(null);
-    setPreview(null);
+    setPreviewUrl(null);
   };
 
   return (

@@ -262,6 +262,9 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
   // On trouve la piece selectionnee pour afficher ses equipements
   const selectedRoomForPhoto = property.rooms?.find((r) => r.id.toString() === pendingRoomId);
 
+  const isValidReceiptYear =
+    Number.isInteger(receiptYear) && receiptYear >= 2000 && receiptYear <= 2100;
+
   return (
     <AppLayout>
       <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-8">
@@ -1194,8 +1197,9 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
             </Button>
             <Button
               variant="primary"
+              disabled={!isValidReceiptYear}
               onClick={() => {
-                if (!activeLease) return;
+                if (!activeLease || !isValidReceiptYear) return;
                 window.open(
                   route('leases.receipt', {
                     lease: activeLease.id,
