@@ -303,16 +303,17 @@ class LeaseController extends Controller
             abort(400, 'Le type d\'état des lieux doit être "in" (entrée) ou "out" (sortie).');
         }
 
-        $lease->load(['tenants', 'property.rooms.equipments', 'documents']);
+        $lease->load(['tenants', 'property.rooms.equipments', 'property.documents' => fn($q) => $q->where('category', 'inventory_photo')]);
 
-        $rooms = $lease->property->rooms->map(function ($room) use ($lease, $type) {
+        $propertyDocs = $lease->property->documents;
+
+        $rooms = $lease->property->rooms->map(function ($room) use ($propertyDocs) {
             // 1. On récupère les IDs de tous les équipements de cette pièce
             $equipmentIds = $room->equipments->pluck('id');
 
-            // 2. On compte s'il y a des photos liées à ces équipements pour ce bail
-            $hasPhotos = $lease->documents
+            // 2. On vérifie s'il y a des photos liées aux équipements de cette pièce
+            $hasPhotos = $propertyDocs
                 ->whereIn('equipment_id', $equipmentIds)
-                ->where('category', 'inventory_photo_' . $type)
                 ->count() > 0;
 
             // 3. On ne génère le QR Code QUE s'il y a des photos
@@ -349,6 +350,7 @@ class LeaseController extends Controller
             'lease' => $lease,
             'type' => $type,
             'rooms' => $rooms,
+            'propertyDocs' => $propertyDocs,
         ]);
 
         $fileName = 'EDL_' . ($type === 'in' ? 'Entree' : 'Sortie') . '_' . $lease->id . '.pdf';

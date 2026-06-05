@@ -294,7 +294,7 @@
                                 <td colspan="2" class="remarques-label" style="background:#faf5ff;">Obs. entrée :</td>
                                 <td colspan="8" class="remarques-box" style="background:#faf5ff;">
                                     @php
-                                        $eqPhotosIn = $lease->documents->where('equipment_id', $equipment->id)->where('category', 'inventory_photo_in');
+                                        $eqPhotosIn = $propertyDocs->where('equipment_id', $equipment->id);
                                     @endphp
                                     @if($eqPhotosIn->count() > 0)
                                         <span style="float:right; font-style:italic; color:#4f46e5; font-size:9px;">
@@ -402,7 +402,7 @@
 
     {{-- Annexe photographique --}}
     @php
-        $photos = $lease->documents->where('category', 'inventory_photo_in');
+        $photos = $propertyDocs;
         $photoCount = 0;
     @endphp
     @if($photos->count() > 0)
@@ -411,7 +411,7 @@
         <div style="width:100%;">
             @foreach($lease->property->rooms as $room)
                 @foreach($room->equipments as $equipment)
-                    @foreach($lease->documents->where('equipment_id', $equipment->id)->where('category', 'inventory_photo_in') as $photo)
+                    @foreach($propertyDocs->where('equipment_id', $equipment->id) as $photo)
                         @php $photoCount++; @endphp
                         <div style="display:inline-block; width:30%; margin:1%; vertical-align:top; border:1px solid #eee; padding:5px;">
                             <img src="{{ public_path('storage/' . str_replace('public/', '', $photo->file_path)) }}"

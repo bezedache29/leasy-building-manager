@@ -1,4 +1,5 @@
 import { Lease } from '@/Types/lease';
+import { AppDocument } from '@/Types/document';
 
 export interface Property {
   id: number;
@@ -11,6 +12,7 @@ export interface Property {
   description: string | null;
   notes: string | null;
   rooms?: Room[];
+  documents?: AppDocument[];
   created_at: string;
   updated_at: string;
   deleted_at: string | null;

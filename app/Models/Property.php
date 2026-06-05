@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Property extends Model
@@ -50,6 +51,9 @@ class Property extends Model
         return $this->hasMany(Lease::class);
     }
 
-    // Plus tard, nous ajouterons ici les relations :
-    // public function currentTenant() { ... }
+    // Photos et documents attachés directement au bien (photos EDL, etc.)
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(Document::class, 'documentable');
+    }
 }
