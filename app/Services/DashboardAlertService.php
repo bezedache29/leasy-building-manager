@@ -13,6 +13,7 @@ class DashboardAlertService
 
         $activeLeases = Lease::with([
             'property',
+            'documents',
             'tenants.documents',
             'tenants.guarantors.documents'
         ])

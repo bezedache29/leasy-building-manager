@@ -120,6 +120,9 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
   const [showCandidatureModal, setShowCandidatureModal] = useState(false);
   const [showUploadSignedModal, setShowUploadSignedModal] = useState(false);
   const [expandedDocGroups, setExpandedDocGroups] = useState<Set<string>>(new Set());
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [receiptMonth, setReceiptMonth] = useState(new Date().getMonth() + 1);
+  const [receiptYear, setReceiptYear] = useState(new Date().getFullYear());
 
   const toggleDocGroup = (key: string) => {
     setExpandedDocGroups((prev) => {
@@ -259,6 +262,9 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
   // On trouve la piece selectionnee pour afficher ses equipements
   const selectedRoomForPhoto = property.rooms?.find((r) => r.id.toString() === pendingRoomId);
 
+  const isValidReceiptYear =
+    Number.isInteger(receiptYear) && receiptYear >= 2000 && receiptYear <= 2100;
+
   return (
     <AppLayout>
       <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-8">
@@ -291,6 +297,11 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            {activeLease?.has_signed_lease && activeLease?.has_signed_inventory && (
+              <Button variant="outline" onClick={() => setShowReceiptModal(true)}>
+                🧾 Quittance
+              </Button>
+            )}
             {activeLease && (
               <Button
                 href={route('properties.annual-charges.create', property.id)}
@@ -1137,6 +1148,74 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
         propertyId={property.id}
         tenants={tenants}
       />
+
+      {/* Modal génération quittance */}
+      <Modal show={showReceiptModal} onClose={() => setShowReceiptModal(false)} maxWidth="sm">
+        <div className="bg-surface p-8 rounded-xl border border-[rgb(var(--border))] shadow-2xl">
+          <h2 className="text-xl font-bold text-app mb-2">Générer une quittance</h2>
+          <p className="text-sm text-muted mb-6">
+            Sélectionne le mois et l'année pour lesquels tu veux générer la quittance.
+          </p>
+
+          <div className="flex gap-4 mb-8">
+            <div className="flex-1">
+              <InputLabel value="Mois" className="mb-2" />
+              <SelectInput
+                value={receiptMonth}
+                onChange={(e) => setReceiptMonth(Number(e.target.value))}
+              >
+                <option value={1}>Janvier</option>
+                <option value={2}>Février</option>
+                <option value={3}>Mars</option>
+                <option value={4}>Avril</option>
+                <option value={5}>Mai</option>
+                <option value={6}>Juin</option>
+                <option value={7}>Juillet</option>
+                <option value={8}>Août</option>
+                <option value={9}>Septembre</option>
+                <option value={10}>Octobre</option>
+                <option value={11}>Novembre</option>
+                <option value={12}>Décembre</option>
+              </SelectInput>
+            </div>
+            <div className="flex-1">
+              <InputLabel value="Année" className="mb-2" />
+              <input
+                type="number"
+                value={receiptYear}
+                onChange={(e) => setReceiptYear(Number(e.target.value))}
+                min={2000}
+                max={2100}
+                className="w-full rounded-md border border-[rgb(var(--border))] bg-surface-2 px-3 py-2 text-app focus:border-[rgb(var(--primary-500))] focus:ring-1 focus:ring-[rgb(var(--primary-500))] focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={() => setShowReceiptModal(false)}>
+              Annuler
+            </Button>
+            <Button
+              variant="primary"
+              disabled={!isValidReceiptYear}
+              onClick={() => {
+                if (!activeLease || !isValidReceiptYear) return;
+                window.open(
+                  route('leases.receipt', {
+                    lease: activeLease.id,
+                    month: receiptMonth,
+                    year: receiptYear,
+                  }),
+                  '_blank'
+                );
+                setShowReceiptModal(false);
+              }}
+            >
+              Générer le PDF
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </AppLayout>
   );
 }

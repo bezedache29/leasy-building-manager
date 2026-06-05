@@ -297,6 +297,90 @@ class LeaseController extends Controller
         return $pdf->stream($filename);
     }
 
+    public function generateReceiptPdf(Request $request, Lease $lease)
+    {
+        $validated = $request->validate([
+            'month' => 'required|integer|min:1|max:12',
+            'year'  => 'required|integer|min:2000|max:2100',
+        ]);
+
+        $lease->load(['property', 'tenants']);
+
+        $month = (int) $validated['month'];
+        $year  = (int) $validated['year'];
+        $requestedPeriod = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $leaseStart = $lease->start_date->copy()->startOfMonth();
+        $leaseEnd   = $lease->end_date ? $lease->end_date->copy()->startOfMonth() : null;
+
+        abort_if(
+            ! $lease->has_signed_lease || ! $lease->has_signed_inventory,
+            403,
+            'La quittance n’est disponible qu’après signature du bail et de l’état des lieux.'
+        );
+
+        abort_if(
+            $requestedPeriod->lt($leaseStart) || ($leaseEnd && $requestedPeriod->gt($leaseEnd)),
+            422,
+            'La période demandée est hors période du bail.'
+        );
+
+        $monthsFr = [
+            1 => 'janvier',
+            2 => 'février',
+            3 => 'mars',
+            4 => 'avril',
+            5 => 'mai',
+            6 => 'juin',
+            7 => 'juillet',
+            8 => 'août',
+            9 => 'septembre',
+            10 => 'octobre',
+            11 => 'novembre',
+            12 => 'décembre',
+        ];
+
+        $monthLabel  = $monthsFr[$month];
+        $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
+        $periodStart = sprintf('%02d/%02d/%d', 1, $month, $year);
+        $periodEnd   = sprintf('%02d/%02d/%d', $daysInMonth, $month, $year);
+
+        $tenantsNames = $lease->tenants
+            ->map(fn($t) => strtoupper($t->last_name) . ' ' . $t->first_name)
+            ->join(' et ');
+
+        $leaseStartDate = $lease->start_date->locale('fr')->translatedFormat('j F Y');
+
+        $generatedDate = Carbon::now()->locale('fr')->translatedFormat('j F Y');
+
+        $formatter    = new \NumberFormatter('fr_FR', \NumberFormatter::SPELLOUT);
+        $totalInWords = $formatter->format($lease->rent_amount + $lease->charges_amount);
+
+        $signatureBase64 = null;
+        if (\Illuminate\Support\Facades\Storage::disk('local')->exists('signature.png')) {
+            $signatureBase64 = 'data:image/png;base64,' . base64_encode(
+                \Illuminate\Support\Facades\Storage::disk('local')->get('signature.png')
+            );
+        }
+
+        $pdf = Pdf::loadView('pdfs.receipt', compact(
+            'lease',
+            'month',
+            'year',
+            'monthLabel',
+            'periodStart',
+            'periodEnd',
+            'tenantsNames',
+            'leaseStartDate',
+            'generatedDate',
+            'totalInWords',
+            'signatureBase64'
+        ));
+
+        $filename = 'quittance-' . Str::slug($lease->property->name) . '-' . $monthLabel . '-' . $year . '.pdf';
+
+        return $pdf->stream($filename);
+    }
+
     public function generateInventoryPdf(Lease $lease,  string $type = 'in')
     {
         if (!in_array($type, ['in', 'out'])) {
@@ -307,7 +391,7 @@ class LeaseController extends Controller
 
         $propertyDocs = $lease->property->documents;
 
-        $rooms = $lease->property->rooms->map(function ($room) use ($propertyDocs) {
+        $rooms = $lease->property->rooms->map(function ($room) use ($propertyDocs, $lease) {
             // 1. On récupère les IDs de tous les équipements de cette pièce
             $equipmentIds = $room->equipments->pluck('id');
 
