@@ -211,6 +211,8 @@ class DocumentController extends Controller
     public function storePhotoForProperty(Request $request, Property $property)
     {
 
+        Gate::authorize('update', $property);
+
         $request->validate([
             'photo' => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
             'name' => 'nullable|string|max:255',
