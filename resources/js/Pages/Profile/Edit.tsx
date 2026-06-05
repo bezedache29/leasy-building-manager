@@ -3,11 +3,13 @@ import { PageProps } from '@/Types';
 import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
+import SignatureForm from './Partials/SignatureForm';
 
 export default function Edit({
   mustVerifyEmail,
   status,
-}: PageProps<{ mustVerifyEmail: boolean; status?: string }>) {
+  hasSignature,
+}: PageProps<{ mustVerifyEmail: boolean; status?: string; hasSignature: boolean }>) {
   const cardClass = 'rounded-xl border border-[rgb(var(--border))] bg-surface p-6 shadow-sm';
 
   return (
@@ -21,6 +23,10 @@ export default function Edit({
 
         <div className={cardClass}>
           <UpdatePasswordForm />
+        </div>
+
+        <div className={cardClass}>
+          <SignatureForm hasSignature={hasSignature} />
         </div>
 
         <div className={cardClass}>

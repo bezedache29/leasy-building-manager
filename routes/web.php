@@ -68,6 +68,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/leases/{lease}/photos', [DocumentController::class, 'storePhotoForLease'])->name('leases.photos.store');
     Route::post('/properties/{property}/photos', [DocumentController::class, 'storePhotoForProperty'])->name('properties.photos.store');
     Route::get('/leases/{lease}/inventory/{type}/pdf', [LeaseController::class, 'generateInventoryPdf'])->name('leases.inventory.pdf');
+    Route::get('/leases/{lease}/receipt', [LeaseController::class, 'generateReceiptPdf'])->name('leases.receipt');
 
     // Génération d'un acte de cautionnement sans bail (phase de candidature)
     Route::get('/properties/{property}/candidature/acte', [CandidatureController::class, 'generateActe'])
@@ -81,6 +82,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/profile/signature', [ProfileController::class, 'showSignature'])->name('profile.signature.show');
+    Route::post('/profile/signature', [ProfileController::class, 'storeSignature'])->name('profile.signature.store');
+    Route::delete('/profile/signature', [ProfileController::class, 'destroySignature'])->name('profile.signature.destroy');
 });
 
 require __DIR__ . '/auth.php';

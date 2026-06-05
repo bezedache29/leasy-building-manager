@@ -495,38 +495,7 @@ export default function Show({
                             </Button>
                           </Link>
 
-                          {!isFullyUploaded ? (
-                            canUploadSignedDocs ? (
-                              <Button
-                                size="sm"
-                                className="w-full justify-center shadow-sm"
-                                onClick={() => {
-                                  setSelectedLease(lease);
-                                  setIsUploadModalOpen(true);
-                                }}
-                              >
-                                <svg
-                                  className="mr-2 h-4 w-4"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                                  />
-                                </svg>
-                                Uploader docuemnts signés
-                              </Button>
-                            ) : (
-                              <div className="p-2 border border-[rgb(var(--border))] border-dashed rounded text-xs text-center text-muted italic bg-surface-3">
-                                Générez le Bail, l'état des lieux et l'acte solidaire pour débloquer
-                                l'upload
-                              </div>
-                            )
-                          ) : (
+                          {isFullyUploaded ? (
                             <div className="p-2 border border-emerald-500/30 rounded text-xs text-center font-medium text-emerald-600 flex items-center justify-center bg-emerald-500/10">
                               <svg
                                 className="mr-1.5 h-4 w-4"
@@ -543,7 +512,35 @@ export default function Show({
                               </svg>
                               Documents signés uploadés !
                             </div>
-                          )}
+                          ) : lease.status === 'active' && canUploadSignedDocs ? (
+                            <Button
+                              size="sm"
+                              className="w-full justify-center shadow-sm"
+                              onClick={() => {
+                                setSelectedLease(lease);
+                                setIsUploadModalOpen(true);
+                              }}
+                            >
+                              <svg
+                                className="mr-2 h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                                />
+                              </svg>
+                              Uploader documents signés
+                            </Button>
+                          ) : lease.status === 'active' ? (
+                            <div className="p-2 border border-[rgb(var(--border))] border-dashed rounded text-xs text-center text-muted italic bg-surface-3">
+                              Générez le bail et l'état des lieux pour débloquer l'upload
+                            </div>
+                          ) : null}
                         </div>
 
                         {(() => {

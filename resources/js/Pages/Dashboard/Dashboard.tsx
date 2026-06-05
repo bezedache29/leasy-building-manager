@@ -3,6 +3,7 @@ import { ReactNode, useState } from 'react';
 import Button from '@/Components/Button';
 import IncompleteTenantsModal from '@/Pages/Dashboard/Partials/IncompleteTenantsModal';
 import { Link } from '@inertiajs/react';
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 
 type AlertLevel = 'success' | 'warning' | 'danger';
 
@@ -26,6 +27,12 @@ interface DashboardStats {
     email: string | null;
   }>;
   rent_monthly_total: number;
+  signed_leases: number;
+  properties_by_status: {
+    vide: number;
+    en_attente: number;
+    loue: number;
+  };
 }
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
@@ -89,11 +96,74 @@ function AlertBox({ alerts }: { alerts: Alert[] }) {
   );
 }
 
+interface DonutChartProps {
+  data: { name: string; value: number; color: string }[];
+  total: number;
+  centerLabel: string;
+}
+
+function DonutChart({ data, total, centerLabel }: DonutChartProps) {
+  const isEmpty = total === 0;
+  const chartData = isEmpty
+    ? [{ name: 'Aucun', value: 1, color: 'rgb(var(--border))' }]
+    : data.filter((d) => d.value > 0);
+
+  return (
+    <div className="relative w-full flex flex-col items-center">
+      <div className="relative w-40 h-40">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              innerRadius={48}
+              outerRadius={68}
+              paddingAngle={isEmpty ? 0 : 2}
+              dataKey="value"
+              strokeWidth={0}
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={index} fill={entry.color} />
+              ))}
+            </Pie>
+            {!isEmpty && (
+              <Tooltip
+                formatter={(value, name) => [value, name]}
+                contentStyle={{
+                  background: 'rgb(var(--surface))',
+                  border: '1px solid rgb(var(--border))',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  color: 'rgb(var(--text-app))',
+                }}
+              />
+            )}
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <span className="text-2xl font-bold text-app">{isEmpty ? '—' : total}</span>
+          <span className="text-xs text-muted text-center leading-tight">{centerLabel}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard({ alerts, stats }: { alerts: Alert[]; stats: DashboardStats }) {
   const [showIncompleteModal, setShowIncompleteModal] = useState(false);
   const totalTenants = stats.complete_tenants + stats.incomplete_tenants;
-  const completePercent =
-    totalTenants > 0 ? Math.round((stats.complete_tenants / totalTenants) * 100) : 0;
+
+  const tenantChartData = [
+    { name: 'Complets', value: stats.complete_tenants, color: '#10b981' },
+    { name: 'Incomplets', value: stats.incomplete_tenants, color: '#f59e0b' },
+  ];
+
+  const propertyChartData = [
+    { name: 'Loué', value: stats.properties_by_status.loue, color: '#10b981' },
+    { name: 'En attente', value: stats.properties_by_status.en_attente, color: '#f59e0b' },
+    { name: 'Vide', value: stats.properties_by_status.vide, color: '#94a3b8' },
+  ];
 
   return (
     <AppLayout>
@@ -102,100 +172,108 @@ export default function Dashboard({ alerts, stats }: { alerts: Alert[]; stats: D
       <AlertBox alerts={alerts} />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Biens & Baux */}
         <Card title="🏢 Biens & Baux">
-          <div className="mb-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted">Biens enregistrés</span>
-              <span className="text-lg font-bold text-app">{stats.properties}</span>
+          <div className="flex-1 flex flex-col items-center justify-between gap-4">
+            <DonutChart data={propertyChartData} total={stats.properties} centerLabel="bien(s)" />
+            <div className="w-full space-y-1.5">
+              {propertyChartData.map((item) => (
+                <div key={item.name} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="h-2.5 w-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-muted">{item.name}</span>
+                  </div>
+                  <span className="font-semibold text-app">{item.value}</span>
+                </div>
+              ))}
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted">Baux actifs</span>
-              <span className="text-lg font-bold text-app">{stats.active_leases}</span>
+            <div className="w-full pt-3 border-t border-[rgb(var(--border))]">
+              <Button href={route('properties.index')} variant="secondary" className="w-full">
+                Gérer l'immeuble
+              </Button>
             </div>
-          </div>
-          <div className="mt-auto pt-4 border-t border-[rgb(var(--border))]">
-            <Button href={route('properties.index')} variant="secondary" className="w-full">
-              Gérer l'immeuble
-            </Button>
           </div>
         </Card>
 
+        {/* Dossiers locataires */}
         <Card title="👥 Dossiers locataires">
-          <div className="mb-5 flex items-end gap-2">
-            <span className="text-3xl font-bold text-app">{totalTenants}</span>
-            <span className="mb-1 text-sm font-medium text-muted">locataire(s)</span>
-          </div>
-
-          <div className="mt-auto pt-2">
-            {totalTenants > 0 ? (
-              <div className="space-y-3">
-                <div className="flex h-2 w-full overflow-hidden rounded-full bg-surface-2">
-                  <div
-                    style={{ width: `${completePercent}%` }}
-                    className="bg-emerald-500 transition-all duration-500"
-                  />
-                  <div
-                    style={{ width: `${100 - completePercent}%` }}
-                    className="bg-amber-500 transition-all duration-500"
-                  />
+          <div className="flex-1 flex flex-col items-center justify-between gap-4">
+            <DonutChart data={tenantChartData} total={totalTenants} centerLabel="locataire(s)" />
+            <div className="w-full space-y-1.5">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" />
+                  <span className="text-muted">Complets</span>
                 </div>
-                <div className="flex justify-between text-xs sm:text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                    <span className="font-medium text-emerald-400">
-                      {stats.complete_tenants} complets
-                    </span>
-                  </div>
-                  {stats.incomplete_tenants > 0 ? (
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-amber-500" />
-                        <span className="font-medium text-amber-400">
-                          {stats.incomplete_tenants} incomplets
-                        </span>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="warning"
-                        size="sm"
-                        onClick={() => setShowIncompleteModal(true)}
-                        className="px-2 py-0.5 text-xs h-auto"
-                      >
-                        Voir
-                      </Button>
-                    </div>
-                  ) : (
-                    <span className="text-muted flex items-center gap-1 italic">
-                      Tous complets ! 🎉
-                    </span>
+                <span className="font-semibold text-emerald-400">{stats.complete_tenants}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="h-2.5 w-2.5 rounded-full bg-amber-500 shrink-0" />
+                  <span className="text-muted">Incomplets</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-amber-400">{stats.incomplete_tenants}</span>
+                  {stats.incomplete_tenants > 0 && (
+                    <button
+                      onClick={() => setShowIncompleteModal(true)}
+                      className="text-xs text-amber-400 underline underline-offset-2 hover:text-amber-300"
+                    >
+                      Voir
+                    </button>
                   )}
                 </div>
               </div>
-            ) : (
-              <div className="rounded-lg bg-surface-2 p-3 text-center border border-[rgb(var(--border))]">
-                <p className="text-sm text-muted italic">Aucun locataire pour le moment.</p>
-              </div>
-            )}
+            </div>
+            <div className="w-full pt-3 border-t border-[rgb(var(--border))]">
+              <Button href={route('tenants.index')} variant="secondary" className="w-full">
+                Gérer les locataires
+              </Button>
+            </div>
           </div>
         </Card>
 
+        {/* Loyers */}
         <Card title="💸 Loyers">
-          <div className="mb-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted">Total mensuel (CC)</span>
-              <span className="text-lg font-bold text-app">
-                {stats.rent_monthly_total > 0 ? `${stats.rent_monthly_total.toFixed(2)} €` : '—'}
-              </span>
+          <div className="flex-1 flex flex-col justify-between gap-4">
+            <div className="space-y-4">
+              <div className="rounded-lg bg-surface-2 border border-[rgb(var(--border))] p-4 text-center">
+                <p className="text-xs text-muted mb-1">Total mensuel charges comprises</p>
+                <p className="text-3xl font-bold text-app">
+                  {stats.rent_monthly_total > 0
+                    ? `${stats.rent_monthly_total.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`
+                    : '—'}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2.5 w-2.5 rounded-full bg-blue-400 shrink-0" />
+                    <span className="text-muted">Baux actifs</span>
+                  </div>
+                  <span className="font-semibold text-app">{stats.active_leases}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" />
+                    <span className="text-muted">Quittances disponibles</span>
+                  </div>
+                  <span
+                    className={`font-semibold ${stats.signed_leases > 0 ? 'text-emerald-400' : 'text-muted'}`}
+                  >
+                    {stats.signed_leases > 0 ? stats.signed_leases : '—'}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted">Baux actifs</span>
-              <span className="text-lg font-bold text-app">{stats.active_leases}</span>
+            <div className="pt-3 border-t border-[rgb(var(--border))]">
+              <Button href={route('properties.index')} variant="secondary" className="w-full">
+                Gérer les biens
+              </Button>
             </div>
-          </div>
-          <div className="mt-auto pt-4 border-t border-[rgb(var(--border))]">
-            <p className="text-xs text-muted italic text-center">
-              Quittances disponibles après implémentation
-            </p>
           </div>
         </Card>
       </div>
