@@ -26,6 +26,7 @@ export default function Show({
   const [showMissingModal, setShowMissingModal] = useState(false);
   const [guarantorToDetach, setGuarantorToDetach] = useState<Guarantor | null>(null);
   const [showArchiveTenantModal, setShowArchiveTenantModal] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedLease, setSelectedLease] = useState<Lease | null>(null);
   const [expandedDocGroups, setExpandedDocGroups] = useState<Set<string>>(new Set());
@@ -54,12 +55,31 @@ export default function Show({
   };
 
   const confirmArchiveTenant = () => {
-    router.patch(route('tenants.archive', tenant.id));
-    setShowArchiveTenantModal(false);
+    router.patch(
+      route('tenants.archive', tenant.id),
+      {},
+      {
+        onSuccess: () => {
+          setShowArchiveTenantModal(false);
+          setArchiveError(null);
+        },
+        onError: () => {
+          setArchiveError("Impossible d'archiver un locataire avec un bail actif.");
+        },
+      }
+    );
   };
 
   const handleUnarchive = () => {
-    router.patch(route('tenants.unarchive', tenant.id));
+    router.patch(
+      route('tenants.unarchive', tenant.id),
+      {},
+      {
+        onError: () => {
+          // Rien à faire côté UI — le rechargement Inertia ne se produit pas en cas d'erreur
+        },
+      }
+    );
   };
 
   const confirmDeleteDocument = () => {
@@ -726,7 +746,10 @@ export default function Show({
 
       <ConfirmModal
         show={showArchiveTenantModal}
-        onClose={() => setShowArchiveTenantModal(false)}
+        onClose={() => {
+          setShowArchiveTenantModal(false);
+          setArchiveError(null);
+        }}
         onConfirm={confirmArchiveTenant}
         title="Archiver le dossier"
         confirmText="Archiver"
@@ -737,6 +760,7 @@ export default function Show({
         </span>{' '}
         ? <br /> <br />
         Il ne sera plus visible dans la liste principale des locataires actifs.
+        {archiveError && <p className="mt-3 text-sm font-medium text-red-500">{archiveError}</p>}
       </ConfirmModal>
 
       <UploadSignedDocsModal
