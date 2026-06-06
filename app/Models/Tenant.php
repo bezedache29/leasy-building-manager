@@ -18,6 +18,7 @@ class Tenant extends Model
         'last_name',
         'marital_status',
         'email',
+        'is_archived',
         'phone',
         'current_address',
         'birth_date',
@@ -28,7 +29,8 @@ class Tenant extends Model
     ];
 
     protected $casts = [
-        'birth_date' => 'date',
+        'birth_date'  => 'date',
+        'is_archived' => 'boolean',
     ];
 
     public function documents(): MorphMany

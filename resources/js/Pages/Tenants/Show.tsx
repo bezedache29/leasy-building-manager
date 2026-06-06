@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
-import { Link, router, useForm } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import Button from '@/Components/Button';
 import { Tenant } from '@/Types/tenant';
 import { Guarantor } from '@/Types/guarantor';
@@ -20,14 +20,13 @@ export default function Show({
   tenant: Tenant;
   availableGuarantors: Guarantor[];
 }) {
-  const { delete: destroyTenant } = useForm();
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGuarantor, setEditingGuarantor] = useState<Guarantor | null>(null);
   const [docToDelete, setDocToDelete] = useState<AppDocument | null>(null);
   const [showMissingModal, setShowMissingModal] = useState(false);
   const [guarantorToDetach, setGuarantorToDetach] = useState<Guarantor | null>(null);
   const [showArchiveTenantModal, setShowArchiveTenantModal] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedLease, setSelectedLease] = useState<Lease | null>(null);
   const [expandedDocGroups, setExpandedDocGroups] = useState<Set<string>>(new Set());
@@ -56,8 +55,31 @@ export default function Show({
   };
 
   const confirmArchiveTenant = () => {
-    destroyTenant(route('tenants.destroy', tenant.id));
-    setShowArchiveTenantModal(false);
+    router.patch(
+      route('tenants.archive', tenant.id),
+      {},
+      {
+        onSuccess: () => {
+          setShowArchiveTenantModal(false);
+          setArchiveError(null);
+        },
+        onError: () => {
+          setArchiveError("Impossible d'archiver un locataire avec un bail actif.");
+        },
+      }
+    );
+  };
+
+  const handleUnarchive = () => {
+    router.patch(
+      route('tenants.unarchive', tenant.id),
+      {},
+      {
+        onError: () => {
+          // Rien à faire côté UI — le rechargement Inertia ne se produit pas en cas d'erreur
+        },
+      }
+    );
   };
 
   const confirmDeleteDocument = () => {
@@ -203,12 +225,26 @@ export default function Show({
                   Dossier complet
                 </span>
               )}
+
+              {tenant.is_archived && (
+                <span className="inline-flex items-center rounded-full bg-red-500/10 border border-red-500/20 px-3 py-1 text-sm font-medium text-red-500">
+                  Archivé
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="danger" onClick={() => setShowArchiveTenantModal(true)}>
-              Archiver
-            </Button>
+            {tenant.is_archived ? (
+              <Button variant="secondary" onClick={handleUnarchive}>
+                Désarchiver
+              </Button>
+            ) : (
+              !tenant.leases?.some((l) => l.status === 'active') && (
+                <Button variant="danger" onClick={() => setShowArchiveTenantModal(true)}>
+                  Archiver
+                </Button>
+              )
+            )}
             <Link href={route('tenants.edit', tenant.id)}>
               <Button variant="primary">Modifier</Button>
             </Link>
@@ -710,7 +746,10 @@ export default function Show({
 
       <ConfirmModal
         show={showArchiveTenantModal}
-        onClose={() => setShowArchiveTenantModal(false)}
+        onClose={() => {
+          setShowArchiveTenantModal(false);
+          setArchiveError(null);
+        }}
         onConfirm={confirmArchiveTenant}
         title="Archiver le dossier"
         confirmText="Archiver"
@@ -721,6 +760,7 @@ export default function Show({
         </span>{' '}
         ? <br /> <br />
         Il ne sera plus visible dans la liste principale des locataires actifs.
+        {archiveError && <p className="mt-3 text-sm font-medium text-red-500">{archiveError}</p>}
       </ConfirmModal>
 
       <UploadSignedDocsModal
