@@ -20,6 +20,7 @@ export interface Tenant {
     name: string;
   };
   is_complete: boolean;
+  is_archived: boolean;
   missing_items: {
     tenant: {
       fields: string[];

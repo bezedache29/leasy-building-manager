@@ -1,35 +1,64 @@
 import AppLayout from '@/Layouts/AppLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import Button from '@/Components/Button';
 import { Tenant } from '@/Types/tenant';
 
 interface Props {
   tenants: Tenant[];
+  showArchived: boolean;
 }
 
-export default function Index({ tenants }: Props) {
+export default function Index({ tenants, showArchived }: Props) {
+  const toggleArchived = () => {
+    router.get(
+      route('tenants.index'),
+      { show_archived: showArchived ? undefined : '1' },
+      { preserveState: false }
+    );
+  };
+
   return (
     <AppLayout>
       <Head title="Locataires" />
 
       <div className="mx-auto max-w-5xl pb-12">
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-app">Locataires</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold text-app">Locataires</h1>
+            {showArchived && (
+              <span className="inline-flex items-center rounded-full bg-surface-2 border border-[rgb(var(--border))] px-2.5 py-0.5 text-xs font-medium text-muted">
+                Archivés
+              </span>
+            )}
+          </div>
 
-          <Link href={route('tenants.create')}>
-            <Button variant="primary">+ Nouveau Locataire</Button>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Button variant="secondary" onClick={toggleArchived}>
+              {showArchived ? '← Locataires actifs' : 'Voir les archivés'}
+            </Button>
+            {!showArchived && (
+              <Link href={route('tenants.create')}>
+                <Button variant="primary">+ Nouveau locataire</Button>
+              </Link>
+            )}
+          </div>
         </div>
 
         <div className="rounded-xl border border-[rgb(var(--border))] bg-surface shadow-sm overflow-hidden">
           {tenants.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 text-center">
-              <p className="mb-4 text-muted">
-                Aucun dossier locataire n'a été créé pour le moment.
-              </p>
-              <Link href={route('tenants.create')}>
-                <Button>Créer mon premier dossier</Button>
-              </Link>
+              {showArchived ? (
+                <p className="text-muted">Aucun dossier archivé.</p>
+              ) : (
+                <>
+                  <p className="mb-4 text-muted">
+                    Aucun dossier locataire n'a été créé pour le moment.
+                  </p>
+                  <Link href={route('tenants.create')}>
+                    <Button>Créer mon premier dossier</Button>
+                  </Link>
+                </>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -44,12 +73,10 @@ export default function Index({ tenants }: Props) {
                 </thead>
                 <tbody className="divide-y divide-[rgb(var(--border))]">
                   {tenants.map((tenant) => {
-                    // 1. On verifie le statut des baux
                     const activeLease = tenant.leases?.find((l) => l.status === 'active');
                     const hasActiveLease = !!activeLease;
                     const hasAnyLease = tenant.leases && tenant.leases.length > 0;
 
-                    // 2. On determine la couleur du bouton de maniere definitive
                     const buttonVariant =
                       !hasActiveLease && hasAnyLease
                         ? 'danger'

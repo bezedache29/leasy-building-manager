@@ -31,6 +31,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Locataires
     Route::resource('tenants', TenantController::class);
+    Route::patch('/tenants/{tenant}/archive', [TenantController::class, 'archive'])->name('tenants.archive');
+    Route::patch('/tenants/{tenant}/unarchive', [TenantController::class, 'unarchive'])->name('tenants.unarchive');
 
     // Garants
     Route::post('/tenants/{tenant}/guarantors', [GuarantorController::class, 'store'])->name('tenants.guarantors.store');

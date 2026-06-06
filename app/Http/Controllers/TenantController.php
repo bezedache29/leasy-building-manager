@@ -16,8 +16,10 @@ class TenantController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $showArchived = $request->boolean('show_archived');
+
         $tenants = Tenant::with([
             'documents',
             'guarantors.documents',
@@ -26,6 +28,7 @@ class TenantController extends Controller
                 $query->orderBy('start_date', 'desc')->with('property');
             }
         ])
+            ->where('is_archived', $showArchived)
             ->get()
             ->append('is_complete')
             ->sortByDesc(function ($tenant) {
@@ -37,10 +40,11 @@ class TenantController extends Controller
 
                 return $isActive . '_' . $latestDate;
             })
-            ->values(); // IMPORTANT : On réinitialise l'index du tableau pour React
+            ->values();
 
         return Inertia::render('Tenants/Index', [
-            'tenants' => $tenants
+            'tenants'      => $tenants,
+            'showArchived' => $showArchived,
         ]);
     }
 
@@ -317,10 +321,30 @@ class TenantController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    public function archive(Tenant $tenant)
+    {
+        abort_if(
+            $tenant->leases()->where('status', 'active')->exists(),
+            422,
+            'Impossible d\'archiver un locataire avec un bail actif.'
+        );
+
+        $tenant->update(['is_archived' => true]);
+
+        return redirect()->route('tenants.index')->with('success', 'Le dossier a été archivé.');
+    }
+
+    public function unarchive(Tenant $tenant)
+    {
+        $tenant->update(['is_archived' => false]);
+
+        return redirect()->route('tenants.show', $tenant)->with('success', 'Le dossier a été désarchivé.');
+    }
+
     public function destroy(Tenant $tenant)
     {
         $tenant->delete();
 
-        return redirect()->route('tenants.index')->with('success', 'Le dossier locataire a été archivé.');
+        return redirect()->route('tenants.index')->with('success', 'Le dossier locataire a été supprimé.');
     }
 }

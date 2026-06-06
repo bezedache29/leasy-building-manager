@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
-import { Link, router, useForm } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import Button from '@/Components/Button';
 import { Tenant } from '@/Types/tenant';
 import { Guarantor } from '@/Types/guarantor';
@@ -20,8 +20,6 @@ export default function Show({
   tenant: Tenant;
   availableGuarantors: Guarantor[];
 }) {
-  const { delete: destroyTenant } = useForm();
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGuarantor, setEditingGuarantor] = useState<Guarantor | null>(null);
   const [docToDelete, setDocToDelete] = useState<AppDocument | null>(null);
@@ -56,8 +54,12 @@ export default function Show({
   };
 
   const confirmArchiveTenant = () => {
-    destroyTenant(route('tenants.destroy', tenant.id));
+    router.patch(route('tenants.archive', tenant.id));
     setShowArchiveTenantModal(false);
+  };
+
+  const handleUnarchive = () => {
+    router.patch(route('tenants.unarchive', tenant.id));
   };
 
   const confirmDeleteDocument = () => {
@@ -203,12 +205,26 @@ export default function Show({
                   Dossier complet
                 </span>
               )}
+
+              {tenant.is_archived && (
+                <span className="inline-flex items-center rounded-full bg-red-500/10 border border-red-500/20 px-3 py-1 text-sm font-medium text-red-500">
+                  Archivé
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="danger" onClick={() => setShowArchiveTenantModal(true)}>
-              Archiver
-            </Button>
+            {tenant.is_archived ? (
+              <Button variant="secondary" onClick={handleUnarchive}>
+                Désarchiver
+              </Button>
+            ) : (
+              !tenant.leases?.some((l) => l.status === 'active') && (
+                <Button variant="danger" onClick={() => setShowArchiveTenantModal(true)}>
+                  Archiver
+                </Button>
+              )
+            )}
             <Link href={route('tenants.edit', tenant.id)}>
               <Button variant="primary">Modifier</Button>
             </Link>
