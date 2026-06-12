@@ -14,6 +14,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 
 class LeaseController extends Controller
 {
@@ -427,18 +429,25 @@ class LeaseController extends Controller
 
     public function generateInventoryPdf(Lease $lease,  string $type = 'in')
     {
+        // La génération PDF avec images peut être longue — on étend le timeout PHP
+        set_time_limit(120);
+
         if (!in_array($type, ['in', 'out'])) {
             abort(400, 'Le type d\'état des lieux doit être "in" (entrée) ou "out" (sortie).');
         }
 
         $lease->load(['tenants', 'property.rooms.equipments', 'property.documents' => fn($q) => $q->where('category', 'inventory_photo')]);
 
-        $propertyDocs = $lease->property->documents->map(function ($doc) {
+        $imageManager = new ImageManager(new Driver());
+
+        $propertyDocs = $lease->property->documents->map(function ($doc) use ($imageManager) {
             try {
-                $contents = \Illuminate\Support\Facades\Storage::disk('public')->get($doc->file_path);
-                $doc->base64_src = $doc->mime_type
-                    ? 'data:' . $doc->mime_type . ';base64,' . base64_encode($contents)
-                    : null;
+                $path = \Illuminate\Support\Facades\Storage::disk('public')->path($doc->file_path);
+                $image = $imageManager->read($path);
+                // Redimensionnement pour limiter le temps de rendu dompdf (max 800px de large)
+                $image->scaleDown(width: 800);
+                $jpeg = $image->toJpeg(quality: 75)->toString();
+                $doc->base64_src = 'data:image/jpeg;base64,' . base64_encode($jpeg);
             } catch (\Exception) {
                 $doc->base64_src = null;
             }
