@@ -402,31 +402,48 @@
 
     {{-- Annexe photographique --}}
     @php
-        $photos = $propertyDocs;
         $photoCount = 0;
+        $allPhotos = [];
+        foreach ($lease->property->rooms as $room) {
+            foreach ($room->equipments as $equipment) {
+                foreach ($propertyDocs->where('equipment_id', $equipment->id) as $photo) {
+                    $photoCount++;
+                    $allPhotos[] = [
+                        'photo'     => $photo,
+                        'room'      => $room->name,
+                        'equipment' => $equipment->name,
+                        'index'     => $photoCount,
+                    ];
+                }
+            }
+        }
+        $rows = array_chunk($allPhotos, 2);
     @endphp
-    @if($photos->count() > 0)
+    @if(count($allPhotos) > 0)
         <div class="page-break"></div>
         <h2 style="margin-bottom:12px;">ANNEXES PHOTOGRAPHIQUES — ENTRÉE</h2>
-        <div style="width:100%;">
-            @foreach($lease->property->rooms as $room)
-                @foreach($room->equipments as $equipment)
-                    @foreach($propertyDocs->where('equipment_id', $equipment->id) as $photo)
-                        @php $photoCount++; @endphp
-                        <div style="display:inline-block; width:30%; margin:1%; vertical-align:top; border:1px solid #eee; padding:5px;">
-                            @if($photo->base64_src)
-                            <img src="{{ $photo->base64_src }}"
-                                style="width:100%; height:auto; border-radius:4px;">
+        <table style="width:100%; border-collapse:collapse;">
+            @foreach($rows as $row)
+                <tr style="page-break-inside:avoid;">
+                    @foreach($row as $item)
+                        <td style="width:50%; padding:6px; vertical-align:top; border:1px solid #eee;">
+                            @if($item['photo']->base64_src)
+                                <img src="{{ $item['photo']->base64_src }}"
+                                    style="width:100%; height:220px; border-radius:4px;">
                             @endif
-                            <p style="font-size:8px; margin-top:4px;">
-                                <strong>#{{ $photoCount }}</strong> — {{ $room->name }}<br>
-                                {{ $equipment->name }} : {{ $photo->name }}
+                            <p style="font-size:8px; margin:4px 0 0 0;">
+                                <strong>#{{ $item['index'] }}</strong> — {{ $item['room'] }}<br>
+                                {{ $item['equipment'] }} : {{ $item['photo']->name }}
                             </p>
-                        </div>
+                        </td>
                     @endforeach
-                @endforeach
+                    {{-- Cellule vide si nombre impair --}}
+                    @if(count($row) === 1)
+                        <td style="width:50%;"></td>
+                    @endif
+                </tr>
             @endforeach
-        </div>
+        </table>
     @endif
 
 </body>
