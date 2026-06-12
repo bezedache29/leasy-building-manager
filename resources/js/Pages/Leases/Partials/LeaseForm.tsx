@@ -1,0 +1,661 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Path, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { router } from '@inertiajs/react';
+import { leaseSchema } from '@/Schemas/LeaseSchema';
+import Button from '@/Components/Button';
+import SelectInput from '@/Components/SelectInput';
+import TextInput from '@/Components/TextInput';
+import InputLabel from '@/Components/InputLabel';
+import { Property } from '@/Types/property';
+import { Tenant } from '@/Types/tenant';
+import { Lease } from '@/Types/lease';
+import z from 'zod';
+
+type FormInput = z.input<typeof leaseSchema>;
+type FormOutput = z.output<typeof leaseSchema>;
+
+interface Props {
+  properties: Property[];
+  tenants: Tenant[];
+  lease?: Lease;
+  defaultPropertyId?: number;
+  defaultTenantId?: number;
+}
+
+export default function LeaseForm({
+  properties,
+  tenants,
+  lease,
+  defaultPropertyId,
+  defaultTenantId,
+}: Props) {
+  const isEdit = !!lease;
+
+  // On initialise les locataires soit via le bail existant, soit via l'ID passé en URL
+  const initialTenants = lease?.tenants
+    ? [...lease.tenants].sort((a, b) => {
+        if (a.pivot?.is_main_tenant) return -1;
+        if (b.pivot?.is_main_tenant) return 1;
+        return 0;
+      })
+    : defaultTenantId
+      ? tenants.filter((t) => t.id === defaultTenantId)
+      : [];
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTenants, setSelectedTenants] = useState<Tenant[]>(initialTenants);
+  const [isPosting, setIsPosting] = useState(false);
+
+  const initialPropertyId = lease?.property_id || defaultPropertyId || 0;
+  const initialProperty = properties.find((p) => p.id === initialPropertyId);
+  const initialIsCommercial = initialProperty?.type === 'commercial';
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    setError,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<FormInput, unknown, FormOutput>({
+    resolver: zodResolver(leaseSchema),
+    defaultValues: {
+      property_id: initialPropertyId,
+      tenant_ids: initialTenants.map((t) => t.id),
+      payment_day: lease?.payment_day || 1,
+      start_date: lease?.start_date
+        ? String(lease.start_date).split('T')[0]
+        : new Date().toLocaleDateString('en-CA'),
+      end_date: lease?.end_date ? String(lease.end_date).split('T')[0] : '',
+      rent_amount: lease?.rent_amount || 0,
+      charges_amount: lease?.charges_amount || 0,
+      deposit_amount: lease?.deposit_amount ?? null,
+      insurer_name: lease?.insurer_name || '',
+      insurer_address: lease?.insurer_address || '',
+      insurer_phone: lease?.insurer_phone || '',
+      keys_building_count: lease?.keys_building_count || 0,
+      keys_mailbox_count: lease?.keys_mailbox_count || 0,
+      keys_apartment_count: lease?.keys_apartment_count || 0,
+      keys_grid_count: lease?.keys_grid_count || 0,
+      guarantor_ids: lease?.guarantors?.map((g) => g.id) || [],
+      lease_type: lease?.lease_type || (initialIsCommercial ? 'commercial' : 'residential'),
+      activity_description: lease?.activity_description || '',
+      base_index_label: lease?.base_index_label || '',
+      base_index_value: lease?.base_index_value ?? undefined,
+    },
+  });
+
+  const selectedPropertyId = watch('property_id');
+  const selectedProperty = properties.find((p) => p.id === Number(selectedPropertyId));
+  const isCommercial = selectedProperty?.type === 'commercial';
+  const leaseType = watch('lease_type');
+
+  // Quand le bien sélectionné change, on adapte le lease_type et on vide les champs commerciaux
+  useEffect(() => {
+    if (!isCommercial) {
+      setValue('lease_type', 'residential');
+      if (!isEdit) {
+        setValue('activity_description', '');
+        setValue('keys_grid_count', 0);
+        setValue('base_index_label', '');
+        setValue('base_index_value', undefined);
+      }
+    } else if (!isEdit) {
+      setValue('lease_type', 'commercial');
+    }
+  }, [isCommercial, isEdit, setValue]);
+
+  const availableGuarantors = useMemo(
+    () =>
+      Array.from(
+        new Map(selectedTenants.flatMap((t) => (t.guarantors ?? []).map((g) => [g.id, g]))).values()
+      ),
+    [selectedTenants]
+  );
+
+  const currentGuarantorIds = watch('guarantor_ids') || [];
+
+  useEffect(() => {
+    const allowedIds = new Set(availableGuarantors.map((g) => g.id));
+    const normalizedIds = currentGuarantorIds.filter((id) => allowedIds.has(id));
+
+    if (normalizedIds.length !== currentGuarantorIds.length) {
+      setValue('guarantor_ids', normalizedIds, { shouldValidate: true });
+    }
+  }, [availableGuarantors, currentGuarantorIds, setValue]);
+
+  const handleToggleGuarantor = (guarantorId: number) => {
+    if (currentGuarantorIds.includes(guarantorId)) {
+      setValue(
+        'guarantor_ids',
+        currentGuarantorIds.filter((id) => id !== guarantorId),
+        { shouldValidate: true }
+      );
+    } else {
+      setValue('guarantor_ids', [...currentGuarantorIds, guarantorId], { shouldValidate: true });
+    }
+  };
+
+  const onSubmit = (data: FormOutput) => {
+    // On nettoie les chaînes vides pour Laravel
+    const payload = {
+      ...data,
+      end_date: data.end_date === '' ? null : data.end_date,
+    };
+
+    const options = {
+      preserveScroll: true,
+      onStart: () => setIsPosting(true),
+      onFinish: () => setIsPosting(false),
+      onError: (serverErrors: Record<string, string>) => {
+        // Affiche les erreurs Laravel en rouge sous tes champs React !
+        Object.entries(serverErrors).forEach(([name, message]) => {
+          const normalizedName = name.replace(/\.\d+$/, '') as Path<FormInput>;
+          setError(normalizedName, { type: 'server', message });
+        });
+      },
+    };
+
+    if (isEdit) {
+      router.put(route('leases.update', lease.id), payload, options);
+    } else {
+      router.post(route('leases.store'), payload, options);
+    }
+  };
+
+  const handleAddTenant = (tenant: Tenant) => {
+    const newSelection = [...selectedTenants, tenant];
+    setSelectedTenants(newSelection);
+    setValue(
+      'tenant_ids',
+      newSelection.map((t) => t.id),
+      { shouldValidate: true }
+    );
+    setSearchTerm('');
+  };
+
+  const handleRemoveTenant = (tenantId: number) => {
+    const newSelection = selectedTenants.filter((t) => t.id !== tenantId);
+    setSelectedTenants(newSelection);
+    setValue(
+      'tenant_ids',
+      newSelection.map((t) => t.id),
+      { shouldValidate: true }
+    );
+  };
+
+  const availableTenants = tenants.filter(
+    (t) =>
+      !selectedTenants.find((st) => st.id === t.id) &&
+      (t.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.last_name.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const sectionTitleClass = 'text-lg font-semibold text-[rgb(var(--primary-500))] mb-6';
+
+  return (
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="rounded-xl border border-[rgb(var(--border))] bg-surface p-6 shadow-sm space-y-10"
+    >
+      <section>
+        <h2 className={sectionTitleClass}>Le Bien & La Période</h2>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <InputLabel htmlFor="property_id" value="Bien loué *" className="mb-1" />
+            <SelectInput
+              id="property_id"
+              {...register('property_id')}
+              className={`w-full ${defaultPropertyId || isEdit ? 'bg-surface-2 cursor-not-allowed opacity-70' : ''}`}
+              error={errors.property_id?.message}
+              disabled={!!defaultPropertyId || isEdit}
+            >
+              <option value={0} disabled>
+                Sélectionner un appartement...
+              </option>
+              {properties.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </SelectInput>
+          </div>
+
+          <div>
+            <InputLabel htmlFor="start_date" value="Date d'entrée *" className="mb-1" />
+            <TextInput
+              type="date"
+              id="start_date"
+              {...register('start_date')}
+              className="w-full"
+              error={errors.start_date?.message}
+            />
+          </div>
+
+          <div>
+            <InputLabel htmlFor="end_date" value="Date de sortie (Optionnel)" className="mb-1" />
+            <TextInput
+              type="date"
+              id="end_date"
+              {...register('end_date')}
+              className="w-full"
+              error={errors.end_date?.message}
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-[rgb(var(--border))] pt-8">
+        <h2 className={sectionTitleClass}>Les Locataires</h2>
+
+        {/* 1. Barre de recherche */}
+        <div className="mb-4">
+          <InputLabel htmlFor="tenant_search" value="Rechercher un locataire *" className="mb-1" />
+          <div className="relative mt-1">
+            <TextInput
+              id="tenant_search"
+              type="text"
+              placeholder="Tapez un nom..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full"
+              error={errors.tenant_ids?.message}
+            />
+
+            {searchTerm && availableTenants.length > 0 && (
+              <ul
+                role="listbox"
+                className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md bg-surface border border-[rgb(var(--border))] py-1 shadow-lg"
+              >
+                {availableTenants.map((tenant) => (
+                  <li key={tenant.id} role="option" aria-selected={false}>
+                    <button
+                      type="button"
+                      onClick={() => handleAddTenant(tenant)}
+                      className="w-full text-left cursor-pointer px-4 py-2 hover:bg-surface-2 focus:bg-surface-2 focus:outline-none text-app text-sm transition-colors"
+                    >
+                      {tenant.first_name} {tenant.last_name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        {/* 2. Liste des locataires sélectionnés (Les pilules) */}
+        <div className="flex flex-wrap gap-3 mb-8">
+          {selectedTenants.length === 0 && (
+            <span className="text-sm text-muted italic">Aucun locataire sélectionné.</span>
+          )}
+          {selectedTenants.map((tenant, index) => (
+            <div
+              key={tenant.id}
+              className="flex items-center gap-2 rounded-full border border-[rgb(var(--primary-500))] bg-[rgb(var(--primary-500))]/10 py-1 pl-3 pr-1"
+            >
+              <span className="text-sm font-medium text-app">
+                {index === 0 && (
+                  <span className="mr-1" title="Locataire Principal">
+                    👑
+                  </span>
+                )}
+                {tenant.first_name} {tenant.last_name}
+              </span>
+              <button
+                type="button"
+                onClick={() => handleRemoveTenant(tenant.id)}
+                aria-label={`Retirer ${tenant.first_name} ${tenant.last_name}`}
+                className="flex h-5 w-5 items-center justify-center rounded-full text-muted transition-colors hover:bg-red-500 hover:text-white cursor-pointer"
+              >
+                &times;
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* 3. L'apparition conditionnelle des garants SOUS les locataires */}
+        {availableGuarantors.length > 0 && (
+          <div
+            className={`rounded-lg border p-6 bg-surface-2 ${
+              errors.guarantor_ids ? 'border-red-500' : 'border-[rgb(var(--border))]'
+            }`}
+          >
+            <h3 className="text-base font-semibold text-app mb-2">
+              {isCommercial ? 'Les Garants (Optionnel)' : 'Les Garants'}
+            </h3>
+            <p className="text-sm text-muted mb-4">
+              {isCommercial
+                ? "Sélectionnez les garants qui s'engagent spécifiquement pour ce bail (facultatif pour un bail commercial) :"
+                : "Sélectionnez les garants qui s'engagent spécifiquement pour ce bail :"}
+            </p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {availableGuarantors.map((guarantor) => (
+                <label
+                  key={guarantor.id}
+                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${
+                    currentGuarantorIds.includes(guarantor.id)
+                      ? 'border-[rgb(var(--primary-500))] bg-[rgb(var(--primary-500))]/5'
+                      : 'border-[rgb(var(--border))] bg-surface hover:bg-surface'
+                  }`}
+                >
+                  <div className="flex h-5 items-center mt-0.5">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-gray-300 text-[rgb(var(--primary-500))] focus:ring-[rgb(var(--primary-500))]"
+                      checked={currentGuarantorIds.includes(guarantor.id)}
+                      onChange={() => handleToggleGuarantor(guarantor.id)}
+                    />
+                  </div>
+                  <div>
+                    <p className="font-medium text-app">
+                      {guarantor.first_name} {guarantor.last_name}
+                    </p>
+                    <p className="text-xs text-muted">Garant</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            {/* Affichage explicite de l'erreur de validation backend ou frontend */}
+            {errors.guarantor_ids && (
+              <p className="mt-3 text-sm font-medium text-red-500">
+                {errors.guarantor_ids.message as string}
+              </p>
+            )}
+          </div>
+        )}
+      </section>
+
+      <section className="border-t border-[rgb(var(--border))] pt-8">
+        <h2 className={sectionTitleClass}>Finances & Modalités</h2>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <InputLabel htmlFor="rent_amount" value="Loyer (HC) *" className="mb-1" />
+            <div className="relative mt-1">
+              <TextInput
+                type="number"
+                step="0.01"
+                id="rent_amount"
+                {...register('rent_amount')}
+                className="w-full pr-8"
+                error={errors.rent_amount?.message}
+              />
+              <div className="pointer-events-none absolute right-3 top-2.5 flex items-center">
+                <span className="text-muted sm:text-sm">€</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <InputLabel htmlFor="charges_amount" value="Provision Charges *" className="mb-1" />
+            <div className="relative mt-1">
+              <TextInput
+                type="number"
+                step="0.01"
+                id="charges_amount"
+                {...register('charges_amount')}
+                className="w-full pr-8"
+                error={errors.charges_amount?.message}
+              />
+              <div className="pointer-events-none absolute right-3 top-2.5 flex items-center">
+                <span className="text-muted sm:text-sm">€</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <InputLabel htmlFor="deposit_amount" value="Dépôt de garantie" className="mb-1" />
+            <div className="relative mt-1">
+              <TextInput
+                type="number"
+                step="0.01"
+                id="deposit_amount"
+                {...register('deposit_amount')}
+                className="w-full pr-8"
+                error={errors.deposit_amount?.message}
+              />
+              <div className="pointer-events-none absolute right-3 top-2.5 flex items-center">
+                <span className="text-muted sm:text-sm">€</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <InputLabel htmlFor="payment_day" value="Jour de paiement *" className="mb-1" />
+            <div className="relative mt-1">
+              <TextInput
+                type="number"
+                min="1"
+                max="31"
+                id="payment_day"
+                {...register('payment_day')}
+                className="w-full pl-10"
+                error={errors.payment_day?.message}
+              />
+              <div className="pointer-events-none absolute left-3 top-2.5 flex items-center">
+                <span className="text-muted sm:text-sm">Le</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* --- SECTION BAIL COMMERCIAL / PROFESSIONNEL --- */}
+      {isCommercial && (
+        <section className="border-t border-[rgb(var(--border))] pt-8">
+          <h2 className={sectionTitleClass}>
+            {leaseType === 'professional' ? 'Bail Professionnel' : 'Bail Commercial'}
+          </h2>
+
+          <div className="space-y-6">
+            {/* Type de bail */}
+            <div className="rounded-lg border border-[rgb(var(--border))] bg-surface-2 p-4">
+              <p className="text-sm font-semibold text-app mb-3">Type de bail *</p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:gap-8">
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input
+                    type="radio"
+                    {...register('lease_type')}
+                    value="commercial"
+                    className="mt-0.5 h-4 w-4 text-[rgb(var(--primary-500))] border-gray-300 focus:ring-[rgb(var(--primary-500))]"
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-app">Bail commercial</p>
+                    <p className="text-xs text-muted">
+                      Commerce, artisanat, industrie — art. L.145-1 C.com. — 9 ans
+                    </p>
+                  </div>
+                </label>
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input
+                    type="radio"
+                    {...register('lease_type')}
+                    value="professional"
+                    className="mt-0.5 h-4 w-4 text-[rgb(var(--primary-500))] border-gray-300 focus:ring-[rgb(var(--primary-500))]"
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-app">Bail professionnel</p>
+                    <p className="text-xs text-muted">
+                      Professions libérales — art. 57A loi 1986 — 6 ans
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <InputLabel
+                htmlFor="activity_description"
+                value="Destination des lieux (activité autorisée) *"
+                className="mb-1"
+              />
+              <textarea
+                id="activity_description"
+                rows={3}
+                {...register('activity_description')}
+                className="w-full rounded-md border border-[rgb(var(--border))] bg-surface text-app px-3 py-2 outline-none transition-all duration-150 focus:border-[rgb(var(--primary-900))]"
+                placeholder={
+                  leaseType === 'professional'
+                    ? 'ex: exercice de la profession libérale de kinésithérapeute'
+                    : 'ex: usage commercial, et plus précisément à usage de vente en lingerie'
+                }
+              />
+              {errors.activity_description && (
+                <p className="mt-1 text-xs text-red-400 font-medium">
+                  {errors.activity_description.message as string}
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div>
+                <InputLabel
+                  htmlFor="base_index_label"
+                  value={`Trimestre de référence de l'indice ${leaseType === 'professional' ? 'ILAT' : 'ILC'}`}
+                  className="mb-1"
+                />
+                <TextInput
+                  id="base_index_label"
+                  {...register('base_index_label')}
+                  placeholder="ex: 4ème trimestre 2024"
+                  className="w-full"
+                  error={errors.base_index_label?.message}
+                />
+              </div>
+              <div>
+                <InputLabel
+                  htmlFor="base_index_value"
+                  value={`Valeur de l'indice ${leaseType === 'professional' ? 'ILAT' : 'ILC'}`}
+                  className="mb-1"
+                />
+                <TextInput
+                  id="base_index_value"
+                  type="number"
+                  step="0.01"
+                  {...register('base_index_value')}
+                  placeholder="ex: 132.50"
+                  className="w-full"
+                  error={errors.base_index_value?.message}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section className="border-t border-[rgb(var(--border))] pt-8">
+        <h2 className={sectionTitleClass}>Assurance & Remise des clés</h2>
+
+        <div className="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div>
+            <InputLabel htmlFor="insurer_name" value="Compagnie d'assurance" className="mb-1" />
+            <TextInput
+              id="insurer_name"
+              {...register('insurer_name')}
+              placeholder="Ex: Macif, Allianz..."
+              className="w-full"
+              error={errors.insurer_name?.message}
+            />
+          </div>
+          <div>
+            <InputLabel htmlFor="insurer_phone" value="Téléphone assurance" className="mb-1" />
+            <TextInput
+              id="insurer_phone"
+              type="tel"
+              {...register('insurer_phone')}
+              className="w-full"
+              error={errors.insurer_phone?.message}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <InputLabel htmlFor="insurer_address" value="Adresse de l'assurance" className="mb-1" />
+            <TextInput
+              id="insurer_address"
+              {...register('insurer_address')}
+              error={errors.insurer_address?.message}
+            />
+          </div>
+        </div>
+
+        <div
+          className={`grid grid-cols-1 gap-6 rounded-lg border border-[rgb(var(--border))] bg-surface-2 p-4 sm:grid-cols-3`}
+        >
+          <div>
+            <InputLabel htmlFor="keys_building_count" value="Clés Immeuble" className="mb-1" />
+            <TextInput
+              id="keys_building_count"
+              type="number"
+              min="0"
+              {...register('keys_building_count')}
+              className="w-full"
+              error={errors.keys_building_count?.message}
+            />
+          </div>
+
+          {!isCommercial && (
+            <div>
+              <InputLabel
+                htmlFor="keys_mailbox_count"
+                value="Clés Boîte aux lettres"
+                className="mb-1"
+              />
+              <TextInput
+                id="keys_mailbox_count"
+                type="number"
+                min="0"
+                {...register('keys_mailbox_count')}
+                className="w-full"
+                error={errors.keys_mailbox_count?.message}
+              />
+            </div>
+          )}
+
+          <div>
+            <InputLabel
+              htmlFor="keys_apartment_count"
+              value={isCommercial ? 'Clés Local' : 'Clés Appartement'}
+              className="mb-1"
+            />
+            <TextInput
+              id="keys_apartment_count"
+              type="number"
+              min="0"
+              {...register('keys_apartment_count')}
+              className="w-full"
+              error={errors.keys_apartment_count?.message}
+            />
+          </div>
+
+          {isCommercial && (
+            <div>
+              <InputLabel
+                htmlFor="keys_grid_count"
+                value="Clés Grille / Vitrine"
+                className="mb-1"
+              />
+              <TextInput
+                id="keys_grid_count"
+                type="number"
+                min="0"
+                {...register('keys_grid_count')}
+                className="w-full"
+                error={errors.keys_grid_count?.message}
+              />
+            </div>
+          )}
+        </div>
+      </section>
+
+      <div className="mt-6 flex justify-end border-t border-[rgb(var(--border))] pt-6">
+        <Button type="submit" disabled={isSubmitting || isPosting} variant="primary">
+          {isSubmitting || isPosting
+            ? 'Enregistrement...'
+            : isEdit
+              ? 'Enregistrer les modifications'
+              : 'Créer le bail'}
+        </Button>
+      </div>
+    </form>
+  );
+}
