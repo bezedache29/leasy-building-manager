@@ -108,7 +108,9 @@ export default function Edit({ tenant }: { tenant: Tenant }) {
         : 'border-[rgb(var(--border))] hover:bg-surface-2'
     }`;
 
-  const stagedCategories = docFields.map((doc) => doc.category).filter(Boolean);
+  const stagedCategories = (watch('tenant_documents') ?? [])
+    .map((doc) => doc.category)
+    .filter(Boolean);
   const existingCategories = [
     ...new Set([...(tenant.documents?.map((doc) => doc.category) ?? []), ...stagedCategories]),
   ];
