@@ -24,7 +24,7 @@ class InventoryController extends Controller
                     $q->where('room_id', $roomId);
                 });
         })
-            ->where('category', 'like', 'inventory_photo_%')
+            ->where('category', 'inventory_photo')
             ->latest()
             ->get();
 

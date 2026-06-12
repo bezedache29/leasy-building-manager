@@ -414,8 +414,10 @@
                     @foreach($propertyDocs->where('equipment_id', $equipment->id) as $photo)
                         @php $photoCount++; @endphp
                         <div style="display:inline-block; width:30%; margin:1%; vertical-align:top; border:1px solid #eee; padding:5px;">
-                            <img src="{{ public_path('storage/' . str_replace('public/', '', $photo->file_path)) }}"
+                            @if($photo->base64_src)
+                            <img src="{{ $photo->base64_src }}"
                                 style="width:100%; height:auto; border-radius:4px;">
+                            @endif
                             <p style="font-size:8px; margin-top:4px;">
                                 <strong>#{{ $photoCount }}</strong> — {{ $room->name }}<br>
                                 {{ $equipment->name }} : {{ $photo->name }}
