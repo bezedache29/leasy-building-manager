@@ -106,8 +106,6 @@
             <span style="color:#b00;">(date et lieu de naissance non renseignés)</span>,
         @endif
         résidant à l'adresse suivante : <span class="bold">{{ $guarantor->current_address }}</span>,
-    </p>
-    <p>
         déclare me porter caution solidaire de <span class="bold">{{ $tenantNames }}</span>
         pour les obligations résultant du bail qui lui a été consenti par le bailleur
         <span class="bold">{{ config('building.landlord_name') }}</span>,

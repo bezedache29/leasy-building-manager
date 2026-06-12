@@ -39,23 +39,29 @@ class LeaseController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'property_id' => 'required|exists:properties,id',
-            'start_date' => 'required|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'rent_amount' => 'required|numeric|min:0',
-            'charges_amount' => 'required|numeric|min:0',
-            'deposit_amount' => 'nullable|numeric|min:0',
-            'payment_day' => 'required|integer|min:1|max:31',
-            'tenant_ids' => 'required|array|min:1',
-            'tenant_ids.*' => 'distinct|exists:tenants,id',
-            'guarantor_ids' => 'nullable|array',
-            'guarantor_ids.*' => 'exists:guarantors,id',
-            'insurer_name' => 'nullable|string|max:255',
-            'insurer_address' => 'nullable|string|max:255',
-            'insurer_phone' => 'nullable|string|max:20',
-            'keys_building_count' => 'required|integer|min:0',
-            'keys_mailbox_count' => 'required|integer|min:0',
-            'keys_apartment_count' => 'required|integer|min:0',
+            'property_id'           => 'required|exists:properties,id',
+            'start_date'            => 'required|date',
+            'end_date'              => 'nullable|date|after_or_equal:start_date',
+            'rent_amount'           => 'required|numeric|min:0',
+            'charges_amount'        => 'required|numeric|min:0',
+            'deposit_amount'        => 'nullable|numeric|min:0',
+            'payment_day'           => 'required|integer|min:1|max:31',
+            'tenant_ids'            => 'required|array|min:1',
+            'tenant_ids.*'          => 'distinct|exists:tenants,id',
+            'guarantor_ids'         => 'nullable|array',
+            'guarantor_ids.*'       => 'exists:guarantors,id',
+            'insurer_name'          => 'nullable|string|max:255',
+            'insurer_address'       => 'nullable|string|max:255',
+            'insurer_phone'         => 'nullable|string|max:20',
+            'keys_building_count'   => 'required|integer|min:0',
+            'keys_mailbox_count'    => 'required|integer|min:0',
+            'keys_apartment_count'  => 'required|integer|min:0',
+            // Champs commerciaux / professionnels
+            'lease_type'            => 'nullable|string|in:residential,commercial,professional',
+            'activity_description'  => 'nullable|string',
+            'base_index_label'      => 'nullable|string|max:50',
+            'base_index_value'      => 'nullable|numeric|min:0',
+            'keys_grid_count'       => 'nullable|integer|min:0',
         ]);
 
         return DB::transaction(function () use ($validated) {
@@ -75,20 +81,25 @@ class LeaseController extends Controller
             Tenant::whereIn('id', $tenantIds)->lockForUpdate()->get(['id']);
 
             $lease = Lease::create([
-                'property_id' => $property->id,
-                'start_date' => $validated['start_date'],
-                'end_date' => $validated['end_date'] ?? null,
-                'rent_amount' => $validated['rent_amount'],
-                'charges_amount' => $validated['charges_amount'],
-                'deposit_amount' => $validated['deposit_amount'] ?? null,
-                'payment_day' => $validated['payment_day'],
-                'status' => $this->calculateLeaseStatus($validated['start_date'], $validated['end_date'] ?? null),
-                'insurer_name' => $validated['insurer_name'] ?? null,
-                'insurer_address' => $validated['insurer_address'] ?? null,
-                'insurer_phone' => $validated['insurer_phone'] ?? null,
-                'keys_building_count' => $validated['keys_building_count'],
-                'keys_mailbox_count' => $validated['keys_mailbox_count'],
+                'property_id'          => $property->id,
+                'start_date'           => $validated['start_date'],
+                'end_date'             => $validated['end_date'] ?? null,
+                'rent_amount'          => $validated['rent_amount'],
+                'charges_amount'       => $validated['charges_amount'],
+                'deposit_amount'       => $validated['deposit_amount'] ?? null,
+                'payment_day'          => $validated['payment_day'],
+                'status'               => $this->calculateLeaseStatus($validated['start_date'], $validated['end_date'] ?? null),
+                'lease_type'           => $validated['lease_type'] ?? 'residential',
+                'activity_description' => $validated['activity_description'] ?? null,
+                'base_index_label'     => $validated['base_index_label'] ?? null,
+                'base_index_value'     => $validated['base_index_value'] ?? null,
+                'insurer_name'         => $validated['insurer_name'] ?? null,
+                'insurer_address'      => $validated['insurer_address'] ?? null,
+                'insurer_phone'        => $validated['insurer_phone'] ?? null,
+                'keys_building_count'  => $validated['keys_building_count'],
+                'keys_mailbox_count'   => $validated['keys_mailbox_count'],
                 'keys_apartment_count' => $validated['keys_apartment_count'],
+                'keys_grid_count'      => $validated['keys_grid_count'] ?? 0,
             ]);
 
             // Attachement des garants
@@ -115,6 +126,13 @@ class LeaseController extends Controller
 
     public function edit(Lease $lease)
     {
+        $lease->loadMissing('documents');
+        abort_if(
+            $lease->has_signed_lease && $lease->has_signed_inventory,
+            403,
+            'Ce bail est finalisé et ne peut plus être modifié.'
+        );
+
         $lease->load(['tenants.guarantors', 'guarantors']);
 
         $properties = Property::orderBy('name')->get();
@@ -130,24 +148,37 @@ class LeaseController extends Controller
 
     public function update(Request $request, Lease $lease)
     {
+        $lease->loadMissing('documents');
+        abort_if(
+            $lease->has_signed_lease && $lease->has_signed_inventory,
+            403,
+            'Ce bail est finalisé et ne peut plus être modifié.'
+        );
+
         $validated = $request->validate([
-            'property_id' => 'required|exists:properties,id',
-            'start_date' => 'required|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'rent_amount' => 'required|numeric|min:0',
-            'charges_amount' => 'required|numeric|min:0',
-            'deposit_amount' => 'nullable|numeric|min:0',
-            'payment_day' => 'required|integer|min:1|max:31',
-            'tenant_ids' => 'required|array|min:1',
-            'tenant_ids.*' => 'distinct|exists:tenants,id',
-            'guarantor_ids' => 'nullable|array',
-            'guarantor_ids.*' => 'exists:guarantors,id',
-            'insurer_name' => 'nullable|string|max:255',
-            'insurer_address' => 'nullable|string|max:255',
-            'insurer_phone' => 'nullable|string|max:20',
-            'keys_building_count' => 'required|integer|min:0',
-            'keys_mailbox_count' => 'required|integer|min:0',
-            'keys_apartment_count' => 'required|integer|min:0',
+            'property_id'           => 'required|exists:properties,id',
+            'start_date'            => 'required|date',
+            'end_date'              => 'nullable|date|after_or_equal:start_date',
+            'rent_amount'           => 'required|numeric|min:0',
+            'charges_amount'        => 'required|numeric|min:0',
+            'deposit_amount'        => 'nullable|numeric|min:0',
+            'payment_day'           => 'required|integer|min:1|max:31',
+            'tenant_ids'            => 'required|array|min:1',
+            'tenant_ids.*'          => 'distinct|exists:tenants,id',
+            'guarantor_ids'         => 'nullable|array',
+            'guarantor_ids.*'       => 'exists:guarantors,id',
+            'insurer_name'          => 'nullable|string|max:255',
+            'insurer_address'       => 'nullable|string|max:255',
+            'insurer_phone'         => 'nullable|string|max:20',
+            'keys_building_count'   => 'required|integer|min:0',
+            'keys_mailbox_count'    => 'required|integer|min:0',
+            'keys_apartment_count'  => 'required|integer|min:0',
+            // Champs commerciaux / professionnels
+            'lease_type'            => 'nullable|string|in:residential,commercial,professional',
+            'activity_description'  => 'nullable|string',
+            'base_index_label'      => 'nullable|string|max:50',
+            'base_index_value'      => 'nullable|numeric|min:0',
+            'keys_grid_count'       => 'nullable|integer|min:0',
         ]);
 
         return DB::transaction(function () use ($validated, $lease) {
@@ -168,20 +199,25 @@ class LeaseController extends Controller
             Tenant::whereIn('id', $tenantIds)->lockForUpdate()->get(['id']);
 
             $lease->update([
-                'property_id' => $property->id,
-                'start_date' => $validated['start_date'],
-                'end_date' => $validated['end_date'] ?? null,
-                'rent_amount' => $validated['rent_amount'],
-                'charges_amount' => $validated['charges_amount'],
-                'deposit_amount' => $validated['deposit_amount'] ?? null,
-                'payment_day' => $validated['payment_day'],
-                'status' => $this->calculateLeaseStatus($validated['start_date'], $validated['end_date'] ?? null),
-                'insurer_name' => $validated['insurer_name'] ?? null,
-                'insurer_address' => $validated['insurer_address'] ?? null,
-                'insurer_phone' => $validated['insurer_phone'] ?? null,
-                'keys_building_count' => $validated['keys_building_count'],
-                'keys_mailbox_count' => $validated['keys_mailbox_count'],
+                'property_id'          => $property->id,
+                'start_date'           => $validated['start_date'],
+                'end_date'             => $validated['end_date'] ?? null,
+                'rent_amount'          => $validated['rent_amount'],
+                'charges_amount'       => $validated['charges_amount'],
+                'deposit_amount'       => $validated['deposit_amount'] ?? null,
+                'payment_day'          => $validated['payment_day'],
+                'status'               => $this->calculateLeaseStatus($validated['start_date'], $validated['end_date'] ?? null),
+                'lease_type'           => $validated['lease_type'] ?? 'residential',
+                'activity_description' => $validated['activity_description'] ?? null,
+                'base_index_label'     => $validated['base_index_label'] ?? null,
+                'base_index_value'     => $validated['base_index_value'] ?? null,
+                'insurer_name'         => $validated['insurer_name'] ?? null,
+                'insurer_address'      => $validated['insurer_address'] ?? null,
+                'insurer_phone'        => $validated['insurer_phone'] ?? null,
+                'keys_building_count'  => $validated['keys_building_count'],
+                'keys_mailbox_count'   => $validated['keys_mailbox_count'],
                 'keys_apartment_count' => $validated['keys_apartment_count'],
+                'keys_grid_count'      => $validated['keys_grid_count'] ?? 0,
             ]);
 
             // SAUVEGARDE DES GARANTS EN MODIFICATION
@@ -228,19 +264,27 @@ class LeaseController extends Controller
 
     public function pdf(Lease $lease)
     {
-        // ON CHARGE DIRECTEMENT "guarantors" (ceux rattachés au bail) 
-        // ET NON PLUS "tenants.guarantors"
         $lease->load(['property', 'tenants', 'guarantors']);
 
         if (is_null($lease->pdf_downloaded_at)) {
             $lease->update(['pdf_downloaded_at' => Carbon::now()]);
         }
 
-        $pdf = Pdf::loadView('pdfs.lease', [
-            'lease' => $lease
-        ]);
+        $view = match ($lease->lease_type) {
+            'commercial'   => 'pdfs.commercial_lease',
+            'professional' => 'pdfs.professional_lease',
+            default        => 'pdfs.lease',
+        };
 
-        $filename = 'bail-' . Str::slug($lease->property->name) . '-' . date('Ymd') . '.pdf';
+        $prefix = match ($lease->lease_type) {
+            'commercial'   => 'bail-commercial-',
+            'professional' => 'bail-professionnel-',
+            default        => 'bail-',
+        };
+
+        $pdf = Pdf::loadView($view, ['lease' => $lease]);
+
+        $filename = $prefix . Str::slug($lease->property->name) . '-' . date('Ymd') . '.pdf';
 
         return $pdf->stream($filename);
     }
@@ -304,7 +348,7 @@ class LeaseController extends Controller
             'year'  => 'required|integer|min:2000|max:2100',
         ]);
 
-        $lease->load(['property', 'tenants']);
+        $lease->load(['property', 'tenants', 'documents']);
 
         $month = (int) $validated['month'];
         $year  = (int) $validated['year'];

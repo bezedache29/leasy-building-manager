@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             PropertySeeder::class,
             RoomSeeder::class,
             EquipmentSeeder::class,
+            T2RoomSeeder::class,
         ]);
     }
 }

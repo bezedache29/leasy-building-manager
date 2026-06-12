@@ -5,6 +5,9 @@ import { z } from 'zod';
 const REQUIRED_MSG = 'Ce champ est requis';
 
 const createTenantSchema = z.object({
+  tenant_type: z.union([z.literal('physical'), z.literal('legal_entity')]),
+  has_residential: z.boolean(),
+  has_commercial: z.boolean(),
   first_name: z.string().min(1, REQUIRED_MSG),
   last_name: z.string().min(1, REQUIRED_MSG),
   marital_status: z.string().optional().or(z.literal('')),
@@ -20,6 +23,19 @@ const createTenantSchema = z.object({
   nationality: z.string().nullable().optional(),
   profession: z.string().optional().or(z.literal('')),
   notes: z.string().optional().or(z.literal('')),
+  // Champs commerciaux (tous optionnels — la complétude est gérée côté serveur)
+  siret: z.string().max(20).optional().or(z.literal('')),
+  company_name: z.string().optional().or(z.literal('')),
+  legal_form: z.string().optional().or(z.literal('')),
+  share_capital: z
+    .union([z.string(), z.number(), z.null()])
+    .optional()
+    .transform((v) => (v === '' || v == null ? null : Number(v)))
+    .refine((v) => v === null || v === undefined || v >= 0, {
+      message: 'Le capital social doit être positif ou nul',
+    }),
+  registered_office: z.string().optional().or(z.literal('')),
+  rcs_city: z.string().optional().or(z.literal('')),
 
   // Le tableau dynamique des garants
   guarantors: z.array(createGuarantorSchema).optional(),

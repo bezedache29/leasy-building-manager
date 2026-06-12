@@ -14,6 +14,9 @@ class Tenant extends Model
     use SoftDeletes;
 
     protected $fillable = [
+        'tenant_type',
+        'has_residential',
+        'has_commercial',
         'first_name',
         'last_name',
         'marital_status',
@@ -25,12 +28,22 @@ class Tenant extends Model
         'birth_place',
         'nationality',
         'profession',
-        'notes'
+        'notes',
+        // Champs commerciaux
+        'siret',
+        'company_name',
+        'legal_form',
+        'share_capital',
+        'registered_office',
+        'rcs_city',
     ];
 
     protected $casts = [
-        'birth_date'  => 'date',
-        'is_archived' => 'boolean',
+        'birth_date'      => 'date',
+        'is_archived'     => 'boolean',
+        'has_residential' => 'boolean',
+        'has_commercial'  => 'boolean',
+        'share_capital'   => 'decimal:2',
     ];
 
     public function documents(): MorphMany
@@ -46,100 +59,93 @@ class Tenant extends Model
     }
 
     /**
-     * Détermine si le dossier du locataire (et de ses garants) est 100% complet.
+     * Vérifie si le profil résidentiel est complet.
+     * Retourne false si le profil résidentiel n'est pas activé.
      */
-    public function getIsCompleteAttribute(): bool
+    public function getIsResidentialCompleteAttribute(): bool
     {
-        // --- 1. VÉRIFICATION DES CHAMPS DU LOCATAIRE ---
-        $tenantRequiredFields = [
-            'first_name',
-            'last_name',
-            'marital_status',
-            'email',
-            'phone',
-            'current_address',
-            'birth_date',
-            'birth_place',
-            'nationality',
-            'profession'
-        ];
+        if (!($this->has_residential ?? true)) return false;
 
-        foreach ($tenantRequiredFields as $field) {
-            // empty() vérifie si c'est null, une chaîne vide '', etc.
-            if (empty($this->{$field})) {
-                return false;
-            }
-        }
-
-        // --- 2. VÉRIFICATION DES DOCUMENTS DU LOCATAIRE ---
-        $tenantRequiredDocs = [
-            'id_card',
-            'proof_of_address',
-            'employment_contract',
-            'payslip',
-            'tax_notice',
-        ];
-
-        // On récupère juste la liste des catégories uploadées
         $tenantCategories = $this->documents->pluck('category')->toArray();
 
-        // S'il reste des éléments après avoir soustrait les documents fournis, c'est qu'il en manque
-        if (!empty(array_diff($tenantRequiredDocs, $tenantCategories))) {
-            return false;
+        $requiredFields = ['first_name', 'last_name', 'marital_status', 'email', 'phone',
+                           'current_address', 'birth_date', 'birth_place', 'nationality', 'profession'];
+        foreach ($requiredFields as $field) {
+            if (empty($this->{$field})) return false;
         }
 
-        // --- 3. AU MOINS UN GARANT REQUIS ---
-        if ($this->guarantors->isEmpty()) {
-            return false;
-        }
+        $requiredDocs = ['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice'];
+        if (!empty(array_diff($requiredDocs, $tenantCategories))) return false;
 
-        // --- 4. VÉRIFICATION DES GARANTS ---
-        $guarantorRequiredFields = [
-            'first_name',
-            'last_name',
-            'marital_status',
-            'email',
-            'phone',
-            'current_address',
-            'birth_date',
-            'birth_place',
-            'nationality',
-            'profession'
-        ];
+        if ($this->guarantors->isEmpty()) return false;
 
-        $guarantorRequiredDocs = [
-            'id_card',
-            'proof_of_address',
-            'employment_contract',
-            'payslip',
-            'tax_notice'
-        ];
+        $guarantorRequiredFields = ['first_name', 'last_name', 'marital_status', 'email', 'phone',
+                                    'current_address', 'birth_date', 'birth_place', 'nationality', 'profession'];
+        $guarantorRequiredDocs = ['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice'];
 
         foreach ($this->guarantors as $guarantor) {
-            // Un garant Visale n'a besoin que du document visale_guarantee
             if ($guarantor->type === 'visale') {
-                $gCategories = $guarantor->documents->pluck('category')->toArray();
-                if (!in_array('visale_guarantee', $gCategories)) {
-                    return false;
-                }
+                $gCats = $guarantor->documents->pluck('category')->toArray();
+                if (!in_array('visale_guarantee', $gCats)) return false;
                 continue;
             }
-
-            // Vérification des champs de texte du garant ordinaire
             foreach ($guarantorRequiredFields as $field) {
-                if (empty($guarantor->{$field})) {
-                    return false;
-                }
+                if (empty($guarantor->{$field})) return false;
             }
-
-            // Vérification des documents du garant ordinaire
-            $guarantorCategories = $guarantor->documents->pluck('category')->toArray();
-            if (!empty(array_diff($guarantorRequiredDocs, $guarantorCategories))) {
-                return false;
-            }
+            $gCats = $guarantor->documents->pluck('category')->toArray();
+            if (!empty(array_diff($guarantorRequiredDocs, $gCats))) return false;
         }
 
         return true;
+    }
+
+    /**
+     * Vérifie si le profil commercial est complet.
+     * Retourne false si le profil commercial n'est pas activé.
+     */
+    public function getIsCommercialCompleteAttribute(): bool
+    {
+        if (!($this->has_commercial ?? false)) return false;
+
+        $tenantCategories = $this->documents->pluck('category')->toArray();
+
+        if ($this->tenant_type === 'legal_entity') {
+            $requiredFields = ['company_name', 'legal_form', 'siret', 'registered_office', 'rcs_city',
+                               'first_name', 'last_name', 'birth_date', 'birth_place', 'nationality', 'current_address'];
+            foreach ($requiredFields as $field) {
+                if (empty($this->{$field})) return false;
+            }
+            $requiredDocs = ['id_card', 'kbis', 'company_statutes', 'balance_sheet'];
+            if (!empty(array_diff($requiredDocs, $tenantCategories))) return false;
+        } else {
+            // Personne physique auto-entrepreneur
+            $requiredFields = ['first_name', 'last_name', 'email', 'phone', 'current_address',
+                               'birth_date', 'birth_place', 'nationality', 'siret'];
+            foreach ($requiredFields as $field) {
+                if (empty($this->{$field})) return false;
+            }
+            $requiredDocs = ['id_card', 'kbis_urssaf', 'tax_notice', 'bank_statement_pro', 'activity_forecast'];
+            if (!empty(array_diff($requiredDocs, $tenantCategories))) return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Retourne true si TOUS les profils actifs sont complets.
+     */
+    public function getIsCompleteAttribute(): bool
+    {
+        $hasResidential = $this->has_residential ?? true;
+        $hasCommercial  = $this->has_commercial ?? false;
+
+        if ($hasResidential && $hasCommercial) {
+            return $this->is_residential_complete && $this->is_commercial_complete;
+        }
+        if ($hasCommercial) {
+            return $this->is_commercial_complete;
+        }
+        return $this->is_residential_complete;
     }
 
     // Un locataire peut être rattaché à plusieurs baux (historique)
@@ -151,118 +157,140 @@ class Tenant extends Model
     }
 
     /**
-     * Retourne la liste exacte des champs et documents manquants traduits en français.
+     * Retourne la liste exacte des champs et documents manquants pour TOUS les profils actifs.
+     * Structure rétro-compatible : missing_items.tenant.fields / .documents / .guarantors
      */
     public function getMissingItemsAttribute(): array
     {
         $missing = [
-            'tenant' => ['fields' => [], 'documents' => []],
+            'tenant'     => ['fields' => [], 'documents' => []],
             'guarantors' => [],
-            'leases' => [],
+            'leases'     => [],
         ];
 
-        // Dictionnaire de traduction pour les champs
-        $fieldLabels = [
-            'first_name' => 'Prénom',
-            'last_name' => 'Nom',
-            'marital_status' => 'Statut marital',
-            'email' => 'Email',
-            'phone' => 'Téléphone',
-            'current_address' => 'Adresse actuelle',
-            'birth_date' => 'Date de naissance',
-            'birth_place' => 'Lieu de naissance',
-            'nationality' => 'Nationalité',
-            'profession' => 'Profession'
-        ];
-
-        // Dictionnaire de traduction pour les documents
-        $docLabels = [
-            'id_card' => "Pièce d'identité",
-            'proof_of_address' => 'Justificatif de domicile',
-            'employment_contract' => 'Contrat de travail / Scolarité / Kbis',
-            'payslip' => 'Fiches de paie / Rémunération',
-            'tax_notice' => "Dernier avis d'imposition",
-            'bank_details' => 'RIB',
-            'insurance' => "Attestation d'assurance",
-            'lease' => 'Bail',
-            'inventory' => 'État des lieux',
-            'deposit_check' => 'Chèque de caution',
-            'guarantee_deed' => 'Acte de caution solidaire'
-        ];
-
-        $tenantRequiredDocs = ['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice'];
-        $guarantorRequiredDocs = ['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice'];
-
-        // 1. Locataire
-        foreach ($fieldLabels as $field => $label) {
-            if (empty($this->{$field})) {
-                $missing['tenant']['fields'][] = $label;
-            }
-        }
+        $hasResidential = $this->has_residential ?? true;
+        $hasCommercial  = $this->has_commercial ?? false;
+        $isLegalEntity  = $this->tenant_type === 'legal_entity';
 
         $tenantCategories = $this->documents->pluck('category')->toArray();
-        $missingTenantDocs = array_diff($tenantRequiredDocs, $tenantCategories);
-        foreach ($missingTenantDocs as $docKey) {
-            $missing['tenant']['documents'][] = $docLabels[$docKey] ?? $docKey;
-        }
 
-        // 2. Garants — au moins un requis
-        if ($this->guarantors->isEmpty()) {
-            $missing['guarantors'][] = [
-                'id' => null,
-                'name' => 'Aucun garant',
-                'fields' => ['Au moins un garant est requis'],
-                'documents' => [],
-            ];
-        }
+        $allFieldLabels = [
+            'first_name'        => 'Prénom',
+            'last_name'         => 'Nom',
+            'marital_status'    => 'Statut marital',
+            'email'             => 'Email',
+            'phone'             => 'Téléphone',
+            'current_address'   => 'Adresse actuelle',
+            'birth_date'        => 'Date de naissance',
+            'birth_place'       => 'Lieu de naissance',
+            'nationality'       => 'Nationalité',
+            'profession'        => 'Profession',
+            'siret'             => 'Numéro SIRET',
+            'company_name'      => 'Raison sociale',
+            'legal_form'        => 'Forme juridique',
+            'registered_office' => 'Siège social',
+            'rcs_city'          => 'Ville RCS',
+        ];
 
-        foreach ($this->guarantors as $guarantor) {
-            $gMissing = [
-                'id' => $guarantor->id,
-                'name' => trim($guarantor->first_name . ' ' . $guarantor->last_name),
-                'fields' => [],
-                'documents' => []
-            ];
+        $allDocLabels = [
+            'id_card'             => "Pièce d'identité",
+            'proof_of_address'    => 'Justificatif de domicile',
+            'employment_contract' => 'Justificatif de statut professionnel',
+            'payslip'             => 'Justificatif de revenus',
+            'tax_notice'          => "Avis d'imposition",
+            'bank_details'        => 'RIB',
+            'insurance'           => "Attestation d'assurance",
+            'deposit_check'       => 'Chèque de caution',
+            'kbis'                => 'Extrait Kbis (moins de 3 mois)',
+            'kbis_urssaf'         => 'Attestation URSSAF / Extrait Kbis',
+            'company_statutes'    => 'Statuts de la société',
+            'balance_sheet'       => 'Bilan comptable (2 derniers)',
+            'tax_filing'          => 'Liasse fiscale',
+            'bank_statement_pro'  => 'Relevés bancaires professionnels',
+            'activity_forecast'   => "Prévisionnel d'activité",
+        ];
 
-            $gCategories = $guarantor->documents->pluck('category')->toArray();
+        // --- Profil résidentiel ---
+        if ($hasResidential) {
+            $label = $hasCommercial ? ' (résidentiel)' : '';
 
-            // Un garant Visale n'a besoin que du document visale_guarantee
-            if ($guarantor->type === 'visale') {
-                if (!in_array('visale_guarantee', $gCategories)) {
-                    $gMissing['documents'][] = 'Garantie Visale (Action Logement)';
+            $requiredFieldKeys = ['first_name', 'last_name', 'marital_status', 'email', 'phone',
+                                   'current_address', 'birth_date', 'birth_place', 'nationality', 'profession'];
+            foreach ($requiredFieldKeys as $field) {
+                if (empty($this->{$field})) {
+                    $missing['tenant']['fields'][] = ($allFieldLabels[$field] ?? $field) . $label;
                 }
-                if (!empty($gMissing['documents'])) {
+            }
+
+            $requiredDocKeys = ['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice'];
+            foreach (array_diff($requiredDocKeys, $tenantCategories) as $docKey) {
+                $missing['tenant']['documents'][] = ($allDocLabels[$docKey] ?? $docKey) . $label;
+            }
+
+            // Garant obligatoire en résidentiel
+            if ($this->guarantors->isEmpty()) {
+                $missing['guarantors'][] = [
+                    'id'        => null,
+                    'name'      => 'Aucun garant',
+                    'fields'    => ['Au moins un garant est requis'],
+                    'documents' => [],
+                ];
+            }
+
+            $guarantorRequiredFields = ['first_name', 'last_name', 'marital_status', 'email', 'phone',
+                                         'current_address', 'birth_date', 'birth_place', 'nationality', 'profession'];
+            $guarantorRequiredDocs = ['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice'];
+
+            foreach ($this->guarantors as $guarantor) {
+                $gMissing    = ['id' => $guarantor->id, 'name' => trim($guarantor->first_name . ' ' . $guarantor->last_name), 'fields' => [], 'documents' => []];
+                $gCategories = $guarantor->documents->pluck('category')->toArray();
+
+                if ($guarantor->type === 'visale') {
+                    if (!in_array('visale_guarantee', $gCategories)) {
+                        $gMissing['documents'][] = 'Garantie Visale (Action Logement)';
+                    }
+                    if (!empty($gMissing['documents'])) $missing['guarantors'][] = $gMissing;
+                    continue;
+                }
+
+                foreach ($guarantorRequiredFields as $field) {
+                    if (empty($guarantor->{$field})) $gMissing['fields'][] = $allFieldLabels[$field] ?? $field;
+                }
+                foreach (array_diff($guarantorRequiredDocs, $gCategories) as $docKey) {
+                    $gMissing['documents'][] = $allDocLabels[$docKey] ?? $docKey;
+                }
+
+                if (!empty($gMissing['fields']) || !empty($gMissing['documents'])) {
                     $missing['guarantors'][] = $gMissing;
                 }
-                continue;
-            }
-
-            // Garant ordinaire : vérification des champs
-            foreach ($fieldLabels as $field => $label) {
-                if (empty($guarantor->{$field})) {
-                    $gMissing['fields'][] = $label;
-                }
-            }
-
-            // Garant ordinaire : vérification des documents
-            $missingGuarantorDocs = array_diff($guarantorRequiredDocs, $gCategories);
-            foreach ($missingGuarantorDocs as $docKey) {
-                $gMissing['documents'][] = $docLabels[$docKey] ?? $docKey;
-            }
-
-            if (!empty($gMissing['fields']) || !empty($gMissing['documents'])) {
-                $missing['guarantors'][] = $gMissing;
             }
         }
 
-        // Si absolument tout est complet, on retourne null
-        if (
-            empty($missing['tenant']['fields']) &&
-            empty($missing['tenant']['documents']) &&
-            empty($missing['guarantors']) &&
-            empty($missing['leases'])
-        ) {
-            return $missing;
+        // --- Profil commercial ---
+        if ($hasCommercial) {
+            $label = $hasResidential ? ' (commercial)' : '';
+
+            if ($isLegalEntity) {
+                $requiredFieldKeys = ['company_name', 'legal_form', 'siret', 'registered_office', 'rcs_city',
+                                       'first_name', 'last_name', 'birth_date', 'birth_place', 'nationality', 'current_address'];
+                $requiredDocKeys   = ['id_card', 'kbis', 'company_statutes', 'balance_sheet'];
+            } else {
+                $requiredFieldKeys = ['first_name', 'last_name', 'email', 'phone', 'current_address',
+                                       'birth_date', 'birth_place', 'nationality', 'siret'];
+                $requiredDocKeys   = ['id_card', 'kbis_urssaf', 'tax_notice', 'bank_statement_pro', 'activity_forecast'];
+            }
+
+            foreach ($requiredFieldKeys as $field) {
+                $label_text = ($allFieldLabels[$field] ?? $field) . $label;
+                // Éviter les doublons si le champ est déjà listé (profil résidentiel)
+                if (!in_array($label_text, $missing['tenant']['fields'])) {
+                    if (empty($this->{$field})) $missing['tenant']['fields'][] = $label_text;
+                }
+            }
+
+            foreach (array_diff($requiredDocKeys, $tenantCategories) as $docKey) {
+                $missing['tenant']['documents'][] = ($allDocLabels[$docKey] ?? $docKey) . $label;
+            }
         }
 
         return $missing;

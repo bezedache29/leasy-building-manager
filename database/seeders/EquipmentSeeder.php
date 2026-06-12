@@ -30,7 +30,11 @@ class EquipmentSeeder extends Seeder
         ];
 
         foreach ($rooms as $room) {
-            // On ajoute 2 à 4 équipements au hasard par pièce
+            // On ignore les pièces qui ont déjà des équipements
+            if ($room->equipments()->count() > 0) {
+                continue;
+            }
+
             $randomEquipments = collect($equipments)->random(rand(2, 4));
 
             foreach ($randomEquipments as $eqData) {

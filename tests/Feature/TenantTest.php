@@ -20,6 +20,7 @@ it('can create a tenant with nationality and birth date', function () {
         'marital_status' => 'Single',
         'profession' => 'Engineer',
         'current_address' => '10 rue de la Paix, 75000 Paris',
+        'has_residential' => true,
     ];
 
     // 3. Envoyer la requête POST à la route de création de locataire

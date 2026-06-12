@@ -21,12 +21,17 @@ class Lease extends Model
         'deposit_amount',
         'payment_day',
         'status',
+        'lease_type',
+        'activity_description',
+        'base_index_label',
+        'base_index_value',
         'insurer_name',
         'insurer_address',
         'insurer_phone',
         'keys_building_count',
         'keys_mailbox_count',
         'keys_apartment_count',
+        'keys_grid_count',
         'pdf_downloaded_at',
         'lease_downloaded_at',
         'inventory_downloaded_at',
@@ -39,6 +44,9 @@ class Lease extends Model
         'charges_amount' => 'decimal:2',
         'deposit_amount' => 'decimal:2',
         'payment_day' => 'integer',
+        'lease_type' => 'string',
+        'base_index_value' => 'decimal:2',
+        'keys_grid_count' => 'integer',
         'pdf_downloaded_at' => 'datetime',
         'lease_downloaded_at' => 'datetime',
         'inventory_downloaded_at' => 'datetime',
@@ -88,10 +96,16 @@ class Lease extends Model
         foreach ($this->tenants as $tenant) {
             $name = trim($tenant->first_name . ' ' . $tenant->last_name);
 
-            if (!$tenant->current_address) $missing[] = "Adresse manquante pour le locataire ($name)";
-            if (!$tenant->birth_date || !$tenant->birth_place) $missing[] = "Date ou lieu de naissance manquant pour le locataire ($name)";
+            if ($tenant->tenant_type === 'legal_entity') {
+                if (!$tenant->company_name) $missing[] = "Raison sociale manquante pour le locataire ($name)";
+                if (!$tenant->siret)         $missing[] = "SIRET manquant pour le locataire ($name)";
+            } else {
+                if (!$tenant->current_address)                      $missing[] = "Adresse manquante pour le locataire ($name)";
+                if (!$tenant->birth_date || !$tenant->birth_place)  $missing[] = "Date ou lieu de naissance manquant pour le locataire ($name)";
+                if (!$tenant->nationality)                          $missing[] = "Nationalité manquante pour le locataire ($name)";
+            }
+
             if (!$tenant->phone) $missing[] = "Téléphone manquant pour le locataire ($name)";
-            if (!$tenant->nationality) $missing[] = "Nationalité manquante pour le locataire ($name)";
         }
 
         // --- 2. VÉRIFICATION DES GARANTS DU BAIL ---
@@ -106,6 +120,16 @@ class Lease extends Model
                 if (!$guarantor->current_address) $missing[] = "Adresse manquante pour le garant ($gName)";
                 if (!$guarantor->phone) $missing[] = "Téléphone manquant pour le garant ($gName)";
             }
+        }
+
+        // --- 3. VÉRIFICATION DES CHAMPS SPÉCIFIQUES AU BAIL COMMERCIAL / PROFESSIONNEL ---
+        if (in_array($this->lease_type, ['commercial', 'professional'])) {
+            if (!$this->activity_description) $missing[] = "Description de l'activité manquante";
+            if (!$this->insurer_name)          $missing[] = "Nom de l'assurance manquant";
+            if (!$this->insurer_address)       $missing[] = "Adresse de l'assurance manquante";
+            if (!$this->insurer_phone)         $missing[] = "Téléphone de l'assurance manquant";
+            if (!$this->base_index_label)      $missing[] = "Libellé de l'indice de référence manquant";
+            if (!$this->base_index_value)      $missing[] = "Valeur de l'indice de référence manquante";
         }
 
         return $missing;

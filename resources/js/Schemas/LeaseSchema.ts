@@ -28,7 +28,13 @@ export const leaseSchema = z
     keys_building_count: z.coerce.number().min(0).default(0),
     keys_mailbox_count: z.coerce.number().min(0).default(0),
     keys_apartment_count: z.coerce.number().min(0).default(0),
+    keys_grid_count: z.coerce.number().min(0).default(0),
     guarantor_ids: z.array(z.number()).optional().default([]),
+    // Champs bail commercial / professionnel
+    lease_type: z.enum(['residential', 'commercial', 'professional']).default('residential'),
+    activity_description: z.string().nullable().optional(),
+    base_index_label: z.string().max(50).nullable().optional(),
+    base_index_value: z.coerce.number().min(0).nullable().optional(),
   })
   .refine(
     (data) => {

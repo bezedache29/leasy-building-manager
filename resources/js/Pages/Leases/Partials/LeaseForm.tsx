@@ -47,6 +47,10 @@ export default function LeaseForm({
   const [selectedTenants, setSelectedTenants] = useState<Tenant[]>(initialTenants);
   const [isPosting, setIsPosting] = useState(false);
 
+  const initialPropertyId = lease?.property_id || defaultPropertyId || 0;
+  const initialProperty = properties.find((p) => p.id === initialPropertyId);
+  const initialIsCommercial = initialProperty?.type === 'commercial';
+
   const {
     register,
     handleSubmit,
@@ -57,7 +61,7 @@ export default function LeaseForm({
   } = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(leaseSchema),
     defaultValues: {
-      property_id: lease?.property_id || defaultPropertyId || 0,
+      property_id: initialPropertyId,
       tenant_ids: initialTenants.map((t) => t.id),
       payment_day: lease?.payment_day || 1,
       start_date: lease?.start_date
@@ -73,9 +77,34 @@ export default function LeaseForm({
       keys_building_count: lease?.keys_building_count || 0,
       keys_mailbox_count: lease?.keys_mailbox_count || 0,
       keys_apartment_count: lease?.keys_apartment_count || 0,
+      keys_grid_count: lease?.keys_grid_count || 0,
       guarantor_ids: lease?.guarantors?.map((g) => g.id) || [],
+      lease_type: lease?.lease_type || (initialIsCommercial ? 'commercial' : 'residential'),
+      activity_description: lease?.activity_description || '',
+      base_index_label: lease?.base_index_label || '',
+      base_index_value: lease?.base_index_value ?? undefined,
     },
   });
+
+  const selectedPropertyId = watch('property_id');
+  const selectedProperty = properties.find((p) => p.id === Number(selectedPropertyId));
+  const isCommercial = selectedProperty?.type === 'commercial';
+  const leaseType = watch('lease_type');
+
+  // Quand le bien sélectionné change, on adapte le lease_type et on vide les champs commerciaux
+  useEffect(() => {
+    if (!isCommercial) {
+      setValue('lease_type', 'residential');
+      if (!isEdit) {
+        setValue('activity_description', '');
+        setValue('keys_grid_count', 0);
+        setValue('base_index_label', '');
+        setValue('base_index_value', undefined);
+      }
+    } else if (!isEdit) {
+      setValue('lease_type', 'commercial');
+    }
+  }, [isCommercial, isEdit, setValue]);
 
   const availableGuarantors = useMemo(
     () =>
@@ -292,9 +321,13 @@ export default function LeaseForm({
               errors.guarantor_ids ? 'border-red-500' : 'border-[rgb(var(--border))]'
             }`}
           >
-            <h3 className="text-base font-semibold text-app mb-2">Les Garants (Optionnel)</h3>
+            <h3 className="text-base font-semibold text-app mb-2">
+              {isCommercial ? 'Les Garants (Optionnel)' : 'Les Garants'}
+            </h3>
             <p className="text-sm text-muted mb-4">
-              Sélectionnez les garants qui s'engagent spécifiquement pour ce bail :
+              {isCommercial
+                ? "Sélectionnez les garants qui s'engagent spécifiquement pour ce bail (facultatif pour un bail commercial) :"
+                : "Sélectionnez les garants qui s'engagent spécifiquement pour ce bail :"}
             </p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {availableGuarantors.map((guarantor) => (
@@ -408,6 +441,109 @@ export default function LeaseForm({
         </div>
       </section>
 
+      {/* --- SECTION BAIL COMMERCIAL / PROFESSIONNEL --- */}
+      {isCommercial && (
+        <section className="border-t border-[rgb(var(--border))] pt-8">
+          <h2 className={sectionTitleClass}>
+            {leaseType === 'professional' ? 'Bail Professionnel' : 'Bail Commercial'}
+          </h2>
+
+          <div className="space-y-6">
+            {/* Type de bail */}
+            <div className="rounded-lg border border-[rgb(var(--border))] bg-surface-2 p-4">
+              <p className="text-sm font-semibold text-app mb-3">Type de bail *</p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:gap-8">
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input
+                    type="radio"
+                    {...register('lease_type')}
+                    value="commercial"
+                    className="mt-0.5 h-4 w-4 text-[rgb(var(--primary-500))] border-gray-300 focus:ring-[rgb(var(--primary-500))]"
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-app">Bail commercial</p>
+                    <p className="text-xs text-muted">
+                      Commerce, artisanat, industrie — art. L.145-1 C.com. — 9 ans
+                    </p>
+                  </div>
+                </label>
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input
+                    type="radio"
+                    {...register('lease_type')}
+                    value="professional"
+                    className="mt-0.5 h-4 w-4 text-[rgb(var(--primary-500))] border-gray-300 focus:ring-[rgb(var(--primary-500))]"
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-app">Bail professionnel</p>
+                    <p className="text-xs text-muted">
+                      Professions libérales — art. 57A loi 1986 — 6 ans
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <InputLabel
+                htmlFor="activity_description"
+                value="Destination des lieux (activité autorisée) *"
+                className="mb-1"
+              />
+              <textarea
+                id="activity_description"
+                rows={3}
+                {...register('activity_description')}
+                className="w-full rounded-md border border-[rgb(var(--border))] bg-surface text-app px-3 py-2 outline-none transition-all duration-150 focus:border-[rgb(var(--primary-900))]"
+                placeholder={
+                  leaseType === 'professional'
+                    ? 'ex: exercice de la profession libérale de kinésithérapeute'
+                    : 'ex: usage commercial, et plus précisément à usage de vente en lingerie'
+                }
+              />
+              {errors.activity_description && (
+                <p className="mt-1 text-xs text-red-400 font-medium">
+                  {errors.activity_description.message as string}
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div>
+                <InputLabel
+                  htmlFor="base_index_label"
+                  value={`Trimestre de référence de l'indice ${leaseType === 'professional' ? 'ILAT' : 'ILC'}`}
+                  className="mb-1"
+                />
+                <TextInput
+                  id="base_index_label"
+                  {...register('base_index_label')}
+                  placeholder="ex: 4ème trimestre 2024"
+                  className="w-full"
+                  error={errors.base_index_label?.message}
+                />
+              </div>
+              <div>
+                <InputLabel
+                  htmlFor="base_index_value"
+                  value={`Valeur de l'indice ${leaseType === 'professional' ? 'ILAT' : 'ILC'}`}
+                  className="mb-1"
+                />
+                <TextInput
+                  id="base_index_value"
+                  type="number"
+                  step="0.01"
+                  {...register('base_index_value')}
+                  placeholder="ex: 132.50"
+                  className="w-full"
+                  error={errors.base_index_value?.message}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="border-t border-[rgb(var(--border))] pt-8">
         <h2 className={sectionTitleClass}>Assurance & Remise des clés</h2>
 
@@ -442,13 +578,11 @@ export default function LeaseForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 rounded-lg border border-[rgb(var(--border))] bg-surface-2 p-4 sm:grid-cols-3">
+        <div
+          className={`grid grid-cols-1 gap-6 rounded-lg border border-[rgb(var(--border))] bg-surface-2 p-4 sm:grid-cols-3`}
+        >
           <div>
-            <InputLabel
-              htmlFor="keys_building_count"
-              value="Clés Immeuble (Vigik)"
-              className="mb-1"
-            />
+            <InputLabel htmlFor="keys_building_count" value="Clés Immeuble" className="mb-1" />
             <TextInput
               id="keys_building_count"
               type="number"
@@ -458,23 +592,31 @@ export default function LeaseForm({
               error={errors.keys_building_count?.message}
             />
           </div>
+
+          {!isCommercial && (
+            <div>
+              <InputLabel
+                htmlFor="keys_mailbox_count"
+                value="Clés Boîte aux lettres"
+                className="mb-1"
+              />
+              <TextInput
+                id="keys_mailbox_count"
+                type="number"
+                min="0"
+                {...register('keys_mailbox_count')}
+                className="w-full"
+                error={errors.keys_mailbox_count?.message}
+              />
+            </div>
+          )}
+
           <div>
             <InputLabel
-              htmlFor="keys_mailbox_count"
-              value="Clés Boîte aux lettres"
+              htmlFor="keys_apartment_count"
+              value={isCommercial ? 'Clés Local' : 'Clés Appartement'}
               className="mb-1"
             />
-            <TextInput
-              id="keys_mailbox_count"
-              type="number"
-              min="0"
-              {...register('keys_mailbox_count')}
-              className="w-full"
-              error={errors.keys_mailbox_count?.message}
-            />
-          </div>
-          <div>
-            <InputLabel htmlFor="keys_apartment_count" value="Clés Appartement" className="mb-1" />
             <TextInput
               id="keys_apartment_count"
               type="number"
@@ -484,6 +626,24 @@ export default function LeaseForm({
               error={errors.keys_apartment_count?.message}
             />
           </div>
+
+          {isCommercial && (
+            <div>
+              <InputLabel
+                htmlFor="keys_grid_count"
+                value="Clés Grille / Vitrine"
+                className="mb-1"
+              />
+              <TextInput
+                id="keys_grid_count"
+                type="number"
+                min="0"
+                {...register('keys_grid_count')}
+                className="w-full"
+                error={errors.keys_grid_count?.message}
+              />
+            </div>
+          )}
         </div>
       </section>
 

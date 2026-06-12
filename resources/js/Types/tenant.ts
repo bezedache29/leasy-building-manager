@@ -4,6 +4,9 @@ import { Lease } from '@/Types/lease';
 
 export interface Tenant {
   id: number;
+  tenant_type: 'physical' | 'legal_entity';
+  has_residential: boolean;
+  has_commercial: boolean;
   first_name: string;
   last_name: string;
   marital_status: string | null;
@@ -15,11 +18,20 @@ export interface Tenant {
   nationality: string | null;
   profession: string | null;
   notes: string | null;
+  // Champs commerciaux
+  siret: string | null;
+  company_name: string | null;
+  legal_form: string | null;
+  share_capital: string | null;
+  registered_office: string | null;
+  rcs_city: string | null;
   property?: {
     id: number;
     name: string;
   };
   is_complete: boolean;
+  is_residential_complete: boolean;
+  is_commercial_complete: boolean;
   is_archived: boolean;
   missing_items: {
     tenant: {

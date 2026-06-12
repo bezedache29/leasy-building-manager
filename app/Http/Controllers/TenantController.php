@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class TenantController extends Controller
@@ -30,7 +31,7 @@ class TenantController extends Controller
         ])
             ->where('is_archived', $showArchived)
             ->get()
-            ->append('is_complete')
+            ->append(['is_complete', 'is_residential_complete', 'is_commercial_complete'])
             ->sortByDesc(function ($tenant) {
                 // Création d'une clé de tri magique !
                 // Ex: Si actif aujourd'hui -> "1_2026-03-13"
@@ -64,17 +65,27 @@ class TenantController extends Controller
         // 1. Validation stricte des données entrantes
         $validated = $request->validate([
             // Locataire
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'marital_status' => 'nullable|string|max:255',
-            'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:255',
-            'current_address' => 'nullable|string',
-            'birth_date' => 'nullable|date',
-            'birth_place' => 'nullable|string|max:255',
-            'nationality' => 'nullable|string|max:255',
-            'profession' => 'nullable|string|max:255',
-            'notes' => 'nullable|string',
+            'tenant_type'      => 'nullable|string|in:physical,legal_entity',
+            'has_residential'  => 'nullable|boolean',
+            'has_commercial'   => 'nullable|boolean',
+            'first_name'       => 'required|string|max:255',
+            'last_name'        => 'required|string|max:255',
+            'marital_status'   => 'nullable|string|max:255',
+            'email'            => ['nullable', 'email', 'max:255', Rule::unique('tenants')],
+            'phone'            => 'nullable|string|max:255',
+            'current_address'  => 'nullable|string',
+            'birth_date'       => 'nullable|date',
+            'birth_place'      => 'nullable|string|max:255',
+            'nationality'      => 'nullable|string|max:255',
+            'profession'       => 'nullable|string|max:255',
+            'notes'            => 'nullable|string',
+            // Champs commerciaux
+            'siret'            => 'nullable|string|max:20',
+            'company_name'     => 'nullable|string|max:255',
+            'legal_form'       => 'nullable|string|max:100',
+            'share_capital'    => 'nullable|numeric|min:0',
+            'registered_office' => 'nullable|string',
+            'rcs_city'         => 'nullable|string|max:100',
 
             // Garants
             'guarantors' => 'nullable|array',
@@ -107,27 +118,59 @@ class TenantController extends Controller
             'tenant_documents.*.category' => [
                 'required',
                 'string',
-                Rule::in(['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice', 'bank_details', 'insurance', 'lease', 'inventory', 'deposit_check', 'other'])
+                Rule::in([
+                    'id_card',
+                    'proof_of_address',
+                    'employment_contract',
+                    'payslip',
+                    'tax_notice',
+                    'bank_details',
+                    'insurance',
+                    'deposit_check',
+                    'kbis',
+                    'kbis_urssaf',
+                    'company_statutes',
+                    'balance_sheet',
+                    'tax_filing',
+                    'bank_statement_pro',
+                    'activity_forecast',
+                    'other',
+                ])
             ],
             'tenant_documents.*.name' => 'required|string',
         ]);
+
+        if (!($validated['has_residential'] ?? false) && !($validated['has_commercial'] ?? false)) {
+            throw ValidationException::withMessages([
+                'has_residential' => 'Au moins un profil (résidentiel ou commercial) doit être actif.',
+            ]);
+        }
 
         // 2. Exécution dans une Transaction
         DB::transaction(function () use ($validated) {
 
             // A. Création du locataire
             $tenant = Tenant::create([
-                'first_name' => $validated['first_name'],
-                'last_name' => $validated['last_name'],
-                'marital_status' => $validated['marital_status'] ?? null,
-                'email' => $validated['email'] ?? null,
-                'phone' => $validated['phone'] ?? null,
-                'current_address' => $validated['current_address'] ?? null,
-                'birth_date' => $validated['birth_date'] ?? null,
-                'birth_place' => $validated['birth_place'] ?? null,
-                'nationality' => $validated['nationality'] ?? null,
-                'profession' => $validated['profession'] ?? null,
-                'notes' => $validated['notes'] ?? null,
+                'tenant_type'       => $validated['tenant_type'] ?? 'physical',
+                'has_residential'   => $validated['has_residential'] ?? true,
+                'has_commercial'    => $validated['has_commercial'] ?? false,
+                'first_name'        => $validated['first_name'],
+                'last_name'         => $validated['last_name'],
+                'marital_status'    => $validated['marital_status'] ?? null,
+                'email'             => $validated['email'] ?? null,
+                'phone'             => $validated['phone'] ?? null,
+                'current_address'   => $validated['current_address'] ?? null,
+                'birth_date'        => $validated['birth_date'] ?? null,
+                'birth_place'       => $validated['birth_place'] ?? null,
+                'nationality'       => $validated['nationality'] ?? null,
+                'profession'        => $validated['profession'] ?? null,
+                'notes'             => $validated['notes'] ?? null,
+                'siret'             => $validated['siret'] ?? null,
+                'company_name'      => $validated['company_name'] ?? null,
+                'legal_form'        => $validated['legal_form'] ?? null,
+                'share_capital'     => $validated['share_capital'] ?? null,
+                'registered_office' => $validated['registered_office'] ?? null,
+                'rcs_city'          => $validated['rcs_city'] ?? null,
             ]);
 
             if (!empty($validated['guarantors'])) {
@@ -204,7 +247,7 @@ class TenantController extends Controller
             }
         ]);
 
-        $tenant->append(['is_complete', 'missing_items']);
+        $tenant->append(['is_complete', 'is_residential_complete', 'is_commercial_complete', 'missing_items']);
 
         $availableGuarantors = Guarantor::orderBy('last_name')->get();
 
@@ -231,19 +274,29 @@ class TenantController extends Controller
      */
     public function update(Request $request, Tenant $tenant)
     {
-        // 1. Validation avec la liste stricte des catégories [cite: 2026-03-10]
+        // 1. Validation avec la liste stricte des catégories
         $validated = $request->validate([
-            'first_name'      => 'required|string|max:255',
-            'last_name'       => 'required|string|max:255',
-            'marital_status'  => 'nullable|string|max:255',
-            'email'           => ['nullable', 'email', 'max:255', Rule::unique('tenants')->ignore($tenant->id)],
-            'phone'           => 'nullable|string|max:255',
-            'current_address' => 'nullable|string',
-            'birth_date'      => 'nullable|date',
-            'birth_place'     => 'nullable|string|max:255',
-            'nationality'     => 'nullable|string|max:255',
-            'profession'      => 'nullable|string|max:255',
-            'notes'           => 'nullable|string',
+            'tenant_type'       => 'nullable|string|in:physical,legal_entity',
+            'has_residential'   => 'nullable|boolean',
+            'has_commercial'    => 'nullable|boolean',
+            'first_name'        => 'required|string|max:255',
+            'last_name'         => 'required|string|max:255',
+            'marital_status'    => 'nullable|string|max:255',
+            'email'             => ['nullable', 'email', 'max:255', Rule::unique('tenants')->ignore($tenant->id)],
+            'phone'             => 'nullable|string|max:255',
+            'current_address'   => 'nullable|string',
+            'birth_date'        => 'nullable|date',
+            'birth_place'       => 'nullable|string|max:255',
+            'nationality'       => 'nullable|string|max:255',
+            'profession'        => 'nullable|string|max:255',
+            'notes'             => 'nullable|string',
+            // Champs commerciaux
+            'siret'             => 'nullable|string|max:20',
+            'company_name'      => 'nullable|string|max:255',
+            'legal_form'        => 'nullable|string|max:100',
+            'share_capital'     => 'nullable|numeric|min:0',
+            'registered_office' => 'nullable|string',
+            'rcs_city'          => 'nullable|string|max:100',
 
             // Validation des nouveaux documents
             'tenant_documents' => 'nullable|array',
@@ -260,13 +313,24 @@ class TenantController extends Controller
                     'tax_notice',
                     'bank_details',
                     'insurance',
-                    'lease',
-                    'inventory',
                     'deposit_check',
-                    'other'
+                    'kbis',
+                    'kbis_urssaf',
+                    'company_statutes',
+                    'balance_sheet',
+                    'tax_filing',
+                    'bank_statement_pro',
+                    'activity_forecast',
+                    'other',
                 ])
             ],
         ]);
+
+        if (!($validated['has_residential'] ?? false) && !($validated['has_commercial'] ?? false)) {
+            throw ValidationException::withMessages([
+                'has_residential' => 'Au moins un profil (résidentiel ou commercial) doit être actif.',
+            ]);
+        }
 
         // Tableau pour traquer les chemins des fichiers fraîchement uploadés
         $storedPaths = [];

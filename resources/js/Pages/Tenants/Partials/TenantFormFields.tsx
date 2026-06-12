@@ -6,11 +6,13 @@ import { UseFormRegister, FieldErrors, FieldValues, Path } from 'react-hook-form
 interface TenantFormFieldsProps<T extends FieldValues> {
   register: UseFormRegister<T>;
   errors: FieldErrors<T>;
+  showResidentialFields?: boolean;
 }
 
 export default function TenantFormFields<T extends FieldValues>({
   register,
   errors,
+  showResidentialFields = true,
 }: TenantFormFieldsProps<T>) {
   const errorClass = 'mt-1 text-xs text-red-400 font-medium';
   const textareaClass =
@@ -71,31 +73,33 @@ export default function TenantFormFields<T extends FieldValues>({
         />
       </div>
 
-      <div className="md:col-span-2">
-        <InputLabel htmlFor="marital_status" value="Statut marital" className="mb-1" />
-        <SelectInput
-          id="marital_status"
-          {...register('marital_status' as Path<T>)}
-          className="w-full"
-          aria-invalid={!!getErrorMessage('marital_status' as Path<T>)}
-          aria-describedby={
-            getErrorMessage('marital_status' as Path<T>) ? 'marital_status-error' : undefined
-          }
-        >
-          <option value="">Sélectionner...</option>
-          <option value="single">Célibataire</option>
-          <option value="married">Marié(e)</option>
-          <option value="pacs">Pacsé(e)</option>
-          <option value="divorced">Divorcé(e)</option>
-          <option value="widowed">Veuf/Veuve</option>
-          <option value="colocation">En colocation</option>
-        </SelectInput>
-        {getErrorMessage('marital_status' as Path<T>) && (
-          <p id="marital_status-error" className={errorClass}>
-            {getErrorMessage('marital_status' as Path<T>)}
-          </p>
-        )}
-      </div>
+      {showResidentialFields && (
+        <div className="md:col-span-2">
+          <InputLabel htmlFor="marital_status" value="Statut marital" className="mb-1" />
+          <SelectInput
+            id="marital_status"
+            {...register('marital_status' as Path<T>)}
+            className="w-full"
+            aria-invalid={!!getErrorMessage('marital_status' as Path<T>)}
+            aria-describedby={
+              getErrorMessage('marital_status' as Path<T>) ? 'marital_status-error' : undefined
+            }
+          >
+            <option value="">Sélectionner...</option>
+            <option value="single">Célibataire</option>
+            <option value="married">Marié(e)</option>
+            <option value="pacs">Pacsé(e)</option>
+            <option value="divorced">Divorcé(e)</option>
+            <option value="widowed">Veuf/Veuve</option>
+            <option value="colocation">En colocation</option>
+          </SelectInput>
+          {getErrorMessage('marital_status' as Path<T>) && (
+            <p id="marital_status-error" className={errorClass}>
+              {getErrorMessage('marital_status' as Path<T>)}
+            </p>
+          )}
+        </div>
+      )}
 
       <div>
         <InputLabel htmlFor="birth_date" value="Date de naissance" className="mb-1" />
@@ -125,14 +129,16 @@ export default function TenantFormFields<T extends FieldValues>({
         />
       </div>
 
-      <div className="mb-1">
-        <InputLabel htmlFor="profession" value="Profession" className="mb-1" />
-        <TextInput
-          id="profession"
-          {...register('profession' as Path<T>)}
-          error={getErrorMessage('profession' as Path<T>)}
-        />
-      </div>
+      {showResidentialFields && (
+        <div className="mb-1">
+          <InputLabel htmlFor="profession" value="Profession" className="mb-1" />
+          <TextInput
+            id="profession"
+            {...register('profession' as Path<T>)}
+            error={getErrorMessage('profession' as Path<T>)}
+          />
+        </div>
+      )}
 
       <div className="md:col-span-2">
         <InputLabel htmlFor="notes" value="Notes internes" className="mb-1" />
