@@ -14,14 +14,20 @@ export interface Lease {
   deposit_amount: number | null;
   payment_day: number;
   status: 'active' | 'terminated' | string;
+  lease_type: 'residential' | 'commercial' | 'professional';
 
-  // Nouveaux champs pour l'assurance et les cles
+  // Champs commerciaux / professionnels
+  activity_description: string | null;
+  base_index_label: string | null;
+  base_index_value: number | null;
+  // Assurance et clés
   insurer_name: string | null;
   insurer_address: string | null;
   insurer_phone: string | null;
   keys_building_count: number;
   keys_mailbox_count: number;
   keys_apartment_count: number;
+  keys_grid_count: number;
   pdf_downloaded_at?: string | null;
 
   // Attributs calculés renvoyés par le backend

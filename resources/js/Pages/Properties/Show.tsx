@@ -121,8 +121,10 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
   const [showUploadSignedModal, setShowUploadSignedModal] = useState(false);
   const [expandedDocGroups, setExpandedDocGroups] = useState<Set<string>>(new Set());
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [showErpReminderModal, setShowErpReminderModal] = useState(false);
   const [receiptMonth, setReceiptMonth] = useState(new Date().getMonth() + 1);
   const [receiptYear, setReceiptYear] = useState(new Date().getFullYear());
+  const [receiptError, setReceiptError] = useState<string | null>(null);
 
   const toggleDocGroup = (key: string) => {
     setExpandedDocGroups((prev) => {
@@ -689,14 +691,16 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
                     </div>
 
                     <div className="flex gap-2 pt-1">
-                      <Button
-                        href={route('leases.edit', activeLease.id)}
-                        variant="warning"
-                        size="sm"
-                        className="flex-1 justify-center"
-                      >
-                        Modifier
-                      </Button>
+                      {(!activeLease.has_signed_lease || !activeLease.has_signed_inventory) && (
+                        <Button
+                          href={route('leases.edit', activeLease.id)}
+                          variant="warning"
+                          size="sm"
+                          className="flex-1 justify-center"
+                        >
+                          Modifier
+                        </Button>
+                      )}
                       <Button
                         onClick={() => setLeaseToTerminate(activeLease)}
                         variant="danger"
@@ -771,6 +775,14 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
                               className="text-xs font-medium text-amber-500 hover:text-amber-400"
                             >
                               Infos manquantes →
+                            </button>
+                          ) : activeLease.lease_type === 'commercial' ||
+                            activeLease.lease_type === 'professional' ? (
+                            <button
+                              onClick={() => setShowErpReminderModal(true)}
+                              className="text-xs font-medium text-[rgb(var(--primary-400))] hover:text-[rgb(var(--primary-300))]"
+                            >
+                              Télécharger →
                             </button>
                           ) : (
                             <a
@@ -1150,7 +1162,14 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
       />
 
       {/* Modal génération quittance */}
-      <Modal show={showReceiptModal} onClose={() => setShowReceiptModal(false)} maxWidth="sm">
+      <Modal
+        show={showReceiptModal}
+        onClose={() => {
+          setShowReceiptModal(false);
+          setReceiptError(null);
+        }}
+        maxWidth="sm"
+      >
         <div className="bg-surface p-8 rounded-xl border border-[rgb(var(--border))] shadow-2xl">
           <h2 className="text-xl font-bold text-app mb-2">Générer une quittance</h2>
           <p className="text-sm text-muted mb-6">
@@ -1162,7 +1181,10 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
               <InputLabel value="Mois" className="mb-2" />
               <SelectInput
                 value={receiptMonth}
-                onChange={(e) => setReceiptMonth(Number(e.target.value))}
+                onChange={(e) => {
+                  setReceiptMonth(Number(e.target.value));
+                  setReceiptError(null);
+                }}
               >
                 <option value={1}>Janvier</option>
                 <option value={2}>Février</option>
@@ -1183,7 +1205,10 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
               <input
                 type="number"
                 value={receiptYear}
-                onChange={(e) => setReceiptYear(Number(e.target.value))}
+                onChange={(e) => {
+                  setReceiptYear(Number(e.target.value));
+                  setReceiptError(null);
+                }}
                 min={2000}
                 max={2100}
                 className="w-full rounded-md border border-[rgb(var(--border))] bg-surface-2 px-3 py-2 text-app focus:border-[rgb(var(--primary-500))] focus:ring-1 focus:ring-[rgb(var(--primary-500))] focus:outline-none"
@@ -1191,8 +1216,20 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
             </div>
           </div>
 
+          {receiptError && (
+            <p className="mb-4 rounded-md bg-red-500/10 px-3 py-2 text-sm text-red-400">
+              {receiptError}
+            </p>
+          )}
+
           <div className="flex justify-end gap-3">
-            <Button variant="secondary" onClick={() => setShowReceiptModal(false)}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowReceiptModal(false);
+                setReceiptError(null);
+              }}
+            >
               Annuler
             </Button>
             <Button
@@ -1200,6 +1237,20 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
               disabled={!isValidReceiptYear}
               onClick={() => {
                 if (!activeLease || !isValidReceiptYear) return;
+
+                const selected = `${receiptYear}-${String(receiptMonth).padStart(2, '0')}`;
+                const leaseStart = activeLease.start_date.substring(0, 7);
+                const leaseEnd = activeLease.end_date ? activeLease.end_date.substring(0, 7) : null;
+
+                if (selected < leaseStart) {
+                  setReceiptError('La période sélectionnée est antérieure au début du bail.');
+                  return;
+                }
+                if (leaseEnd && selected > leaseEnd) {
+                  setReceiptError('La période sélectionnée dépasse la fin du bail.');
+                  return;
+                }
+
                 window.open(
                   route('leases.receipt', {
                     lease: activeLease.id,
@@ -1208,6 +1259,7 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
                   }),
                   '_blank'
                 );
+                setReceiptError(null);
                 setShowReceiptModal(false);
               }}
             >
@@ -1216,6 +1268,39 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
           </div>
         </div>
       </Modal>
+      {/* Rappel ERP avant téléchargement du bail commercial */}
+      <ConfirmModal
+        show={showErpReminderModal}
+        onClose={() => setShowErpReminderModal(false)}
+        onConfirm={() => {
+          setShowErpReminderModal(false);
+          if (activeLease) {
+            window.open(route('leases.pdf', activeLease.id), '_blank');
+          }
+        }}
+        title="Avant de télécharger le bail"
+        confirmText="J'ai mon ERP, télécharger"
+        cancelText="Fermer"
+        variant="info"
+      >
+        <p>
+          Le bail commercial doit être accompagné d'un{' '}
+          <span className="font-medium text-app">État des Risques et Pollutions (ERP)</span> datant
+          de moins de 6 mois.
+        </p>
+        <p className="mt-3">
+          Générez-le gratuitement sur{' '}
+          <a
+            href="https://www.georisques.gouv.fr"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono font-medium text-[rgb(var(--primary-400))] hover:underline"
+          >
+            georisques.gouv.fr
+          </a>{' '}
+          → <em>"Mon bien face aux risques"</em> → saisissez l'adresse du bien → téléchargez le PDF.
+        </p>
+      </ConfirmModal>
     </AppLayout>
   );
 }

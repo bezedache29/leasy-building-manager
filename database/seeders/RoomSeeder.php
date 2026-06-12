@@ -29,12 +29,10 @@ class RoomSeeder extends Seeder
 
         foreach ($properties as $property) {
             foreach ($standardRooms as $roomData) {
-                // On cree la piece et on l'attache au bien
-                Room::create([
-                    'property_id' => $property->id,
-                    'name' => $roomData['name'],
-                    'surface_area' => $roomData['surface_area'],
-                ]);
+                Room::firstOrCreate(
+                    ['property_id' => $property->id, 'name' => $roomData['name']],
+                    ['surface_area' => $roomData['surface_area']]
+                );
             }
         }
 
