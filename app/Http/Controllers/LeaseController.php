@@ -433,7 +433,15 @@ class LeaseController extends Controller
 
         $lease->load(['tenants', 'property.rooms.equipments', 'property.documents' => fn($q) => $q->where('category', 'inventory_photo')]);
 
-        $propertyDocs = $lease->property->documents;
+        $propertyDocs = $lease->property->documents->map(function ($doc) {
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($doc->file_path)) {
+                $contents = \Illuminate\Support\Facades\Storage::disk('public')->get($doc->file_path);
+                $doc->base64_src = 'data:' . $doc->mime_type . ';base64,' . base64_encode($contents);
+            } else {
+                $doc->base64_src = null;
+            }
+            return $doc;
+        });
 
         $rooms = $lease->property->rooms->map(function ($room) use ($propertyDocs, $lease) {
             // 1. On récupère les IDs de tous les équipements de cette pièce
