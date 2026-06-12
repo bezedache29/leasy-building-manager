@@ -96,10 +96,16 @@ class Lease extends Model
         foreach ($this->tenants as $tenant) {
             $name = trim($tenant->first_name . ' ' . $tenant->last_name);
 
-            if (!$tenant->current_address) $missing[] = "Adresse manquante pour le locataire ($name)";
-            if (!$tenant->birth_date || !$tenant->birth_place) $missing[] = "Date ou lieu de naissance manquant pour le locataire ($name)";
+            if ($tenant->tenant_type === 'legal_entity') {
+                if (!$tenant->company_name) $missing[] = "Raison sociale manquante pour le locataire ($name)";
+                if (!$tenant->siret)         $missing[] = "SIRET manquant pour le locataire ($name)";
+            } else {
+                if (!$tenant->current_address)                      $missing[] = "Adresse manquante pour le locataire ($name)";
+                if (!$tenant->birth_date || !$tenant->birth_place)  $missing[] = "Date ou lieu de naissance manquant pour le locataire ($name)";
+                if (!$tenant->nationality)                          $missing[] = "Nationalité manquante pour le locataire ($name)";
+            }
+
             if (!$tenant->phone) $missing[] = "Téléphone manquant pour le locataire ($name)";
-            if (!$tenant->nationality) $missing[] = "Nationalité manquante pour le locataire ($name)";
         }
 
         // --- 2. VÉRIFICATION DES GARANTS DU BAIL ---
@@ -114,6 +120,16 @@ class Lease extends Model
                 if (!$guarantor->current_address) $missing[] = "Adresse manquante pour le garant ($gName)";
                 if (!$guarantor->phone) $missing[] = "Téléphone manquant pour le garant ($gName)";
             }
+        }
+
+        // --- 3. VÉRIFICATION DES CHAMPS SPÉCIFIQUES AU BAIL COMMERCIAL / PROFESSIONNEL ---
+        if (in_array($this->lease_type, ['commercial', 'professional'])) {
+            if (!$this->activity_description) $missing[] = "Description de l'activité manquante";
+            if (!$this->insurer_name)          $missing[] = "Nom de l'assurance manquant";
+            if (!$this->insurer_address)       $missing[] = "Adresse de l'assurance manquante";
+            if (!$this->insurer_phone)         $missing[] = "Téléphone de l'assurance manquant";
+            if (!$this->base_index_label)      $missing[] = "Libellé de l'indice de référence manquant";
+            if (!$this->base_index_value)      $missing[] = "Valeur de l'indice de référence manquante";
         }
 
         return $missing;

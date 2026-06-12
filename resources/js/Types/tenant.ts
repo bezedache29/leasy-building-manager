@@ -22,7 +22,7 @@ export interface Tenant {
   siret: string | null;
   company_name: string | null;
   legal_form: string | null;
-  share_capital: number | null;
+  share_capital: string | null;
   registered_office: string | null;
   rcs_city: string | null;
   property?: {

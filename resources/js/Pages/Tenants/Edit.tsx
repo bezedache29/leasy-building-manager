@@ -108,7 +108,10 @@ export default function Edit({ tenant }: { tenant: Tenant }) {
         : 'border-[rgb(var(--border))] hover:bg-surface-2'
     }`;
 
-  const existingCategories = tenant.documents?.map((doc) => doc.category) || [];
+  const stagedCategories = docFields.map((doc) => doc.category).filter(Boolean);
+  const existingCategories = [
+    ...new Set([...(tenant.documents?.map((doc) => doc.category) ?? []), ...stagedCategories]),
+  ];
 
   // Dropdown : tous les types de documents disponibles selon les profils actifs
   const documentKeys = (() => {

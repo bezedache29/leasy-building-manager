@@ -29,7 +29,7 @@ class RoomSeeder extends Seeder
 
         foreach ($properties as $property) {
             foreach ($standardRooms as $roomData) {
-                Room::firstOrCreate(
+                Room::updateOrCreate(
                     ['property_id' => $property->id, 'name' => $roomData['name']],
                     ['surface_area' => $roomData['surface_area']]
                 );

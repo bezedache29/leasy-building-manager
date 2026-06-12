@@ -189,8 +189,8 @@
             <p>
                 @if($tenant->tenant_type === 'legal_entity')
                     <span class="strong">{{ $tenant->company_name ?? '—' }}</span>
-                    ({{ $tenant->company_legal_form ?? '' }}) — SIRET {{ $tenant->siret ?? '—' }}<br>
-                    Siège : {{ $tenant->company_address ?? '—' }}<br>
+                    ({{ $tenant->legal_form ?? '' }}) — SIRET {{ $tenant->siret ?? '—' }}<br>
+                    Siège : {{ $tenant->registered_office ?? '—' }}<br>
                     Représentée par {{ $tenant->first_name }} {{ strtoupper($tenant->last_name) }}
                     ({{ $tenant->company_role ?? '—' }})
                 @else
@@ -271,7 +271,7 @@
                 <td class="fin-value">
                     {{ number_format($lease->deposit_amount, 2, ',', ' ') }} €
                     ({{ strtoupper($fmt->format($lease->deposit_amount)) }} EUROS)
-                    — {{ round($lease->deposit_amount / $monthlyRent) }} mois HC — restitution sous 3 mois
+                    — {{ $monthlyRent > 0 ? round($lease->deposit_amount / $monthlyRent) : 'N/A' }} mois HC — restitution sous 3 mois
                 </td>
             </tr>
             @endif

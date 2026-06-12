@@ -91,10 +91,16 @@ export default function LeaseForm({
   const isCommercial = selectedProperty?.type === 'commercial';
   const leaseType = watch('lease_type');
 
-  // Quand le bien sélectionné change, on adapte le lease_type
+  // Quand le bien sélectionné change, on adapte le lease_type et on vide les champs commerciaux
   useEffect(() => {
     if (!isCommercial) {
       setValue('lease_type', 'residential');
+      if (!isEdit) {
+        setValue('activity_description', '');
+        setValue('keys_grid_count', 0);
+        setValue('base_index_label', '');
+        setValue('base_index_value', undefined);
+      }
     } else if (!isEdit) {
       setValue('lease_type', 'commercial');
     }

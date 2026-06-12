@@ -6,6 +6,7 @@ use App\Models\Equipment;
 use App\Models\Property;
 use App\Models\Room;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class T2RoomSeeder extends Seeder
 {
@@ -18,12 +19,6 @@ class T2RoomSeeder extends Seeder
 
             return;
         }
-
-        // Suppression des pièces existantes (et leurs équipements en cascade)
-        $property->rooms()->each(function (Room $room) {
-            $room->equipments()->delete();
-            $room->delete();
-        });
 
         $rooms = [
             [
@@ -138,23 +133,31 @@ class T2RoomSeeder extends Seeder
             ],
         ];
 
-        foreach ($rooms as $roomData) {
-            $room = Room::create([
-                'property_id' => $property->id,
-                'name' => $roomData['name'],
-                'surface_area' => $roomData['surface_area'],
-            ]);
+        DB::transaction(function () use ($property, $rooms) {
+            // Suppression des pièces existantes (et leurs équipements en cascade)
+            $property->rooms()->each(function (Room $room) {
+                $room->equipments()->delete();
+                $room->delete();
+            });
 
-            foreach ($roomData['equipments'] as $eq) {
-                Equipment::create([
-                    'room_id' => $room->id,
-                    'name' => $eq['name'],
-                    'type' => $eq['type'],
-                    'quantity' => $eq['quantity'],
-                    'notes' => $eq['notes'],
+            foreach ($rooms as $roomData) {
+                $room = Room::create([
+                    'property_id' => $property->id,
+                    'name' => $roomData['name'],
+                    'surface_area' => $roomData['surface_area'],
                 ]);
+
+                foreach ($roomData['equipments'] as $eq) {
+                    Equipment::create([
+                        'room_id' => $room->id,
+                        'name' => $eq['name'],
+                        'type' => $eq['type'],
+                        'quantity' => $eq['quantity'],
+                        'notes' => $eq['notes'],
+                    ]);
+                }
             }
-        }
+        });
 
         $this->command->info('Pièces et équipements du T2 générés avec succès !');
     }

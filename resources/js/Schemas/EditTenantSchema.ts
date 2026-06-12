@@ -23,7 +23,13 @@ const editTenantSchema = z.object({
   siret: z.string().max(20).optional().or(z.literal('')),
   company_name: z.string().optional().or(z.literal('')),
   legal_form: z.string().optional().or(z.literal('')),
-  share_capital: z.coerce.number().min(0).optional().nullable(),
+  share_capital: z
+    .union([z.string(), z.number(), z.null()])
+    .optional()
+    .transform((v) => (v === '' || v == null ? null : Number(v)))
+    .refine((v) => v === null || v === undefined || v >= 0, {
+      message: 'Le capital social doit être positif ou nul',
+    }),
   registered_office: z.string().optional().or(z.literal('')),
   rcs_city: z.string().optional().or(z.literal('')),
 

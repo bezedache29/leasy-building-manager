@@ -175,10 +175,10 @@
             <p>
                 @if($tenant->tenant_type === 'legal_entity')
                     <span class="strong">{{ $tenant->company_name ?? '—' }}</span>
-                    ({{ $tenant->company_legal_form ?? '' }}) — SIRET {{ $tenant->siret ?? '—' }}<br>
-                    Siège : {{ $tenant->company_address ?? '—' }}<br>
+                    ({{ $tenant->legal_form ?? '' }}) — SIRET {{ $tenant->siret ?? '—' }}<br>
+                    Siège : {{ $tenant->registered_office ?? '—' }}<br>
                     Représentée par {{ $tenant->first_name }} {{ strtoupper($tenant->last_name) }}
-                    ({{ $tenant->company_role ?? '—' }})
+                    ({{ $tenant->rcs_city ?? '—' }})
                 @else
                     <span class="strong">{{ strtoupper($tenant->last_name) }} {{ $tenant->first_name }}</span><br>
                     {{ $tenant->current_address ?? '—' }}<br>

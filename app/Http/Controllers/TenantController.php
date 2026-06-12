@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class TenantController extends Controller
@@ -70,7 +71,7 @@ class TenantController extends Controller
             'first_name'       => 'required|string|max:255',
             'last_name'        => 'required|string|max:255',
             'marital_status'   => 'nullable|string|max:255',
-            'email'            => 'nullable|email|max:255',
+            'email'            => ['nullable', 'email', 'max:255', Rule::unique('tenants')],
             'phone'            => 'nullable|string|max:255',
             'current_address'  => 'nullable|string',
             'birth_date'       => 'nullable|date',
@@ -83,7 +84,7 @@ class TenantController extends Controller
             'company_name'     => 'nullable|string|max:255',
             'legal_form'       => 'nullable|string|max:100',
             'share_capital'    => 'nullable|numeric|min:0',
-            'registered_office'=> 'nullable|string',
+            'registered_office' => 'nullable|string',
             'rcs_city'         => 'nullable|string|max:100',
 
             // Garants
@@ -118,15 +119,32 @@ class TenantController extends Controller
                 'required',
                 'string',
                 Rule::in([
-                    'id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice',
-                    'bank_details', 'insurance', 'deposit_check',
-                    'kbis', 'kbis_urssaf', 'company_statutes', 'balance_sheet',
-                    'tax_filing', 'bank_statement_pro', 'activity_forecast',
+                    'id_card',
+                    'proof_of_address',
+                    'employment_contract',
+                    'payslip',
+                    'tax_notice',
+                    'bank_details',
+                    'insurance',
+                    'deposit_check',
+                    'kbis',
+                    'kbis_urssaf',
+                    'company_statutes',
+                    'balance_sheet',
+                    'tax_filing',
+                    'bank_statement_pro',
+                    'activity_forecast',
                     'other',
                 ])
             ],
             'tenant_documents.*.name' => 'required|string',
         ]);
+
+        if (!($validated['has_residential'] ?? false) && !($validated['has_commercial'] ?? false)) {
+            throw ValidationException::withMessages([
+                'has_residential' => 'Au moins un profil (résidentiel ou commercial) doit être actif.',
+            ]);
+        }
 
         // 2. Exécution dans une Transaction
         DB::transaction(function () use ($validated) {
@@ -288,14 +306,31 @@ class TenantController extends Controller
                 'required',
                 'string',
                 Rule::in([
-                    'id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice',
-                    'bank_details', 'insurance', 'deposit_check',
-                    'kbis', 'kbis_urssaf', 'company_statutes', 'balance_sheet',
-                    'tax_filing', 'bank_statement_pro', 'activity_forecast',
+                    'id_card',
+                    'proof_of_address',
+                    'employment_contract',
+                    'payslip',
+                    'tax_notice',
+                    'bank_details',
+                    'insurance',
+                    'deposit_check',
+                    'kbis',
+                    'kbis_urssaf',
+                    'company_statutes',
+                    'balance_sheet',
+                    'tax_filing',
+                    'bank_statement_pro',
+                    'activity_forecast',
                     'other',
                 ])
             ],
         ]);
+
+        if (!($validated['has_residential'] ?? false) && !($validated['has_commercial'] ?? false)) {
+            throw ValidationException::withMessages([
+                'has_residential' => 'Au moins un profil (résidentiel ou commercial) doit être actif.',
+            ]);
+        }
 
         // Tableau pour traquer les chemins des fichiers fraîchement uploadés
         $storedPaths = [];

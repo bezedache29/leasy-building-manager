@@ -100,7 +100,6 @@ class LeaseController extends Controller
                 'keys_mailbox_count'   => $validated['keys_mailbox_count'],
                 'keys_apartment_count' => $validated['keys_apartment_count'],
                 'keys_grid_count'      => $validated['keys_grid_count'] ?? 0,
-                'keys_vitrine_count'   => $validated['keys_vitrine_count'] ?? 0,
             ]);
 
             // Attachement des garants
@@ -127,6 +126,13 @@ class LeaseController extends Controller
 
     public function edit(Lease $lease)
     {
+        $lease->loadMissing('documents');
+        abort_if(
+            $lease->has_signed_lease && $lease->has_signed_inventory,
+            403,
+            'Ce bail est finalisé et ne peut plus être modifié.'
+        );
+
         $lease->load(['tenants.guarantors', 'guarantors']);
 
         $properties = Property::orderBy('name')->get();
@@ -142,6 +148,13 @@ class LeaseController extends Controller
 
     public function update(Request $request, Lease $lease)
     {
+        $lease->loadMissing('documents');
+        abort_if(
+            $lease->has_signed_lease && $lease->has_signed_inventory,
+            403,
+            'Ce bail est finalisé et ne peut plus être modifié.'
+        );
+
         $validated = $request->validate([
             'property_id'           => 'required|exists:properties,id',
             'start_date'            => 'required|date',
@@ -205,7 +218,6 @@ class LeaseController extends Controller
                 'keys_mailbox_count'   => $validated['keys_mailbox_count'],
                 'keys_apartment_count' => $validated['keys_apartment_count'],
                 'keys_grid_count'      => $validated['keys_grid_count'] ?? 0,
-                'keys_vitrine_count'   => $validated['keys_vitrine_count'] ?? 0,
             ]);
 
             // SAUVEGARDE DES GARANTS EN MODIFICATION
