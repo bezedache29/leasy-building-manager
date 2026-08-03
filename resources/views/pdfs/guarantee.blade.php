@@ -95,6 +95,7 @@
 
     @php
         $tenantNames = $tenants->map(fn($t) => $t->first_name . ' ' . $t->last_name)->implode(' et ');
+        $tenantPronoun = $tenants->count() > 1 ? 'leur' : 'lui';
     @endphp
 
     <p>
@@ -107,7 +108,7 @@
         @endif
         résidant à l'adresse suivante : <span class="bold">{{ $guarantor->current_address }}</span>,
         déclare me porter caution solidaire de <span class="bold">{{ $tenantNames }}</span>
-        pour les obligations résultant du bail qui lui a été consenti par le bailleur
+        pour les obligations résultant du bail qui {{ $tenantPronoun }} a été consenti par le bailleur
         <span class="bold">{{ config('building.landlord_name') }}</span>,
         demeurant <span class="bold">{{ config('building.landlord_address') }}</span>,
         pour la location du logement situé :
