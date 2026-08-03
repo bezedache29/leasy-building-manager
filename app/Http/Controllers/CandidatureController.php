@@ -23,6 +23,8 @@ class CandidatureController extends Controller
             'guarantor_id' => 'required|integer|exists:guarantors,id',
             'rent_amount'  => 'required|numeric|min:0',
             'charges_amount' => 'nullable|numeric|min:0',
+            'irl_quarter'  => 'required|string|max:50',
+            'irl_value'    => 'required|string|max:20',
         ]);
 
         $tenants   = Tenant::whereIn('id', $validated['tenant_ids'])->get();
@@ -54,6 +56,8 @@ class CandidatureController extends Controller
             'maxGuaranteeAmount'  => $maxGuarantee,
             'maxGuaranteeInWords' => $formatter->format($maxGuarantee),
             'revisionLabel'       => null,
+            'irlQuarter'          => $validated['irl_quarter'],
+            'irlValue'            => $validated['irl_value'],
         ]);
 
         $pdf->setPaper('A4', 'portrait');

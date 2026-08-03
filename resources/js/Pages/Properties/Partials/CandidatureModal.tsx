@@ -17,6 +17,8 @@ export default function CandidatureModal({ show, onClose, propertyId, tenants }:
   const [selectedGuarantorId, setSelectedGuarantorId] = useState<number | null>(null);
   const [rentAmount, setRentAmount] = useState('');
   const [chargesAmount, setChargesAmount] = useState('');
+  const [irlQuarter, setIrlQuarter] = useState('');
+  const [irlValue, setIrlValue] = useState('');
 
   // Réinitialisation à chaque ouverture
   useEffect(() => {
@@ -26,6 +28,8 @@ export default function CandidatureModal({ show, onClose, propertyId, tenants }:
       setSelectedGuarantorId(null);
       setRentAmount('');
       setChargesAmount('');
+      setIrlQuarter('');
+      setIrlValue('');
     }
   }, [show]);
 
@@ -68,7 +72,9 @@ export default function CandidatureModal({ show, onClose, propertyId, tenants }:
     selectedTenantIds.length > 0 &&
     selectedGuarantorId !== null &&
     rentAmount.trim() !== '' &&
-    parseFloat(rentAmount) >= 0;
+    parseFloat(rentAmount) >= 0 &&
+    irlQuarter.trim() !== '' &&
+    irlValue.trim() !== '';
 
   const handleGenerate = () => {
     if (!canGenerate) return;
@@ -80,6 +86,8 @@ export default function CandidatureModal({ show, onClose, propertyId, tenants }:
     if (chargesAmount.trim() !== '') {
       params.append('charges_amount', chargesAmount);
     }
+    params.append('irl_quarter', irlQuarter.trim());
+    params.append('irl_value', irlValue.trim());
 
     const url = route('properties.candidature.acte', propertyId) + '?' + params.toString();
     window.open(url, '_blank');
@@ -213,6 +221,41 @@ export default function CandidatureModal({ show, onClose, propertyId, tenants }:
               onChange={(e) => setChargesAmount(e.target.value)}
               className={inputClass}
             />
+          </div>
+        </div>
+
+        {/* Étape 4 : Indice de référence des loyers */}
+        <div className="mb-6">
+          <label className={labelClass}>
+            Indice de référence des loyers (IRL){' '}
+            <a
+              href="https://www.insee.fr/fr/statistiques/serie/001515333"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[rgb(var(--primary-400))] hover:text-[rgb(var(--primary-300))] font-normal"
+            >
+              (voir la valeur actuelle sur l'INSEE →)
+            </a>
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <input
+                type="text"
+                placeholder="ex: 2e trimestre 2026"
+                value={irlQuarter}
+                onChange={(e) => setIrlQuarter(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <input
+                type="text"
+                placeholder="Valeur, ex: 148,37"
+                value={irlValue}
+                onChange={(e) => setIrlValue(e.target.value)}
+                className={inputClass}
+              />
+            </div>
           </div>
         </div>
 

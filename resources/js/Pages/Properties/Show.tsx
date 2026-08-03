@@ -12,6 +12,7 @@ import { Lease } from '@/Types/lease';
 import TerminateLeaseModal from '@/Pages/Leases/Partials/TerminateLeaseModal';
 import MissingPdfDataModal from '@/Pages/Properties/Partials/MissingPdfDataModal';
 import CandidatureModal from '@/Pages/Properties/Partials/CandidatureModal';
+import GuaranteeIrlModal from '@/Pages/Properties/Partials/GuaranteeIrlModal';
 import UploadSignedDocsModal from '@/Pages/Tenants/Partials/UploadSignedDocsModal';
 import PhotoGallery from '@/Components/PhotoGallery';
 import InputLabel from '@/Components/InputLabel';
@@ -19,6 +20,7 @@ import Modal from '@/Components/Modal';
 import { Disclosure } from '@headlessui/react';
 import SelectInput from '@/Components/SelectInput';
 import { Tenant } from '@/Types/tenant';
+import { Guarantor } from '@/Types/guarantor';
 
 // Typage précis pour les détails de calcul recus du controleur
 interface WaterChargeDetails {
@@ -118,6 +120,10 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showInventoryConfirmModal, setShowInventoryConfirmModal] = useState(false);
   const [showCandidatureModal, setShowCandidatureModal] = useState(false);
+  const [guaranteeToDownload, setGuaranteeToDownload] = useState<{
+    leaseId: number;
+    guarantor: Guarantor;
+  } | null>(null);
   const [showUploadSignedModal, setShowUploadSignedModal] = useState(false);
   const [expandedDocGroups, setExpandedDocGroups] = useState<Set<string>>(new Set());
   const [showReceiptModal, setShowReceiptModal] = useState(false);
@@ -738,17 +744,15 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
                             <span className="text-sm text-app">
                               🛡️ Acte de caution — {guarantor.first_name} {guarantor.last_name}
                             </span>
-                            <a
-                              href={route('leases.guarantors.pdf', {
-                                lease: activeLease.id,
-                                guarantor: guarantor.id,
-                              })}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setGuaranteeToDownload({ leaseId: activeLease.id, guarantor })
+                              }
                               className="text-xs font-medium text-[rgb(var(--primary-400))] hover:text-[rgb(var(--primary-300))]"
                             >
                               Télécharger →
-                            </a>
+                            </button>
                           </div>
                         )
                       )}
@@ -1159,6 +1163,13 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
         onClose={() => setShowCandidatureModal(false)}
         propertyId={property.id}
         tenants={tenants}
+      />
+
+      <GuaranteeIrlModal
+        show={guaranteeToDownload !== null}
+        onClose={() => setGuaranteeToDownload(null)}
+        leaseId={guaranteeToDownload?.leaseId ?? null}
+        guarantor={guaranteeToDownload?.guarantor ?? null}
       />
 
       {/* Modal génération quittance */}

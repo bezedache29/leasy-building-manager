@@ -9,10 +9,6 @@ return [
     'landlord_address' => env('LANDLORD_ADDRESS', ''),
     'landlord_phone_number' => env('LANDLORD_PHONE_NUMBER', ''),
     'landlord_mail' => env('LANDLORD_MAIL', ''),
-    // IRL — à mettre à jour chaque trimestre (source : INSEE)
-    'irl_value'   => env('IRL_VALUE', '146,60'),
-    'irl_quarter' => env('IRL_QUARTER', '1er trimestre 2026'),
-
     // Informations détaillées du bailleur (pour le bail commercial)
     'landlord_first_name'     => env('LANDLORD_FIRST_NAME', ''),
     'landlord_last_name'      => env('LANDLORD_LAST_NAME', ''),

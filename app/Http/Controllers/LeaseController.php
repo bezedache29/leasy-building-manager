@@ -291,8 +291,14 @@ class LeaseController extends Controller
         return $pdf->stream($filename);
     }
 
-    public function downloadGuarantee(Lease $lease, Guarantor $guarantor)
+    public function downloadGuarantee(Request $request, Lease $lease, Guarantor $guarantor)
     {
+        // Trimestre et valeur IRL saisis manuellement par l'utilisateur (source : INSEE)
+        $validated = $request->validate([
+            'irl_quarter' => 'required|string|max:50',
+            'irl_value'   => 'required|string|max:20',
+        ]);
+
         // On charge les relations necessaires
         $lease->load(['property', 'tenants', 'guarantors']);
 
@@ -331,6 +337,8 @@ class LeaseController extends Controller
             'maxGuaranteeAmount'  => $maxGuaranteeAmount,
             'maxGuaranteeInWords' => $maxGuaranteeInWords,
             'revisionLabel'       => $revisionLabel,
+            'irlQuarter'          => $validated['irl_quarter'],
+            'irlValue'            => $validated['irl_value'],
         ]);
 
         // Optionnel : personnaliser le format du papier
