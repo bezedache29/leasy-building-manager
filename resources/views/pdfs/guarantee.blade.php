@@ -152,8 +152,8 @@
             à la date anniversaire du bail
         @endif
         selon la variation de l'indice de référence des loyers (IRL) publié par l'INSEE
-        au <span class="bold">{{ config('building.irl_quarter') }}</span>
-        (valeur : <span class="bold">{{ config('building.irl_value') }}</span>).
+        au <span class="bold">{{ $irlQuarter }}</span>
+        (valeur : <span class="bold">{{ $irlValue }}</span>).
     </p>
 
     {{-- 3. ÉTENDUE DE LA CAUTION --}}
