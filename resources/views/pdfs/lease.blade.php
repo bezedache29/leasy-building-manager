@@ -13,7 +13,7 @@
             text-align: justify;
         }
         h1 { text-align: center; font-size: 16px; text-transform: uppercase; margin-bottom: 5px; }
-        .subtitle { text-align: center; font-size: 10px; font-style: italic; margin-bottom: 25px; color: #444; }
+        .subtitle { text-align: center; font-size: 10px; font-style: italic; margin-bottom: 25px; color: #000; }
         h2 { 
             font-size: 12px; 
             background-color: #f4f4f4; 
@@ -35,8 +35,8 @@
         .highlight-box { border: 1px solid #000; padding: 12px; background-color: #fafafa; margin-top: 5px; border-radius: 2px; }
         
         .signature-table { width: 100%; margin-top: 15px; border-collapse: collapse; page-break-inside: avoid; }
-        .signature-table td { width: 50%; vertical-align: top; border: 1px solid #aaa; padding: 10px; height: 100px; }
-        .small-text { font-size: 9.5px; color: #555; font-style: italic; }
+        .signature-table td { width: 50%; vertical-align: top; border: 1px solid #000; padding: 10px; height: 100px; }
+        .small-text { font-size: 9.5px; color: #000; font-style: italic; }
         
         .dotted-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
         .dotted-label { white-space: nowrap; width: 1%; padding-right: 5px; }

@@ -21,7 +21,7 @@
         .subtitle {
             text-align: center;
             font-size: 11px;
-            color: #555;
+            color: #000;
             margin-bottom: 30px;
         }
         .section-title {
@@ -41,7 +41,7 @@
         p { margin: 0 0 6px 0; }
         .bold { font-weight: bold; }
         .italic { font-style: italic; }
-        .text-small { font-size: 10px; color: #444; }
+        .text-small { font-size: 10px; color: #000; }
         .warning { color: #b00; font-weight: bold; }
         .quote-box {
             border-left: 3px solid #555;
@@ -55,7 +55,7 @@
             margin-top: 10px;
         }
         .handwritten-line {
-            border-bottom: 1px solid #888;
+            border-bottom: 1px solid #000;
             height: 22px;
             margin-bottom: 6px;
         }
@@ -72,14 +72,14 @@
         .signature-table td:first-child { padding-left: 0; }
         .signature-table td:last-child { padding-right: 0; text-align: right; }
         .signature-block {
-            border: 1px solid #ccc;
+            border: 1px solid #000;
             padding: 10px 14px;
             min-height: 80px;
         }
         .page-break { page-break-before: always; }
         .legal-text {
             font-size: 10.5px;
-            color: #333;
+            color: #000;
         }
     </style>
 </head>
@@ -250,7 +250,7 @@
         </tr>
     </table>
 
-    <p class="text-small" style="margin-top: 20px; text-align: center; color: #777;">
+    <p class="text-small" style="margin-top: 20px; text-align: center; color: #000;">
         Document établi conformément à la loi n°89-462 du 6 juillet 1989 et à la loi ALUR n°2014-366 du 24 mars 2014
     </p>
 
