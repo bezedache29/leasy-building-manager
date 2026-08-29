@@ -100,9 +100,15 @@
         .room-header-bar {
             background-color: #f3f4f6;
             border-left: 4px solid #8b5cf6;
-            padding: 6px 12px;
+            padding: 10px 12px;
             vertical-align: middle;
-            height: 60px;
+        }
+        .room-qr-box {
+            border: 1px solid #d1d5db;
+            background-color: #ffffff;
+            border-radius: 4px;
+            padding: 6px;
+            text-align: center;
         }
         .meter-table {
             width: 100%;
@@ -235,10 +241,10 @@
                             @endif
                         </td>
                         @if($room->qr_code_svg)
-                            <td style="width:90px; text-align:right; vertical-align:middle; padding-left:8px; white-space:nowrap;">
-                                <div style="display:inline-block; text-align:center;">
-                                    <img src="{{ $room->qr_code_svg }}" width="65" height="65" style="display:block; margin-left:auto;">
-                                    <div style="font-size:6px; color:#8b5cf6; font-weight:bold; text-transform:uppercase; margin-top:2px;">
+                            <td style="width:145px; text-align:right; vertical-align:middle; padding-left:8px; white-space:nowrap;">
+                                <div class="room-qr-box" style="display:inline-block;">
+                                    <img src="{{ $room->qr_code_svg }}" width="110" height="110" style="display:block;">
+                                    <div style="font-size:7px; color:#8b5cf6; font-weight:bold; text-transform:uppercase; margin-top:3px;">
                                         Scanner pour photos
                                     </div>
                                 </div>
