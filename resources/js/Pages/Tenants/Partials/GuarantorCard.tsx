@@ -13,6 +13,7 @@ import InputLabel from '@/Components/InputLabel';
 import SelectInput from '@/Components/SelectInput';
 import Button from '@/Components/Button';
 import { GUARANTOR_DOCUMENT_KEYS, VISALE_DOCUMENT_KEYS } from '@/Constants/documentCategories';
+import { GUARANTOR_RELATIONSHIPS } from '@/Constants/guarantorRelationships';
 import { AppDocument } from '@/Types';
 import { router } from '@inertiajs/react';
 import DocumentFieldItem from '@/Pages/Tenants/Partials/DocumentFieldItem';
@@ -128,12 +129,11 @@ export default function GuarantorCard<T extends FieldValues>({
             <InputLabel value="Lien avec le locataire" className="mb-1" />
             <SelectInput {...register(`${prefix}relationship` as Path<T>)} className="w-full">
               <option value="">Sélectionner...</option>
-              <option value="parent">Parent</option>
-              <option value="grandparent">Grand-parent</option>
-              <option value="sibling">Frère / Sœur</option>
-              <option value="friend">Ami(e)</option>
-              <option value="colleague">Collègue</option>
-              <option value="other">Autre</option>
+              {GUARANTOR_RELATIONSHIPS.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
             </SelectInput>
           </div>
 

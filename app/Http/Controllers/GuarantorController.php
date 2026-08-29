@@ -50,7 +50,7 @@ class GuarantorController extends Controller
 
             // Documents du garant
             'documents' => 'nullable|array',
-            'documents.*.file'     => 'required_with:documents|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:10240',
+            'documents.*.file' => 'required_with:documents|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:10240',
             'documents.*.category' => [
                 'required',
                 'string',
@@ -62,8 +62,8 @@ class GuarantorController extends Controller
                     'tax_notice',
                     'guarantee_deed',
                     'visale_guarantee',
-                    'other'
-                ])
+                    'other',
+                ]),
             ],
             'documents.*.name' => 'required|string',
         ]);
@@ -71,10 +71,10 @@ class GuarantorController extends Controller
         DB::transaction(function () use ($validated, $tenant) {
 
             // CAS 1 : C'est un garant existant qu'on rattache au dossier
-            if (!empty($validated['guarantor_id'])) {
+            if (! empty($validated['guarantor_id'])) {
                 // syncWithoutDetaching empêche de dupliquer l'entrée dans la table pivot
                 $tenant->guarantors()->syncWithoutDetaching([
-                    $validated['guarantor_id'] => ['relationship' => $validated['relationship'] ?? null]
+                    $validated['guarantor_id'] => ['relationship' => $validated['relationship'] ?? null],
                 ]);
             }
             // CAS 2 : C'est un tout nouveau garant
@@ -85,18 +85,18 @@ class GuarantorController extends Controller
                 // Pour un garant Visale, le nom est fixé automatiquement
                 if (($guarantorDbData['type'] ?? 'human') === 'visale') {
                     $guarantorDbData['first_name'] = 'Action Logement';
-                    $guarantorDbData['last_name']  = 'Visale';
+                    $guarantorDbData['last_name'] = 'Visale';
                 }
 
                 $guarantor = Guarantor::create($guarantorDbData);
 
                 // 2. On l'attache au locataire avec le lien de parenté (Table Pivot)
                 $tenant->guarantors()->attach($guarantor->id, [
-                    'relationship' => $validated['relationship'] ?? null
+                    'relationship' => $validated['relationship'] ?? null,
                 ]);
 
                 // 3. On gère ses documents s'il y en a
-                if (!empty($validated['documents'])) {
+                if (! empty($validated['documents'])) {
                     foreach ($validated['documents'] as $docData) {
                         if (isset($docData['file'])) {
                             $file = $docData['file'];
@@ -139,30 +139,30 @@ class GuarantorController extends Controller
     public function update(Request $request, Tenant $tenant, Guarantor $guarantor)
     {
         // 🔒 Sécurité anti-IDOR
-        if (!$tenant->guarantors()->where('guarantor_id', $guarantor->id)->exists()) {
+        if (! $tenant->guarantors()->where('guarantor_id', $guarantor->id)->exists()) {
             abort(404);
         }
 
         // 1. Validation stricte
         $validated = $request->validate([
-            'type'                   => 'nullable|in:human,visale',
+            'type' => 'nullable|in:human,visale',
             'visale_contract_number' => 'nullable|string|max:255',
-            'first_name'             => 'nullable|string|max:255',
-            'last_name'       => 'nullable|string|max:255',
-            'email'           => 'nullable|email|max:255',
-            'phone'           => 'nullable|string|max:255',
-            'profession'      => 'nullable|string|max:255',
-            'marital_status'  => 'nullable|string',
+            'first_name' => 'nullable|string|max:255',
+            'last_name' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:255',
+            'profession' => 'nullable|string|max:255',
+            'marital_status' => 'nullable|string',
             'current_address' => 'nullable|string|max:500',
-            'birth_date'      => 'nullable|date',
-            'birth_place'     => 'nullable|string|max:255',
-            'nationality'     => 'nullable|string|max:255',
-            'relationship'    => 'nullable|string',
+            'birth_date' => 'nullable|date',
+            'birth_place' => 'nullable|string|max:255',
+            'nationality' => 'nullable|string|max:255',
+            'relationship' => 'nullable|string',
 
             // Validation du tableau de documents
-            'documents'       => 'nullable|array',
-            'documents.*.name'     => 'required_with:documents|string',
-            'documents.*.file'     => 'required_with:documents|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:10240',
+            'documents' => 'nullable|array',
+            'documents.*.name' => 'required_with:documents|string',
+            'documents.*.file' => 'required_with:documents|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:10240',
             'documents.*.category' => [
                 'required_with:documents',
                 'string',
@@ -174,8 +174,8 @@ class GuarantorController extends Controller
                     'tax_notice',
                     'guarantee_deed',
                     'visale_guarantee',
-                    'other'
-                ])
+                    'other',
+                ]),
             ],
         ]);
 
@@ -188,7 +188,7 @@ class GuarantorController extends Controller
             // Pour un garant Visale, le nom est fixé automatiquement
             if (($guarantorDbData['type'] ?? $guarantor->type) === 'visale') {
                 $guarantorDbData['first_name'] = 'Action Logement';
-                $guarantorDbData['last_name']  = 'Visale';
+                $guarantorDbData['last_name'] = 'Visale';
             }
 
             $guarantor->update($guarantorDbData);
@@ -196,7 +196,7 @@ class GuarantorController extends Controller
             // B. Mise à jour du lien (pivot) avec le locataire
             if (array_key_exists('relationship', $validated)) {
                 $tenant->guarantors()->updateExistingPivot($guarantor->id, [
-                    'relationship' => $validated['relationship']
+                    'relationship' => $validated['relationship'],
                 ]);
             }
 
@@ -211,8 +211,8 @@ class GuarantorController extends Controller
 
                         // Création de l'enregistrement polymorphique
                         $guarantor->documents()->create([
-                            'name'      => $docData['name'],
-                            'category'  => $docData['category'],
+                            'name' => $docData['name'],
+                            'category' => $docData['category'],
                             'file_path' => $path,
                             'mime_type' => $file->getMimeType(),
                         ]);
@@ -230,12 +230,19 @@ class GuarantorController extends Controller
     public function destroy(Tenant $tenant, Guarantor $guarantor)
     {
         // 🔒 Sécurité anti-IDOR : On vérifie dans la table pivot que le garant est bien lié à ce locataire
-        if (!$tenant->guarantors()->where('guarantor_id', $guarantor->id)->exists()) {
+        if (! $tenant->guarantors()->where('guarantor_id', $guarantor->id)->exists()) {
             abort(404);
         }
 
-        $guarantor->delete();
+        // On ne détache que ce locataire : un garant peut être partagé entre plusieurs
+        // locataires (colocation), le supprimer entièrement le retirerait aussi des autres.
+        $tenant->guarantors()->detach($guarantor->id);
 
-        return back()->with('success', 'Garant retiré du dossier (archivé).');
+        // S'il n'est plus rattaché à personne, on l'archive (comportement historique)
+        if ($guarantor->tenants()->count() === 0) {
+            $guarantor->delete();
+        }
+
+        return back()->with('success', 'Garant retiré du dossier.');
     }
 }
