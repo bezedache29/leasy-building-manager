@@ -843,52 +843,54 @@ export default function Show({ property, waterChargeDetails, tenants }: Props) {
                       </p>
                     </div>
                   )}
-
-                  {/* === PHOTOS EDL === */}
-                  <div className="border-t border-[rgb(var(--border))] px-4 pt-3 pb-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted mb-3">
-                      Photos état des lieux
-                    </p>
-                    <label className="w-full justify-center inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[rgb(var(--border))] bg-surface px-4 py-2 text-sm font-medium text-app transition-colors hover:bg-surface-2">
-                      <svg
-                        className="h-4 w-4 text-muted"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                      Ajouter une photo
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        className="hidden"
-                        onChange={handleFileSelect}
-                      />
-                    </label>
-                    <PhotoGallery
-                      photos={
-                        property.documents?.filter((doc) => doc.category === 'inventory_photo') ||
-                        []
-                      }
-                      title="Photos état des lieux"
-                      rooms={property.rooms}
-                    />
-                  </div>
                 </div>
               )}
+
+              {/* === PHOTOS EDL === */}
+              {/* Toujours disponible, meme si le bien n'a pas (ou plus) de bail actif */}
+              <div className="border border-[rgb(var(--border))] rounded-lg bg-surface-2 mb-6 overflow-hidden">
+                <div className="px-4 pt-3 pb-4">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted mb-3">
+                    Photos état des lieux
+                  </p>
+                  <label className="w-full justify-center inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[rgb(var(--border))] bg-surface px-4 py-2 text-sm font-medium text-app transition-colors hover:bg-surface-2">
+                    <svg
+                      className="h-4 w-4 text-muted"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                    Ajouter une photo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={handleFileSelect}
+                    />
+                  </label>
+                  <PhotoGallery
+                    photos={
+                      property.documents?.filter((doc) => doc.category === 'inventory_photo') || []
+                    }
+                    title="Photos état des lieux"
+                    rooms={property.rooms}
+                  />
+                </div>
+              </div>
 
               {/* SECTION CANDIDATURES (uniquement si le bien est vacant) */}
               {!activeLease && (
