@@ -40,7 +40,7 @@
         .info-title {
             font-size: 9px;
             text-transform: uppercase;
-            color: #6b7280;
+            color: #000;
             font-weight: bold;
             margin-bottom: 4px;
         }
@@ -87,7 +87,7 @@
         .remarques-label {
             font-size: 9px;
             font-weight: bold;
-            color: #6b7280;
+            color: #000;
             width: 80px;
             vertical-align: top;
             padding-top: 6px;
@@ -140,7 +140,7 @@
         }
         .signature-box {
             width: 48%;
-            border: 1px solid #d1d5db;
+            border: 1px solid #000;
             height: 90px;
             padding: 8px;
             vertical-align: top;
@@ -148,7 +148,7 @@
         .obs-text {
             display: block;
             font-size: 9px;
-            color: #4b5563;
+            color: #000;
             margin-top: 3px;
             font-style: italic;
         }
@@ -216,7 +216,7 @@
         </tr>
     </table>
 
-    <p style="font-size: 10px; color: #6b7280; text-align: right; margin-bottom: 10px;">
+    <p style="font-size: 10px; color: #000; text-align: right; margin-bottom: 10px;">
         Légende : <strong>TB</strong> = Très Bon &nbsp;|&nbsp; <strong>B</strong> = Bon &nbsp;|&nbsp; <strong>M</strong> = Moyen &nbsp;|&nbsp; <strong>D</strong> = Dégradé
     </p>
 
@@ -231,7 +231,7 @@
                         <td class="room-header-bar" width="100%">
                             <h2 style="text-transform: uppercase;">{{ $room->name }}</h2>
                             @if($room->surface_area)
-                                <span style="font-size:9px; color:#6b7280;">{{ $room->surface_area }} m²</span>
+                                <span style="font-size:9px; color:#000;">{{ $room->surface_area }} m²</span>
                             @endif
                         </td>
                         @if($room->qr_code_svg)
@@ -311,7 +311,7 @@
                         @endforeach
                     @else
                         <tr>
-                            <td colspan="10" style="text-align:center; color:#9ca3af; padding:12px;">Aucun équipement enregistré.</td>
+                            <td colspan="10" style="text-align:center; color:#000; padding:12px;">Aucun équipement enregistré.</td>
                         </tr>
                     @endif
                     </tbody>
@@ -374,12 +374,12 @@
         <tr>
             <td class="signature-box">
                 <strong>Le Locataire</strong><br>
-                <span style="font-size:9px; color:#6b7280;">Mention "Lu et approuvé" et signature</span>
+                <span style="font-size:9px; color:#000;">Mention "Lu et approuvé" et signature</span>
             </td>
             <td style="width:4%; border:none;"></td>
             <td class="signature-box">
                 <strong>Le Bailleur</strong><br>
-                <span style="font-size:9px; color:#6b7280;">Mention "Lu et approuvé" et signature</span>
+                <span style="font-size:9px; color:#000;">Mention "Lu et approuvé" et signature</span>
             </td>
         </tr>
     </table>
@@ -390,12 +390,12 @@
         <tr>
             <td class="signature-box">
                 <strong>Le Locataire</strong><br>
-                <span style="font-size:9px; color:#6b7280;">Mention "Lu et approuvé" et signature</span>
+                <span style="font-size:9px; color:#000;">Mention "Lu et approuvé" et signature</span>
             </td>
             <td style="width:4%; border:none;"></td>
             <td class="signature-box">
                 <strong>Le Bailleur</strong><br>
-                <span style="font-size:9px; color:#6b7280;">Mention "Lu et approuvé" et signature</span>
+                <span style="font-size:9px; color:#000;">Mention "Lu et approuvé" et signature</span>
             </td>
         </tr>
     </table>

@@ -81,7 +81,7 @@
         }
         .fin-grid { width: 100%; border-collapse: collapse; }
         .fin-grid td { padding: 3px 6px; font-size: 9.5px; vertical-align: middle; }
-        .fin-label { color: #555; width: 38%; }
+        .fin-label { color: #000; width: 38%; }
         .fin-value { font-weight: bold; color: #111; }
         .fin-grid tr:nth-child(even) td { background: rgba(255,255,255,0.6); }
 
@@ -90,7 +90,7 @@
             background: #f5f5f5; border: 1px solid #ccc;
             border-left: 3px solid #666;
             padding: 7px 12px; margin: 8px 0;
-            font-size: 9px; color: #444; font-style: italic;
+            font-size: 9px; color: #000; font-style: italic;
         }
 
         /* ── MISC ───────────────────────────────── */
@@ -108,7 +108,7 @@
         .sig-wrap { width: 100%; border-collapse: collapse; margin-top: 16px; page-break-inside: avoid; }
         .sig-cell {
             width: 48%; vertical-align: top;
-            border: 1px solid #ccc; background: #fafafa;
+            border: 1px solid #000; background: #fafafa;
             padding: 12px 14px;
         }
         .sig-spacer { width: 4%; }
@@ -120,9 +120,9 @@
         }
         .sig-name { font-weight: bold; font-size: 9.5px; color: #111; margin-bottom: 4px; }
         .sig-line {
-            border-top: 1px dashed #aaa; margin-top: 40px;
+            border-top: 1px dashed #000; margin-top: 40px;
             padding-top: 4px; font-size: 8px;
-            color: #888; font-style: italic;
+            color: #000; font-style: italic;
         }
     </style>
 </head>
@@ -174,13 +174,13 @@
                 {{ config('building.landlord_address') }}.
             </p>
             @if(config('building.landlord_birth_date'))
-            <p style="font-size:9px; color:#444;">
+            <p style="font-size:9px; color:#000;">
                 Né(e) le {{ config('building.landlord_birth_date') }}
                 à {{ config('building.landlord_birth_place') }},
                 nationalité {{ config('building.landlord_nationality') }}.
             </p>
             @endif
-            <p style="margin-top:6px; font-size:8.5px; font-style:italic; color:#333;">« le Bailleur »</p>
+            <p style="margin-top:6px; font-size:8.5px; font-style:italic; color:#000;">« le Bailleur »</p>
         </td>
         <td class="party-spacer"></td>
         <td class="party-cell">
@@ -196,7 +196,7 @@
                 @else
                     <span class="strong">{{ strtoupper($tenant->last_name) }} {{ $tenant->first_name }}</span><br>
                     {{ $tenant->current_address ?? '—' }}<br>
-                    <span style="font-size:9px; color:#444;">
+                    <span style="font-size:9px; color:#000;">
                         Né(e) le {{ $tenant->birth_date?->locale('fr')->translatedFormat('j F Y') ?? '—' }}
                         à {{ $tenant->birth_place ?? '—' }},
                         nationalité {{ $tenant->nationality ?? '—' }}
@@ -205,7 +205,7 @@
             </p>
             @if(!$loop->last)<div class="hr"></div>@endif
             @endforeach
-            <p style="margin-top:6px; font-size:8.5px; font-style:italic; color:#333;">« le Locataire »</p>
+            <p style="margin-top:6px; font-size:8.5px; font-style:italic; color:#000;">« le Locataire »</p>
         </td>
     </tr>
 </table>
@@ -630,7 +630,7 @@
                 <div class="sig-label">Le Locataire</div>
                 @if($tenant->tenant_type === 'legal_entity')
                     <div class="sig-name">{{ $tenant->company_name ?? '' }}</div>
-                    <p style="font-size:9px; color:#444; margin:2px 0 0 0;">Représentée par {{ $tenant->first_name }} {{ strtoupper($tenant->last_name) }}</p>
+                    <p style="font-size:9px; color:#000; margin:2px 0 0 0;">Représentée par {{ $tenant->first_name }} {{ strtoupper($tenant->last_name) }}</p>
                 @else
                     <div class="sig-name">{{ $tenant->first_name }} {{ strtoupper($tenant->last_name) }}</div>
                 @endif
@@ -690,10 +690,10 @@
     <div class="fin-box">
         <table style="width:100%; border-collapse: collapse;">
             <tr>
-                <td style="width:30%; font-weight:bold; font-size:9px; color:#555; padding: 4px 6px; border-bottom: 1px solid #ddd;">Nature des travaux</td>
-                <td style="width:20%; font-weight:bold; font-size:9px; color:#555; padding: 4px 6px; border-bottom: 1px solid #ddd;">Année</td>
-                <td style="width:25%; font-weight:bold; font-size:9px; color:#555; padding: 4px 6px; border-bottom: 1px solid #ddd;">Coût (€ HT)</td>
-                <td style="width:25%; font-weight:bold; font-size:9px; color:#555; padding: 4px 6px; border-bottom: 1px solid #ddd;">Observations</td>
+                <td style="width:30%; font-weight:bold; font-size:9px; color:#000; padding: 4px 6px; border-bottom: 1px solid #ddd;">Nature des travaux</td>
+                <td style="width:20%; font-weight:bold; font-size:9px; color:#000; padding: 4px 6px; border-bottom: 1px solid #ddd;">Année</td>
+                <td style="width:25%; font-weight:bold; font-size:9px; color:#000; padding: 4px 6px; border-bottom: 1px solid #ddd;">Coût (€ HT)</td>
+                <td style="width:25%; font-weight:bold; font-size:9px; color:#000; padding: 4px 6px; border-bottom: 1px solid #ddd;">Observations</td>
             </tr>
             @for($i = 0; $i < 4; $i++)
             <tr>
@@ -712,10 +712,10 @@
     <div class="fin-box">
         <table style="width:100%; border-collapse: collapse;">
             <tr>
-                <td style="width:30%; font-weight:bold; font-size:9px; color:#555; padding: 4px 6px; border-bottom: 1px solid #ddd;">Nature des travaux</td>
-                <td style="width:20%; font-weight:bold; font-size:9px; color:#555; padding: 4px 6px; border-bottom: 1px solid #ddd;">Année prévisionnelle</td>
-                <td style="width:25%; font-weight:bold; font-size:9px; color:#555; padding: 4px 6px; border-bottom: 1px solid #ddd;">Budget estimatif (€ HT)</td>
-                <td style="width:25%; font-weight:bold; font-size:9px; color:#555; padding: 4px 6px; border-bottom: 1px solid #ddd;">Observations</td>
+                <td style="width:30%; font-weight:bold; font-size:9px; color:#000; padding: 4px 6px; border-bottom: 1px solid #ddd;">Nature des travaux</td>
+                <td style="width:20%; font-weight:bold; font-size:9px; color:#000; padding: 4px 6px; border-bottom: 1px solid #ddd;">Année prévisionnelle</td>
+                <td style="width:25%; font-weight:bold; font-size:9px; color:#000; padding: 4px 6px; border-bottom: 1px solid #ddd;">Budget estimatif (€ HT)</td>
+                <td style="width:25%; font-weight:bold; font-size:9px; color:#000; padding: 4px 6px; border-bottom: 1px solid #ddd;">Observations</td>
             </tr>
             @for($i = 0; $i < 4; $i++)
             <tr>
@@ -739,7 +739,7 @@
         <td class="sig-cell">
             <div class="sig-label">Le Bailleur</div>
             <div class="sig-name">{{ config('building.landlord_first_name') }} {{ config('building.landlord_last_name') }}</div>
-            <p style="font-size:8.5px; color:#555; margin: 4px 0 0 0;">
+            <p style="font-size:8.5px; color:#000; margin: 4px 0 0 0;">
                 Fait à {{ config('building.city') }}, le {{ $startFr }}
             </p>
             <div class="sig-line">Signature</div>
@@ -750,7 +750,7 @@
             <div class="sig-label">Le Locataire — Accusé de réception</div>
             @if($tenant->tenant_type === 'legal_entity')
                 <div class="sig-name">{{ $tenant->company_name ?? '' }}</div>
-                <p style="font-size:9px; color:#444; margin:2px 0 0 0;">Représentée par {{ $tenant->first_name }} {{ strtoupper($tenant->last_name) }}</p>
+                <p style="font-size:9px; color:#000; margin:2px 0 0 0;">Représentée par {{ $tenant->first_name }} {{ strtoupper($tenant->last_name) }}</p>
             @else
                 <div class="sig-name">{{ $tenant->first_name }} {{ strtoupper($tenant->last_name) }}</div>
             @endif
