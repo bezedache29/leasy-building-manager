@@ -16,6 +16,13 @@ export const getLocalISODate = (date: Date = new Date()): string => {
   return `${year}-${month}-${day}`;
 };
 
+export const formatFullName = (person: {
+  first_name: string | null;
+  last_name: string | null;
+}): string => {
+  return `${person.first_name ?? ''} ${person.last_name ?? ''}`.trim();
+};
+
 export const parseLocalDate = (dateInput: string | Date): Date => {
   if (dateInput instanceof Date) {
     return new Date(dateInput.getFullYear(), dateInput.getMonth(), dateInput.getDate());

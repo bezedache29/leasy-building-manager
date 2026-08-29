@@ -16,6 +16,9 @@ export interface Guarantor {
   profession: string | null;
   documents?: AppDocument[];
 
+  // Locataires deja couverts par ce garant (utile pour le selecteur de rattachement)
+  tenants?: { id: number; first_name: string; last_name: string }[];
+
   pivot?: {
     relationship: string | null;
   };

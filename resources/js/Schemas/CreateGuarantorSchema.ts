@@ -30,6 +30,9 @@ const createGuarantorSchema = z.object({
 export const guarantorModalSchema = createGuarantorSchema
   .extend({
     type: z.enum(['human', 'visale']),
+    // Mode de saisie choisi dans la modale : sert uniquement à la validation cote client,
+    // ignoré par le backend (non present dans la liste des champs valides du controller)
+    mode: z.enum(['new', 'existing']).optional(),
     guarantor_id: z.string().optional().or(z.number().optional()).or(z.literal('')),
     // On rend le prénom et le nom optionnels au cas où l'utilisateur sélectionne un garant existant
     first_name: z.string().optional().or(z.literal('')),
@@ -39,22 +42,32 @@ export const guarantorModalSchema = createGuarantorSchema
     // Visale : pas de validation sur les noms (remplis automatiquement côté serveur)
     if (data.type === 'visale') return;
 
-    // Si AUCUN garant existant n'est sélectionné (donc on crée un nouveau garant)
-    if (!data.guarantor_id) {
-      if (!data.first_name || data.first_name.trim() === '') {
+    // Mode "garant existant" : seule la sélection compte, pas d'identité à saisir
+    if (data.mode === 'existing') {
+      if (!data.guarantor_id) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Le prénom est requis pour un nouveau garant',
-          path: ['first_name'],
+          message: 'Sélectionnez un garant existant',
+          path: ['guarantor_id'],
         });
       }
-      if (!data.last_name || data.last_name.trim() === '') {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Le nom est requis pour un nouveau garant',
-          path: ['last_name'],
-        });
-      }
+      return;
+    }
+
+    // Mode "nouveau garant" (ou édition) : prénom/nom requis
+    if (!data.first_name || data.first_name.trim() === '') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Le prénom est requis pour un nouveau garant',
+        path: ['first_name'],
+      });
+    }
+    if (!data.last_name || data.last_name.trim() === '') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Le nom est requis pour un nouveau garant',
+        path: ['last_name'],
+      });
     }
   });
 

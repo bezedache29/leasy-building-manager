@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Tenant;
 use App\Models\Guarantor;
+use App\Models\Tenant;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -27,7 +27,7 @@ class TenantController extends Controller
             'leases' => function ($query) {
                 // Tri des baux du plus récent au plus ancien
                 $query->orderBy('start_date', 'desc')->with('property');
-            }
+            },
         ])
             ->where('is_archived', $showArchived)
             ->get()
@@ -39,12 +39,12 @@ class TenantController extends Controller
                 $isActive = $tenant->leases->contains('status', 'active') ? '1' : '0';
                 $latestDate = $tenant->leases->first()->start_date ?? '0000-00-00';
 
-                return $isActive . '_' . $latestDate;
+                return $isActive.'_'.$latestDate;
             })
             ->values();
 
         return Inertia::render('Tenants/Index', [
-            'tenants'      => $tenants,
+            'tenants' => $tenants,
             'showArchived' => $showArchived,
         ]);
     }
@@ -65,27 +65,27 @@ class TenantController extends Controller
         // 1. Validation stricte des données entrantes
         $validated = $request->validate([
             // Locataire
-            'tenant_type'      => 'nullable|string|in:physical,legal_entity',
-            'has_residential'  => 'nullable|boolean',
-            'has_commercial'   => 'nullable|boolean',
-            'first_name'       => 'required|string|max:255',
-            'last_name'        => 'required|string|max:255',
-            'marital_status'   => 'nullable|string|max:255',
-            'email'            => ['nullable', 'email', 'max:255', Rule::unique('tenants')],
-            'phone'            => 'nullable|string|max:255',
-            'current_address'  => 'nullable|string',
-            'birth_date'       => 'nullable|date',
-            'birth_place'      => 'nullable|string|max:255',
-            'nationality'      => 'nullable|string|max:255',
-            'profession'       => 'nullable|string|max:255',
-            'notes'            => 'nullable|string',
+            'tenant_type' => 'nullable|string|in:physical,legal_entity',
+            'has_residential' => 'nullable|boolean',
+            'has_commercial' => 'nullable|boolean',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'marital_status' => 'nullable|string|max:255',
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('tenants')],
+            'phone' => 'nullable|string|max:255',
+            'current_address' => 'nullable|string',
+            'birth_date' => 'nullable|date',
+            'birth_place' => 'nullable|string|max:255',
+            'nationality' => 'nullable|string|max:255',
+            'profession' => 'nullable|string|max:255',
+            'notes' => 'nullable|string',
             // Champs commerciaux
-            'siret'            => 'nullable|string|max:20',
-            'company_name'     => 'nullable|string|max:255',
-            'legal_form'       => 'nullable|string|max:100',
-            'share_capital'    => 'nullable|numeric|min:0',
+            'siret' => 'nullable|string|max:20',
+            'company_name' => 'nullable|string|max:255',
+            'legal_form' => 'nullable|string|max:100',
+            'share_capital' => 'nullable|numeric|min:0',
             'registered_office' => 'nullable|string',
-            'rcs_city'         => 'nullable|string|max:100',
+            'rcs_city' => 'nullable|string|max:100',
 
             // Garants
             'guarantors' => 'nullable|array',
@@ -108,7 +108,7 @@ class TenantController extends Controller
             'guarantors.*.documents.*.category' => [
                 'required',
                 'string',
-                Rule::in(['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice', 'guarantee_deed', 'visale_guarantee', 'other'])
+                Rule::in(['id_card', 'proof_of_address', 'employment_contract', 'payslip', 'tax_notice', 'guarantee_deed', 'visale_guarantee', 'other']),
             ],
             'guarantors.*.documents.*.name' => 'required|string',
 
@@ -135,12 +135,12 @@ class TenantController extends Controller
                     'bank_statement_pro',
                     'activity_forecast',
                     'other',
-                ])
+                ]),
             ],
             'tenant_documents.*.name' => 'required|string',
         ]);
 
-        if (!($validated['has_residential'] ?? false) && !($validated['has_commercial'] ?? false)) {
+        if (! ($validated['has_residential'] ?? false) && ! ($validated['has_commercial'] ?? false)) {
             throw ValidationException::withMessages([
                 'has_residential' => 'Au moins un profil (résidentiel ou commercial) doit être actif.',
             ]);
@@ -151,29 +151,29 @@ class TenantController extends Controller
 
             // A. Création du locataire
             $tenant = Tenant::create([
-                'tenant_type'       => $validated['tenant_type'] ?? 'physical',
-                'has_residential'   => $validated['has_residential'] ?? true,
-                'has_commercial'    => $validated['has_commercial'] ?? false,
-                'first_name'        => $validated['first_name'],
-                'last_name'         => $validated['last_name'],
-                'marital_status'    => $validated['marital_status'] ?? null,
-                'email'             => $validated['email'] ?? null,
-                'phone'             => $validated['phone'] ?? null,
-                'current_address'   => $validated['current_address'] ?? null,
-                'birth_date'        => $validated['birth_date'] ?? null,
-                'birth_place'       => $validated['birth_place'] ?? null,
-                'nationality'       => $validated['nationality'] ?? null,
-                'profession'        => $validated['profession'] ?? null,
-                'notes'             => $validated['notes'] ?? null,
-                'siret'             => $validated['siret'] ?? null,
-                'company_name'      => $validated['company_name'] ?? null,
-                'legal_form'        => $validated['legal_form'] ?? null,
-                'share_capital'     => $validated['share_capital'] ?? null,
+                'tenant_type' => $validated['tenant_type'] ?? 'physical',
+                'has_residential' => $validated['has_residential'] ?? true,
+                'has_commercial' => $validated['has_commercial'] ?? false,
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'],
+                'marital_status' => $validated['marital_status'] ?? null,
+                'email' => $validated['email'] ?? null,
+                'phone' => $validated['phone'] ?? null,
+                'current_address' => $validated['current_address'] ?? null,
+                'birth_date' => $validated['birth_date'] ?? null,
+                'birth_place' => $validated['birth_place'] ?? null,
+                'nationality' => $validated['nationality'] ?? null,
+                'profession' => $validated['profession'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'siret' => $validated['siret'] ?? null,
+                'company_name' => $validated['company_name'] ?? null,
+                'legal_form' => $validated['legal_form'] ?? null,
+                'share_capital' => $validated['share_capital'] ?? null,
                 'registered_office' => $validated['registered_office'] ?? null,
-                'rcs_city'          => $validated['rcs_city'] ?? null,
+                'rcs_city' => $validated['rcs_city'] ?? null,
             ]);
 
-            if (!empty($validated['guarantors'])) {
+            if (! empty($validated['guarantors'])) {
                 foreach ($validated['guarantors'] as $guarantorData) {
 
                     // On isole les infos du garant pur (sans documents ni relationship de la table pivot)
@@ -182,7 +182,7 @@ class TenantController extends Controller
                     // Pour un garant Visale, le nom est fixé automatiquement
                     if (($guarantorDbData['type'] ?? 'human') === 'visale') {
                         $guarantorDbData['first_name'] = 'Action Logement';
-                        $guarantorDbData['last_name']  = 'Visale';
+                        $guarantorDbData['last_name'] = 'Visale';
                     }
 
                     // 1. On crée le garant de manière isolée
@@ -190,11 +190,11 @@ class TenantController extends Controller
 
                     // 2. On l'attache au locataire via la table pivot (en y ajoutant le lien de parenté)
                     $tenant->guarantors()->attach($guarantor->id, [
-                        'relationship' => $guarantorData['relationship'] ?? null
+                        'relationship' => $guarantorData['relationship'] ?? null,
                     ]);
 
                     // 3. On boucle sur les documents validés du garant
-                    if (!empty($guarantorData['documents'])) {
+                    if (! empty($guarantorData['documents'])) {
                         foreach ($guarantorData['documents'] as $docData) {
                             if (isset($docData['file'])) {
                                 $file = $docData['file'];
@@ -213,7 +213,7 @@ class TenantController extends Controller
             }
 
             // C. Upload et création des documents du locataire
-            if (!empty($validated['tenant_documents'])) {
+            if (! empty($validated['tenant_documents'])) {
                 foreach ($validated['tenant_documents'] as $docData) {
                     if (isset($docData['file'])) {
                         $file = $docData['file'];
@@ -242,14 +242,22 @@ class TenantController extends Controller
         $tenant->loadMissing([
             'documents',
             'guarantors.documents',
+            // On charge les autres locataires de chaque garant pour signaler le partage
+            'guarantors.tenants:id,first_name,last_name',
             'leases' => function ($query) {
                 $query->orderBy('start_date', 'desc')->with(['property', 'documents', 'guarantors']);
-            }
+            },
         ]);
 
         $tenant->append(['is_complete', 'is_residential_complete', 'is_commercial_complete', 'missing_items']);
 
-        $availableGuarantors = Guarantor::orderBy('last_name')->get();
+        // On exclut les garants deja rattaches a ce locataire, et on charge les
+        // locataires deja couverts par chaque garant pour aider a l'identifier
+        // dans le selecteur "rattacher un garant existant".
+        $availableGuarantors = Guarantor::with('tenants:id,first_name,last_name')
+            ->whereNotIn('id', $tenant->guarantors->pluck('id'))
+            ->orderBy('last_name')
+            ->get();
 
         return Inertia::render('Tenants/Show', [
             'tenant' => $tenant,
@@ -265,7 +273,7 @@ class TenantController extends Controller
         $tenant->load(['documents', 'guarantors.documents']);
 
         return Inertia::render('Tenants/Edit', [
-            'tenant' => $tenant
+            'tenant' => $tenant,
         ]);
     }
 
@@ -276,27 +284,27 @@ class TenantController extends Controller
     {
         // 1. Validation avec la liste stricte des catégories
         $validated = $request->validate([
-            'tenant_type'       => 'nullable|string|in:physical,legal_entity',
-            'has_residential'   => 'nullable|boolean',
-            'has_commercial'    => 'nullable|boolean',
-            'first_name'        => 'required|string|max:255',
-            'last_name'         => 'required|string|max:255',
-            'marital_status'    => 'nullable|string|max:255',
-            'email'             => ['nullable', 'email', 'max:255', Rule::unique('tenants')->ignore($tenant->id)],
-            'phone'             => 'nullable|string|max:255',
-            'current_address'   => 'nullable|string',
-            'birth_date'        => 'nullable|date',
-            'birth_place'       => 'nullable|string|max:255',
-            'nationality'       => 'nullable|string|max:255',
-            'profession'        => 'nullable|string|max:255',
-            'notes'             => 'nullable|string',
+            'tenant_type' => 'nullable|string|in:physical,legal_entity',
+            'has_residential' => 'nullable|boolean',
+            'has_commercial' => 'nullable|boolean',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'marital_status' => 'nullable|string|max:255',
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('tenants')->ignore($tenant->id)],
+            'phone' => 'nullable|string|max:255',
+            'current_address' => 'nullable|string',
+            'birth_date' => 'nullable|date',
+            'birth_place' => 'nullable|string|max:255',
+            'nationality' => 'nullable|string|max:255',
+            'profession' => 'nullable|string|max:255',
+            'notes' => 'nullable|string',
             // Champs commerciaux
-            'siret'             => 'nullable|string|max:20',
-            'company_name'      => 'nullable|string|max:255',
-            'legal_form'        => 'nullable|string|max:100',
-            'share_capital'     => 'nullable|numeric|min:0',
+            'siret' => 'nullable|string|max:20',
+            'company_name' => 'nullable|string|max:255',
+            'legal_form' => 'nullable|string|max:100',
+            'share_capital' => 'nullable|numeric|min:0',
             'registered_office' => 'nullable|string',
-            'rcs_city'          => 'nullable|string|max:100',
+            'rcs_city' => 'nullable|string|max:100',
 
             // Validation des nouveaux documents
             'tenant_documents' => 'nullable|array',
@@ -322,11 +330,11 @@ class TenantController extends Controller
                     'bank_statement_pro',
                     'activity_forecast',
                     'other',
-                ])
+                ]),
             ],
         ]);
 
-        if (!($validated['has_residential'] ?? false) && !($validated['has_commercial'] ?? false)) {
+        if (! ($validated['has_residential'] ?? false) && ! ($validated['has_commercial'] ?? false)) {
             throw ValidationException::withMessages([
                 'has_residential' => 'Au moins un profil (résidentiel ou commercial) doit être actif.',
             ]);
@@ -355,9 +363,9 @@ class TenantController extends Controller
 
                         // 3. Création de l'enregistrement en base
                         $tenant->documents()->create([
-                            'name'      => $docData['name'],
+                            'name' => $docData['name'],
                             'file_path' => $path,
-                            'category'  => $docData['category'],
+                            'category' => $docData['category'],
                             'mime_type' => $file->getMimeType(),
                         ]);
                     }
@@ -371,7 +379,7 @@ class TenantController extends Controller
             DB::rollBack();
 
             // Et on supprime physiquement les fichiers orphelins qui venaient d'être uploadés
-            if (!empty($storedPaths)) {
+            if (! empty($storedPaths)) {
                 Storage::disk('public')->delete($storedPaths);
             }
 
