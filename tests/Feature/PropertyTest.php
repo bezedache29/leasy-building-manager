@@ -144,11 +144,9 @@ it('mentions the individual electricity meter in the lease only when the propert
     $withMeter = Lease::factory()->create();
     $html = view('pdfs.lease', ['lease' => $withMeter->load(['property', 'tenants', 'guarantors'])])->render();
 
-    expect($html)
-        ->toContain('Compteur électrique individuel à la charge du locataire.')
-        ->not->toContain('électricité du logement');
+    expect($html)->toContain('Compteur électrique individuel à la charge du locataire.');
 
-    // Sans compteur (cas du studio) : électricité comprise dans les charges
+    // Sans compteur (cas du studio) : le bail ne mentionne pas l'électricité du logement
     $withoutMeter = Lease::factory()->create([
         'property_id' => LeasyProperty::factory()->create(['has_individual_electricity_meter' => false])->id,
     ]);
@@ -156,6 +154,5 @@ it('mentions the individual electricity meter in the lease only when the propert
 
     expect($html)
         ->not->toContain('Compteur électrique individuel')
-        ->toContain('Électricité du logement comprise dans les charges.')
-        ->toContain('électricité des parties communes, électricité du logement');
+        ->not->toContain('lectricité du logement');
 });

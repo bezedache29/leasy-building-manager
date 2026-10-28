@@ -164,8 +164,8 @@ export default function Edit({ property }: Props) {
                     Compteur électrique individuel à la charge du locataire
                   </p>
                   <p className="text-xs text-muted">
-                    Décocher si l'électricité du logement est comprise dans les charges (mention
-                    reprise dans le bail).
+                    Décocher pour retirer cette mention du bail (ex. électricité réglée via les
+                    charges).
                   </p>
                 </div>
               </label>
