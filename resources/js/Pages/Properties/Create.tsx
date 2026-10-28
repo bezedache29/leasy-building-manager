@@ -145,8 +145,8 @@ export default function Create() {
                     Compteur électrique individuel à la charge du locataire
                   </p>
                   <p className="text-xs text-muted">
-                    Décocher pour retirer cette mention du bail (ex. électricité réglée via les
-                    charges).
+                    Décocher pour retirer cette mention du bail et ajouter un sous-compteur
+                    électrique à l'état des lieux (ex. électricité réglée via les charges).
                   </p>
                 </div>
               </label>
