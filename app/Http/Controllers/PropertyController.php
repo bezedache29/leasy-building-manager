@@ -41,6 +41,8 @@ class PropertyController extends Controller
             'surface_area' => 'nullable|numeric|min:0',
             'tantiemes_water' => 'nullable|integer|min:0',
             'tantiemes_commons' => 'nullable|integer|min:0',
+            // Compteur électrique à la charge du locataire (conditionne une clause du bail d'habitation)
+            'has_individual_electricity_meter' => 'boolean',
             'description' => 'nullable|string',
             'notes' => 'nullable|string',
         ]);
@@ -183,6 +185,8 @@ class PropertyController extends Controller
             'surface_area' => 'nullable|numeric|min:0',
             'tantiemes_water' => 'nullable|integer|min:0',
             'tantiemes_commons' => 'nullable|integer|min:0',
+            // Compteur électrique à la charge du locataire (conditionne une clause du bail d'habitation)
+            'has_individual_electricity_meter' => 'boolean',
             'description' => 'nullable|string',
             'notes' => 'nullable|string',
         ]);

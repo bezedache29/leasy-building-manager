@@ -23,6 +23,7 @@ class Property extends Model
         'surface_area',
         'tantiemes_water',
         'tantiemes_commons',
+        'has_individual_electricity_meter',
         'description',
         'notes',
     ];
@@ -37,6 +38,7 @@ class Property extends Model
         'tantiemes_water' => 'integer',
         'tantiemes_commons' => 'integer',
         'floor' => 'integer',
+        'has_individual_electricity_meter' => 'boolean',
     ];
 
     // Un bien possède plusieurs pièces
