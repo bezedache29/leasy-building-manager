@@ -343,6 +343,10 @@
             <tr><td><strong>Eau (m³)</strong></td><td></td><td></td><td></td></tr>
             <tr><td><strong>Électricité (HP)</strong></td><td></td><td></td><td></td></tr>
             <tr><td><strong>Électricité (HC)</strong></td><td></td><td></td><td></td></tr>
+            {{-- Bien sans compteur électrique au nom du locataire (ex. le studio) : relevé du sous-compteur --}}
+            @if(! $lease->property->has_individual_electricity_meter)
+                <tr><td><strong>Sous-compteur électrique (kWh)</strong></td><td></td><td></td><td></td></tr>
+            @endif
         </tbody>
     </table>
 

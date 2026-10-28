@@ -156,3 +156,27 @@ it('mentions the individual electricity meter in the lease only when the propert
         ->not->toContain('Compteur électrique individuel')
         ->not->toContain('lectricité du logement');
 });
+
+it('adds the electricity sub-meter to the inventory only when the property has no individual meter', function () {
+    // Rendu direct de la vue de l'EDL (sans dompdf) pour pouvoir lire le texte
+    $renderInventory = function (Lease $lease) {
+        $lease->load(['tenants', 'property.rooms.equipments']);
+
+        return view('pdfs.inventory', [
+            'lease' => $lease,
+            'type' => 'in',
+            'rooms' => $lease->property->rooms,
+            'propertyDocs' => collect(),
+        ])->render();
+    };
+
+    // Compteur à la charge du locataire : pas de sous-compteur
+    expect($renderInventory(Lease::factory()->create()))
+        ->not->toContain('Sous-compteur électrique');
+
+    // Sans compteur au nom du locataire (cas du studio) : ligne du sous-compteur
+    $studioLease = Lease::factory()->create([
+        'property_id' => LeasyProperty::factory()->create(['has_individual_electricity_meter' => false])->id,
+    ]);
+    expect($renderInventory($studioLease))->toContain('Sous-compteur électrique (kWh)');
+});
