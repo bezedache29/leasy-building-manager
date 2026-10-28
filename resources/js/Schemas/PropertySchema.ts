@@ -22,6 +22,9 @@ export const propertySchema = z.object({
     z.number().nullable()
   ),
 
+  // Compteur électrique individuel à la charge du locataire (sinon : électricité comprise dans les charges)
+  has_individual_electricity_meter: z.boolean(),
+
   description: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
 });

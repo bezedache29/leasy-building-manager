@@ -110,7 +110,13 @@
         <h3>Consistance et équipements du logement</h3>
         <p>Tels que ces locaux existent et tels que le locataire déclare parfaitement les connaître pour les avoir visités dès avant ce jour. Il reconnaît qu'ils sont en bon état d'usage et d'entretien.</p>
         <ul>
-            <li><span class="strong">Équipements privatifs :</span> Chauffage individuel, production d'eau chaude individuelle, système de ventilation (VMC) individuel. Sous-compteur d'eau individuel. Compteur électrique individuel à la charge du locataire.</li>
+            <li><span class="strong">Équipements privatifs :</span> Chauffage individuel, production d'eau chaude individuelle, système de ventilation (VMC) individuel. Sous-compteur d'eau individuel.
+                @if($lease->property->has_individual_electricity_meter)
+                    Compteur électrique individuel à la charge du locataire.
+                @else
+                    Électricité du logement comprise dans les charges.
+                @endif
+            </li>
             <li><span class="strong">Parties et équipements communs :</span> Hall d'entrée, escalier menant aux appartements, boîtes aux lettres, interphone.</li>
         </ul>
     </div>
@@ -142,7 +148,8 @@
             </tr>
         </table>
         
-        <p><span class="strong">Détail des charges :</span> Ordures ménagères, électricité des parties communes, ménage des communs, eau. En même temps et de la même façon que le loyer principal, le locataire s'oblige à acquitter les charges et prestations récupérables. Le paiement de ces charges donnera lieu au paiement de provisions mensuelles justifiées par une régularisation annuelle établie par le bailleur sur présentation des justificatifs correspondants.</p>
+        {{-- L'électricité du logement n'apparaît dans les charges que si le bien n'a pas de compteur à la charge du locataire --}}
+        <p><span class="strong">Détail des charges :</span> Ordures ménagères, électricité des parties communes{{ $lease->property->has_individual_electricity_meter ? '' : ', électricité du logement' }}, ménage des communs, eau. En même temps et de la même façon que le loyer principal, le locataire s'oblige à acquitter les charges et prestations récupérables. Le paiement de ces charges donnera lieu au paiement de provisions mensuelles justifiées par une régularisation annuelle établie par le bailleur sur présentation des justificatifs correspondants.</p>
 
         <h3>2. Nettoyage des parties communes</h3>
         <p>Afin de garantir le maintien en bon état de propreté de l'immeuble, le bailleur mandate une entreprise de nettoyage pour l'entretien des parties communes. Le coût de cette prestation est répercuté au locataire au sein des provisions pour charges susmentionnées.</p>
