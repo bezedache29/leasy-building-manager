@@ -9,6 +9,7 @@ export interface Property {
   surface_area: number | null; // en m²
   tantiemes_water: number | null; // Base 10000
   tantiemes_commons: number | null; // Base 1000
+  has_individual_electricity_meter: boolean;
   description: string | null;
   notes: string | null;
   rooms?: Room[];

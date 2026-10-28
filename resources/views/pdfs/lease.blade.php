@@ -110,7 +110,12 @@
         <h3>Consistance et équipements du logement</h3>
         <p>Tels que ces locaux existent et tels que le locataire déclare parfaitement les connaître pour les avoir visités dès avant ce jour. Il reconnaît qu'ils sont en bon état d'usage et d'entretien.</p>
         <ul>
-            <li><span class="strong">Équipements privatifs :</span> Chauffage individuel, production d'eau chaude individuelle, système de ventilation (VMC) individuel. Sous-compteur d'eau individuel. Compteur électrique individuel à la charge du locataire.</li>
+            <li><span class="strong">Équipements privatifs :</span> Chauffage individuel, production d'eau chaude individuelle, système de ventilation (VMC) individuel. Sous-compteur d'eau individuel.
+                {{-- Mention omise pour un bien sans compteur à la charge du locataire (ex. le studio) --}}
+                @if($lease->property->has_individual_electricity_meter)
+                    Compteur électrique individuel à la charge du locataire.
+                @endif
+            </li>
             <li><span class="strong">Parties et équipements communs :</span> Hall d'entrée, escalier menant aux appartements, boîtes aux lettres, interphone.</li>
         </ul>
     </div>

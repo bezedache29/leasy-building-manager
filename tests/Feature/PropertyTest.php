@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Lease;
 use App\Models\Property as LeasyProperty;
 use App\Models\User;
 
@@ -123,4 +124,35 @@ it('soft deletes a property', function () {
     assertSoftDeleted('properties', [
         'id' => $property->id,
     ]);
+});
+
+it('stores whether the property has an individual electricity meter', function () {
+    $property = LeasyProperty::factory()->create(['type' => 'studio']);
+
+    put(route('properties.update', $property), [
+        'name' => $property->name,
+        'type' => 'studio',
+        'floor' => 1,
+        'has_individual_electricity_meter' => false,
+    ])->assertRedirect(route('properties.show', $property));
+
+    expect($property->fresh()->has_individual_electricity_meter)->toBeFalse();
+});
+
+it('mentions the individual electricity meter in the lease only when the property has one', function () {
+    // Par défaut (colonne à true en base), le compteur est à la charge du locataire
+    $withMeter = Lease::factory()->create();
+    $html = view('pdfs.lease', ['lease' => $withMeter->load(['property', 'tenants', 'guarantors'])])->render();
+
+    expect($html)->toContain('Compteur électrique individuel à la charge du locataire.');
+
+    // Sans compteur (cas du studio) : le bail ne mentionne pas l'électricité du logement
+    $withoutMeter = Lease::factory()->create([
+        'property_id' => LeasyProperty::factory()->create(['has_individual_electricity_meter' => false])->id,
+    ]);
+    $html = view('pdfs.lease', ['lease' => $withoutMeter->load(['property', 'tenants', 'guarantors'])])->render();
+
+    expect($html)
+        ->not->toContain('Compteur électrique individuel')
+        ->not->toContain('lectricité du logement');
 });

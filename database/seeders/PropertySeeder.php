@@ -20,6 +20,8 @@ class PropertySeeder extends Seeder
                 'surface_area' => 23.56,
                 'tantiemes_water' => 866,
                 'tantiemes_commons' => 157,
+                // Pas de compteur électrique à la charge du locataire : électricité comprise dans les charges
+                'has_individual_electricity_meter' => false,
                 'description' => 'Appartement de type Studio',
             ],
             [

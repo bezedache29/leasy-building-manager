@@ -34,6 +34,7 @@ export default function Edit({ property }: Props) {
       tantiemes_water: property.tantiemes_water != null ? String(property.tantiemes_water) : '',
       tantiemes_commons:
         property.tantiemes_commons != null ? String(property.tantiemes_commons) : '',
+      has_individual_electricity_meter: property.has_individual_electricity_meter ?? true,
       description: property.description || '',
       notes: property.notes || '',
     },
@@ -149,6 +150,25 @@ export default function Edit({ property }: Props) {
                 <option value="2">2ème Étage</option>
               </SelectInput>
               {errors.floor && <p className={errorClass}>{errors.floor.message}</p>}
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...register('has_individual_electricity_meter')}
+                  className="mt-0.5 h-4 w-4 rounded text-[rgb(var(--primary-500))]"
+                />
+                <div>
+                  <p className="text-sm font-medium text-app">
+                    Compteur électrique individuel à la charge du locataire
+                  </p>
+                  <p className="text-xs text-muted">
+                    Décocher pour retirer cette mention du bail (ex. électricité réglée via les
+                    charges).
+                  </p>
+                </div>
+              </label>
             </div>
 
             <div className="sm:col-span-2">
